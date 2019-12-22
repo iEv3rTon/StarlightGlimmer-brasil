@@ -316,22 +316,15 @@ class Template(commands.Cog):
         if url is None:
             return
         
-        print(xyparse)
         xyparse = xyparse.split()
-        print(xyparse)
         if len(xyparse) == 1:
             xyparse = ''.join(xyparse)
-            print(xyparse)
             x, y = xyparse.split(',')
             x = int(x)
-            print(x)
             y = int(y)
-            print(y)
         else:
             x = int(re.sub('\D','', xyparse[0]))
-            print(x)
             y = int(re.sub('\D','', xyparse[1]))
-            print(y)
         
         t = await Template.build_template(ctx, name, x, y, url, canvas)
         if not t:

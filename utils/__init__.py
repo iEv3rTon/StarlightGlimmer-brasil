@@ -127,10 +127,10 @@ async def yes_no(ctx, question):
         return ctx.channel.id == m.channel.id and ctx.author.id == m.author.id
 
     try:
-        resp_msg = await ctx.bot.wait_for('message', timeout=180.0, check=check)
+        resp_msg = await ctx.bot.wait_for('message', timeout=300.0, check=check)
         while not (resp_msg.content == "0" or resp_msg.content == "1"):
             await ctx.send(ctx.s("error.invalid_option"))
-            resp_msg = await ctx.bot.wait_for('message', timeout=180.0, check=check)
+            resp_msg = await ctx.bot.wait_for('message', timeout=300.0, check=check)
     except asyncio.TimeoutError:
         await query_msg.edit(content=ctx.s("error.timed_out"))
         return False
