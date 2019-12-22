@@ -319,7 +319,7 @@ class Template(commands.Cog):
         print(xyparse)
         xyparse = xyparse.split()
         print(xyparse)
-        if xyparse.len() == 1:
+        if len(xyparse) == 1:
             xyparse = ''.join(xyparse)
             print(xyparse)
             x, y = xyparse.split(',')
