@@ -131,21 +131,21 @@ class Template(commands.Cog):
     @commands.cooldown(1, 5, BucketType.guild)
     @checks.template_adder_only()
     @template_add.command(name="pixelcanvas", aliases=['pc'])
-    async def template_add_pixelcanvas(self, ctx, name: str, x: int, y: int, url=None):
-        await self.add_template(ctx, "pixelcanvas", name, x, y, url)
+    async def template_add_pixelcanvas(self, ctx, name: str, *, xyparse, url=None):
+        await self.add_template(ctx, "pixelcanvas", name, xyparse, url)
 
     @commands.guild_only()
     @commands.cooldown(1, 5, BucketType.guild)
     @checks.template_adder_only()
     @template_add.command(name="pixelzone", aliases=['pz'])
-    async def template_add_pixelzone(self, ctx, name: str, x: int, y: int, url=None):
+    async def template_add_pixelzone(self, ctx, name: str, *, xyparse, url=None):
         await self.add_template(ctx, "pixelzone", name, x, y, url)
 
     @commands.guild_only()
     @commands.cooldown(1, 5, BucketType.guild)
     @checks.template_adder_only()
     @template_add.command(name="pxlsspace", aliases=['ps'])
-    async def template_add_pxlsspace(self, ctx, name: str, x: int, y: int, url=None):
+    async def template_add_pxlsspace(self, ctx, name: str, *, xyparse, url=None):
         await self.add_template(ctx, "pxlsspace", name, x, y, url)
 
     @commands.guild_only()
@@ -305,7 +305,7 @@ class Template(commands.Cog):
         await ctx.send(ctx.s("template.remove").format(name))
 
     @staticmethod
-    async def add_template(ctx, canvas, name, x, y, url):
+    async def add_template(ctx, canvas, name, xyparse, url):
         if len(name) > config.MAX_TEMPLATE_NAME_LENGTH:
             await ctx.send(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
             return
@@ -315,7 +315,17 @@ class Template(commands.Cog):
         url = await Template.select_url(ctx, url)
         if url is None:
             return
-
+        
+        xyparse = xyparse.split()
+        if xyparse.len() == 1:
+            xyparse = ''.join(xyparse)
+            x, y = xyparse.split(,)
+            x = int(x)
+            y = int(y)
+        else:
+            x = int(re.sub('\D','', xyparse[0]))
+            y = int(re.sub('\D','', xyparse[1]))
+        
         t = await Template.build_template(ctx, name, x, y, url, canvas)
         if not t:
             return
