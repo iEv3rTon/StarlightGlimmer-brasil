@@ -323,8 +323,8 @@ class Template(commands.Cog):
             x = int(x)
             y = int(y)
         else:
-            x = int(re.sub('\D','', xyparse[0]))
-            y = int(re.sub('\D','', xyparse[1]))
+            x = int(re.sub('[^0-9-]','', xyparse[0]))
+            y = int(re.sub('[^0-9-]','', xyparse[1]))
         
         t = await Template.build_template(ctx, name, x, y, url, canvas)
         if not t:
