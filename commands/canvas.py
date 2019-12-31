@@ -279,8 +279,6 @@ class Canvas(commands.Cog):
                 await ctx.send(ctx.s("error.invalid_color"))
                 return
 
-        print(faction)
-
         def parse_zoom(z):
             try:
                 if type(z) is int:
@@ -294,11 +292,7 @@ class Canvas(commands.Cog):
             except ValueError:
                 return 8
 
-        print(faction.id)
-        print(name)
-
         t = sql.template_get_by_name(faction.id, name) if faction else sql.template_get_by_name(ctx.guild.id, name)
-        print(t)
         if t:
             log.info("(T:{} | GID:{})".format(t.name, t.gid))
             data = await http.get_template(t.url, t.name)
