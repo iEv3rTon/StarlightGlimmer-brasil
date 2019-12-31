@@ -267,6 +267,7 @@ class Canvas(commands.Cog):
                     await ctx.send(ctx.s("error.missing_arg_faction"))
                     return
                 f = sql.guild_get_by_faction_name_or_alias(fac)
+                print(f)
                 if not f:
                     await ctx.send(ctx.s("error.faction_not_found"))
                     return
