@@ -257,7 +257,6 @@ class Canvas(commands.Cog):
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.command(name="gridify", aliases=["g"])
     async def gridify(self, ctx, *args):
-        faction = None
         color = 0x808080
         iter_args = iter(args)
         name = next(iter_args, None)
@@ -268,7 +267,7 @@ class Canvas(commands.Cog):
                     await ctx.send(ctx.s("error.missing_arg_faction"))
                     return
                 f = sql.guild_get_by_faction_name_or_alias(fac)
-                if not faction:
+                if not f:
                     await ctx.send(ctx.s("error.faction_not_found"))
                     return
             if name == "-c":
