@@ -257,27 +257,29 @@ class Canvas(commands.Cog):
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.command(name="gridify", aliases=["g"])
     async def gridify(self, ctx, *args):
+        faction = None
         color = 0x808080
         iter_args = iter(args)
         name = next(iter_args, None)
-        while name in ["-f", "-c"]:
-            if name == "-f":
-                fac = next(iter_args, None)
-                if fac is None:
-                    await ctx.send(ctx.s("error.missing_arg_faction"))
-                    return
-                f = sql.guild_get_by_faction_name_or_alias(fac)
-                print(f)
-                if not f:
-                    await ctx.send(ctx.s("error.faction_not_found"))
-                    return
-            if name == "-c":
-                try:
-                    color = abs(int(next(iter_args, None), 16) % 0xFFFFFF)
-                    name = next(iter_args, None)
-                except ValueError:
-                    await ctx.send(ctx.s("error.invalid_color"))
-                    return
+        if name == "-f":
+            fac = next(iter_args, None)
+            if fac is None:
+                await ctx.send(ctx.s("error.missing_arg_faction"))
+                return
+            faction = sql.guild_get_by_faction_name_or_alias(fac)
+            if not faction:
+                await ctx.send(ctx.s("error.faction_not_found"))
+                return
+            name = next(iter_args, None)
+        if name == "-c":
+            try:
+                color = abs(int(next(iter_args, None), 16) % 0xFFFFFF)
+                name = next(iter_args, None)
+            except ValueError:
+                await ctx.send(ctx.s("error.invalid_color"))
+                return
+
+        print(faction)
 
         def parse_zoom(z):
             try:
@@ -292,7 +294,11 @@ class Canvas(commands.Cog):
             except ValueError:
                 return 8
 
+        print(faction.id)
+        print(name)
+
         t = sql.template_get_by_name(faction.id, name) if faction else sql.template_get_by_name(ctx.guild.id, name)
+        print(t)
         if t:
             log.info("(T:{} | GID:{})".format(t.name, t.gid))
             data = await http.get_template(t.url, t.name)
