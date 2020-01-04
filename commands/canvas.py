@@ -3,6 +3,7 @@ import io
 import math
 import re
 import requests
+import aiohttp
 
 import discord
 from discord.ext import commands
