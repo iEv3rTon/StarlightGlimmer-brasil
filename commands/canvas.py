@@ -4,6 +4,8 @@ import math
 import re
 import requests
 import aiohttp
+from PIL import Image
+import math
 
 import discord
 from discord.ext import commands
@@ -588,7 +590,7 @@ def closest(pixel, pallete):
 
     return smallD[1]
 
-def ditherGet(pixel, x, y):
+def ditherGet(pixel, x, y, greyscaleDithers, dithList):
     #determines if a pixel is grey, and chooses a pallete accordingly
     if pixel[0] == pixel[1] and pixel[1] == pixel[2]:
         colour = closest(pixel, greyscaleDithers)
@@ -598,7 +600,7 @@ def ditherGet(pixel, x, y):
     #returns colour[1] if it's an even amount of pixels from the origin and colour[2] if it's odd, creates a hash pattern
     return colour[((x+y) % 2) + 1]
 
-async def _dither(ctx, url, canvas, pallete, clashes):
+async def _dither(ctx, url, canvas, palette, clashes):
     url = await select_url(ctx, url)
     if url is None:
         await ctx.send("You must attach an image to dither.")
@@ -608,11 +610,14 @@ async def _dither(ctx, url, canvas, pallete, clashes):
     try:
         with await http.get_template(url, "image") as data:
             with Image.open(data).convert("RGBA") as origImg:
+                if origImg.height > 1500 or origImg.width > 1500:
+                    return await ctx.send("Image is too big, under 1500x1500 only please.")
+
                 #generates a list of possible dithers
                 dithList = []
-                for cOne in pallete:
-                    for cTwo in pallete:
-                        dither = average(pallete[cOne],pallete[cTwo])
+                for cOne in palette:
+                    for cTwo in palette:
+                        dither = average(palette[cOne],palette[cTwo])
                         #omits dither if it's already in the list or it clashes
                         if [dither,cTwo,cOne] in dithList or [cOne, cTwo] in clashes or [cTwo, cOne] in clashes:
                             pass
@@ -626,20 +631,34 @@ async def _dither(ctx, url, canvas, pallete, clashes):
                         greyscaleDithers.append(colour)
 
                 #generates a new image
-                newImg = pillow.new("RGBA", origImg.size, "white")
+                newImg = Image.new("RGBA", origImg.size, "white")
                 pArray = newImg.load()
+
+                message = await ctx.send("`Converting - 0%`")
+
+                _25percent = math.floor(origImg.height * 0.25)
+                _50percent = math.floor(origImg.height * 0.5)
+                _75percent = math.floor(origImg.height * 0.75)
 
                 #convert
                 for y in range(origImg.height):
                     for x in range(origImg.width):
-                        reduced = ditherGet(origImg.getpixel((x, y)), x, y)
+                        reduced = ditherGet(origImg.getpixel((x, y)), x, y, greyscaleDithers, dithList)
                         pArray[x, y] = palette[reduced]
+
+                        if y == _25percent and x == 1:
+                            await message.edit(content="`Converting - 25%`")
+                        elif y == _50percent and x == 1:
+                            await message.edit(content="`Converting - 50%`")
+                        elif y == _75percent and x == 1:
+                            await message.edit(content="`Converting - 75%`")
 
                 with io.BytesIO() as bio:
                     newImg.save(bio, format="PNG")
                     bio.seek(0)
                     f = discord.File(bio, "dithered.png")
-                    return await ctx.send("Image dithered:", file=f)
+                    await message.delete()
+                    return await ctx.send(content="`Image dithered:`", file=f)
 
 
     except aiohttp.client_exceptions.InvalidURL:
