@@ -68,7 +68,7 @@ class Template(commands.Cog):
         await message.add_reaction('▶')
 
         def is_valid(reaction, user):
-            return reaction.message.id == message.id and (reaction.emoji == '◀' or reaction.emoji == '▶') and user.id != 654034035063914498
+            return reaction.message.id == message.id and (reaction.emoji == '◀' or reaction.emoji == '▶') and user.id != 589606792926068736
 
         _5_minutes_in_future = (datetime.datetime.today() + datetime.timedelta(minutes=5.0))
 
