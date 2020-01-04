@@ -148,21 +148,21 @@ class Template(commands.Cog):
     @commands.cooldown(1, 5, BucketType.guild)
     @checks.template_adder_only()
     @template_add.command(name="pixelcanvas", aliases=['pc'])
-    async def template_add_pixelcanvas(self, ctx, name: str, *, x, y, url=None):
-        await self.add_template(ctx, "pixelcanvas", name, xyparse, url)
+    async def template_add_pixelcanvas(self, ctx, name: str, x, y, url=None):
+        await self.add_template(ctx, "pixelcanvas", name, x, y, url)
 
     @commands.guild_only()
     @commands.cooldown(1, 5, BucketType.guild)
     @checks.template_adder_only()
     @template_add.command(name="pixelzone", aliases=['pz'])
-    async def template_add_pixelzone(self, ctx, name: str, *, x, y, url=None):
+    async def template_add_pixelzone(self, ctx, name: str, x, y, url=None):
         await self.add_template(ctx, "pixelzone", name, x, y, url)
 
     @commands.guild_only()
     @commands.cooldown(1, 5, BucketType.guild)
     @checks.template_adder_only()
     @template_add.command(name="pxlsspace", aliases=['ps'])
-    async def template_add_pxlsspace(self, ctx, name: str, *, x, y, url=None):
+    async def template_add_pxlsspace(self, ctx, name: str, x, y, url=None):
         await self.add_template(ctx, "pxlsspace", name, x, y, url)
 
 
