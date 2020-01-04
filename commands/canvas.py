@@ -251,6 +251,20 @@ class Canvas(commands.Cog):
         await _quantize(ctx, args, "pxlsspace", colors.pxlsspace)
 
     # =======================
+    #         DITHER
+    # =======================
+
+    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.group(name="dither", invoke_without_command=True)
+    async def dither(self, ctx):
+        await ctx.invoke_default("dither")
+
+    @commands.cooldown(1, 5, BucketType.guild)
+    @dither.command(name="pixelcanvas", aliases=["pc"])
+    async def dither_pixelcanvas(self, ctx, url=None):
+        await _dither(ctx, url, "pixelcanvas", colors.pcDitherColours, colors.pcClashes)
+
+    # =======================
     #         GRIDIFY
     # =======================
 
@@ -534,3 +548,100 @@ async def _quantize(ctx, args, canvas, palette):
             bio.seek(0)
             f = discord.File(bio, "template.png")
             return await ctx.send(ctx.s("canvas.quantize").format(bad_pixels), file=f)
+
+async def select_url(ctx, input_url):
+    if input_url:
+        if re.search('^(?:https?://)cdn\.discordapp\.com/', input_url):
+            return input_url
+        raise UrlError
+    if len(ctx.message.attachments) > 0:
+        return ctx.message.attachments[0].url
+
+#finds the average of two colours
+def average(first, second):
+    red = (first[0] + second[0]) / 2
+    green = (first[1] + second[1]) / 2
+    blue = (first[2] + second[2]) / 2
+    return (red, green, blue)
+
+#finds the distance between two colours
+def distance(point, target):
+    dx = point[0] - target[0]
+    dy = point[1] - target[1]
+    dz = point[2] - target[2]
+
+    #uses pythagoras (getting the root isn't required)
+    return dx**2 + dy**2 + dz**2
+
+def closest(pixel, pallete):
+    #haha, small D
+    smallD = [9999999,{}]
+    for colour in pallete:
+        newD = distance(pixel, colour[0])
+
+        if newD < smallD[0]:
+            smallD = [newD,colour]
+        #useful for white pixels
+        if newD == 0:
+            break
+
+    return smallD[1]
+
+def ditherGet(pixel, x, y):
+    #determines if a pixel is grey, and chooses a pallete accordingly
+    if pixel[0] == pixel[1] and pixel[1] == pixel[2]:
+        colour = closest(pixel, greyscaleDithers)
+    else:
+        colour = closest(pixel, dithList)
+
+    #returns colour[1] if it's an even amount of pixels from the origin and colour[2] if it's odd, creates a hash pattern
+    return colour[((x+y) % 2) + 1]
+
+async def _dither(ctx, url, canvas, pallete, clashes):
+    url = await select_url(ctx, url)
+    if url is None:
+        await ctx.send("You must attach an image to dither.")
+        return
+
+    #load user's image
+    try:
+        with await http.get_template(url, "image") as data:
+            with Image.open(data).convert("RGBA") as origImg:
+                #generates a list of possible dithers
+                dithList = []
+                for cOne in pallete:
+                    for cTwo in pallete:
+                        dither = average(pallete[cOne],pallete[cTwo])
+                        #omits dither if it's already in the list or it clashes
+                        if [dither,cTwo,cOne] in dithList or [cOne, cTwo] in clashes or [cTwo, cOne] in clashes:
+                            pass
+                        else:
+                            dithList.append([dither,cOne,cTwo])
+
+                #generates greyscale dithers from all possible ones
+                greyscaleDithers = []
+                for colour in dithList:
+                    if colour[0][0] == colour[0][1] and colour[0][1] == colour[0][2]:
+                        greyscaleDithers.append(colour)
+
+                #generates a new image
+                newImg = pillow.new("RGBA", origImg.size, "white")
+                pArray = newImg.load()
+
+                #convert
+                for y in range(origImg.height):
+                    for x in range(origImg.width):
+                        reduced = ditherGet(origImg.getpixel((x, y)), x, y)
+                        pArray[x, y] = palette[reduced]
+
+                with io.BytesIO() as bio:
+                    newImg.save(bio, format="PNG")
+                    bio.seek(0)
+                    f = discord.File(bio, "dithered.png")
+                    return await ctx.send("Image dithered:", file=f)
+
+
+    except aiohttp.client_exceptions.InvalidURL:
+        raise UrlError
+    except IOError:
+        raise PilImageError
