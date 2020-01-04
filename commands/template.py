@@ -476,8 +476,8 @@ async def _build_template_report(ctx, ts: List[DbTemplate], page_number):
     err = ctx.s("bot.errors")
     perc = ctx.s("bot.percent")
 
-    # Find number of pages given there are 15 templates per page.
-    pages = int(math.ceil(len(ts) / 15))
+    # Find number of pages given there are 20 templates per page.
+    pages = int(math.ceil(len(ts) / 20))
     # Makes sure page is in the range (1 <= page <= pages).
     page_number = min(max(page_number, 0), pages)
 
@@ -505,7 +505,7 @@ async def build_check_table(ctx, ts, page, pages):
 
     for p in range(pages):
         if p == page_index:
-            for x in range(15):
+            for x in range(20):
                 if page_index == 0:
                     try:
                         table.add_row(temp[0+x])
@@ -513,7 +513,7 @@ async def build_check_table(ctx, ts, page, pages):
                         pass
                 else:
                     try:
-                        table.add_row(temp[(page_index*15)+x])
+                        table.add_row(temp[(page_index*20)+x])
                     except:
                         pass
             return "**{} | Page {} of {}**```xl\n{}```".format(ctx.s("template.template_report_header"), str(page), str(pages), table)
