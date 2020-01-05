@@ -88,8 +88,7 @@ class Template(commands.Cog):
                         message_text = Template.build_table(ctx, page_index, pages, ts)
                         await message.edit(content=message_text)
         except asyncio.TimeoutError:
-            message_text = "{}\nMenu timed out.".format(message_text)
-            await message.edit(content=message_text)
+            pass
         message_text = "{}\nMenu timed out.".format(message_text)
         await message.edit(content=message_text)
 

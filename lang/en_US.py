@@ -163,7 +163,7 @@ STRINGS = {
     "template.list_all_footer_1": "Use '{0}template all <page>' to see that page",
     "template.list_all_footer_2": "Use '{0}template info -f <faction> <name>' to see more info on a template",
     "template.list_header": "Template List",
-    "template.list_footer_1": "Use '{0}template <page>' to see that page",
+    "template.list_footer_1": "Use '{0}template <page>' to see that page or scroll using the reactions below",
     "template.list_footer_2": "Use '{0}template info <name>' to see more info on a template",
     "template.name_exists_ask_replace": "A template with the name '{0}' already exists for {1} at ({2}, {3}). Replace it?",
     "template.not_quantized": "This image contains colors that are not part of this canvas's palette. Would you like to quantize it?",
