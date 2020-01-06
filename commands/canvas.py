@@ -109,12 +109,12 @@ class Canvas(commands.Cog):
                         out = '\n'.join(out)
                     if err > 15:
                         haste = []
-                        for p in err_list:
+                        for i, p in enumerate(err_list):
                             x, y, current, target = p
                             current = ctx.s("color.{}.{}".format(t.canvas, current))
                             target = ctx.s("color.{}.{}".format(t.canvas, target))
                             haste.append("({},{}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
-                            if err == 50:
+                            if i == 50:
                                 haste.append("...")
                                 break
                         """And here send the haste list to hastebin formatted correctly"""
