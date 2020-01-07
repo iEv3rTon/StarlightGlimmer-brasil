@@ -16,8 +16,14 @@ async def calculate_size(data):
     white = Image.composite(white, alpha, template)
     return int(np.array(white).any(axis=-1).sum())
 
-
-async def diff(x, y, data, zoom, fetch, palette):
+# x: x coord, int
+# y: y coord, int
+# data: template image
+# zoom: amount to zoom by, int
+# fetch: current state of the area of the template on canvas, image
+# palette: valid colours for this canvas, list of tuples
+# create_snapshot: if you should create a "finished template" where the only non-transparent pixels are those that are correct on canvas right now, bool
+async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
     with data:
         template = Image.open(data).convert('RGBA')
 
@@ -59,12 +65,18 @@ async def diff(x, y, data, zoom, fetch, palette):
                 f_color = -1
             error_list.append((*p, f_color, t_color))
 
-        diff_img = diff_img.convert('L').convert('RGB')
-        diff_img = Image.composite(Image.new('RGB', template.size, (255, 0, 0)), diff_img, error_mask)
-        diff_img = Image.composite(Image.new('RGB', template.size, (0, 0, 255)), diff_img, bad_mask)
+        if create_snapshot:
+            # make a snapshot
+            diff_img = template.convert('L')
+            pass
+        else:
+            # make a normal diff
+            diff_img = diff_img.convert('L').convert('RGB')
+            diff_img = Image.composite(Image.new('RGB', template.size, (255, 0, 0)), diff_img, error_mask)
+            diff_img = Image.composite(Image.new('RGB', template.size, (0, 0, 255)), diff_img, bad_mask)
 
-    if zoom > 1:
-        diff_img = diff_img.resize(tuple(zoom * x for x in diff_img.size), Image.NEAREST)
+            if zoom > 1:
+                diff_img = diff_img.resize(tuple(zoom * x for x in diff_img.size), Image.NEAREST)
 
     return diff_img, tot, err, bad, error_list
 
