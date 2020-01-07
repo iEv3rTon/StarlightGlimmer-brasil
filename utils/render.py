@@ -34,6 +34,7 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
         black = Image.new('1', template.size, 0)
         white = Image.new('1', template.size, 1)
         mask = Image.composite(white, black, template)
+        template_copy = template.copy()
         template = template.convert('RGB')
 
         def lut(i):
@@ -67,8 +68,8 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
 
         if create_snapshot:
             # make a snapshot
-            diff_img = template.convert('L')
-            pass
+            diff_img = template_copy
+            diff_img = Image.composite(Image.new('RGBA', template.size, (0, 0, 0, 0)), diff_img, error_mask)
         else:
             # make a normal diff
             diff_img = diff_img.convert('L').convert('RGB')
