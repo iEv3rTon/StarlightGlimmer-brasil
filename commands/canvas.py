@@ -32,10 +32,14 @@ class Canvas(commands.Cog):
         if len(args) < 1:
             return
         list_pixels = False
+        create_snapshot = False
         iter_args = iter(args)
         a = next(iter_args, None)
         if a == "-e":
             list_pixels = True
+            a = next(iter_args, None)
+        if a == "-s" or a == "--snapshot":
+            create_snapshot = True
             a = next(iter_args, None)
         if a == "-f":
             fac = next(iter_args, None)
@@ -76,7 +80,7 @@ class Canvas(commands.Cog):
                 }
 
                 diff_img, tot, err, bad, err_list \
-                    = await render.diff(t.x, t.y, data, zoom, fetchers[t.canvas], colors.by_name[t.canvas])
+                    = await render.diff(t.x, t.y, data, zoom, fetchers[t.canvas], colors.by_name[t.canvas], create_snapshot)
 
                 done = tot - err
                 perc = done / tot
