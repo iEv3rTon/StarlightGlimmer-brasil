@@ -187,6 +187,8 @@ STRINGS = {
     "brief.diff.pixelzone": "Creates a diff using Pixelzone.io.",
     "brief.diff.pxlsspace": "Creates a diff using Pxls.space.",
     "brief.disband": "Disband this guild's faction.",
+    "brief.dither": "Dither a png image.",
+    "brief.dither.pixelcanvas": "Dithers an image using the pixelcanvas palette",
     "brief.ditherchart": "Gets a chart of canvas colors dithered together.",
     "brief.ditherchart.pixelcanvas": "Gets a dither chart of Pixelcanvas.io colors.",
     "brief.ditherchart.pixelzone": "Gets a dither chart of Pixelzone.io colors.",
@@ -276,6 +278,18 @@ STRINGS = {
         Error pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `{p}help quantize`).
         You cannot zoom an image to contain more than 4 million pixels.
         Use the `-e` flag to print out the specific coordinates of the first 15 error pixels.""",
+    "help.dither":
+        """Images must be in PNG format.
+        The image will be converted to the palette you select using the dithering algorithm specified.
+        You cannot dither an image that is larger than 1500 by 1500 pixels.
+
+        Bayer dithering: `[-b|--bayer] <threshold> <order>`
+        Yliluoma dithering: `[-y|--yliluoma] <order>`
+        Floyd Steinberg dithering: `[-f|-fs|--floyd-steinberg] <order>`
+
+        Threshold can be either: 2, 4, 8, 16, 32, 64, 128, 256 or 512
+        Order can be either: 2, 4, 8 or 16
+        """,
     "help.faction.create":
         """Factions must have unique names (6 to 32 chars, case sensitive) and, if at all, unique aliases (1 to 5 chars, case insensitive).
         A guild can only have one faction at any given time.""",
@@ -377,6 +391,8 @@ STRINGS = {
                      ("\"My Template\"", "Check a template named 'My Template'"),
                      ("-f CoolFaction CoolTemplate", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction'"),
                      ("-e -f CoolFaction CoolTemplate", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction' and print a short list of specific error pixels")],
+    "example.dither": [("-y 4", "(with an attachment) Dither an image using yliluoma dithering and an order of 4"),
+                       ("--bayer 512 8", "(with an attachment) Dither an image using bayer dithering, a threshold of 512/4 and an order of 8")],
     "example.diff.pixelcanvas": [("100 100", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100)"),
                                  ("100 100 7", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100) and magnify the result 7 times")],
     "example.diff.pixelzone": [("100 100", "(with an attachment) Check an image against Pixelzone.io at (100, 100)"),
