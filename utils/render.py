@@ -19,14 +19,26 @@ async def calculate_size(data):
     white = Image.composite(white, alpha, template)
     return int(np.array(white).any(axis=-1).sum())
 
-async def bayer_dither(origImg, canvas_palette, top_val):
+async def bayer_dither(origImg, canvas_palette, threshold, order):
     alpha_mask = origImg.split()[3]
     alpha_mask = Image.eval(alpha_mask, lambda a: 255 if a == 0 else 0)
 
     origImg = origImg.convert('RGB')
     palette = hitherdither.palette.Palette(canvas_palette)
-    threshold = [top_val/4]
-    dithered_image = hitherdither.ordered.bayer.bayer_dithering(origImg, palette, threshold, order=8)
+    threshold = [threshold/4]
+    dithered_image = hitherdither.ordered.bayer.bayer_dithering(origImg, palette, threshold, order)
+
+    dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
+
+    return dithered_image
+
+async def yliluoma_dither(origImg, canvas_palette, order):
+    alpha_mask = origImg.split()[3]
+    alpha_mask = Image.eval(alpha_mask, lambda a: 255 if a == 0 else 0)
+
+    origImg = origImg.convert('RGB')
+    palette = hitherdither.palette.Palette(canvas_palette)
+    dithered_image = hitherdither.ordered.yliluoma.yliluomas_1_ordered_dithering(origImg, palette, order)
 
     dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
 

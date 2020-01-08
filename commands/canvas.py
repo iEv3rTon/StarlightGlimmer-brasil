@@ -270,12 +270,36 @@ class Canvas(commands.Cog):
 
     @commands.cooldown(1, 5, BucketType.guild)
     @dither.command(name="pixelcanvas", aliases=["pc"])
-    async def dither_pixelcanvas(self, ctx, threshold=128, url=None):
-        try:
-            threshold = int(threshold)
-        except ValueError:
+    async def dither_pixelcanvas(self, ctx, *args):
+        url = None
+        iter_args = iter(args)
+        arg = next(iter_args, None)
+        if arg == "-b" or arg == "--bayer":
+            threshold = next(iter_args, 256)
+            try:
+                threshold = int(threshold)
+            except ValueError:
+                await ctx.send("The threshold must be a positive integer.")
+                return
+            order = next(iter_args, 4)
+            try:
+                order = int(order)
+            except ValueError:
+                await ctx.send("The order must be a positive integer.")
+                return
+            bayer_options = (threshold, order)
+            await _dither(ctx, url, colors.pixelcanvas, "bayer", bayer_options)
             return
-        await _dither(ctx, url, colors.pixelcanvas, threshold)
+        if arg == "-y" or arg == "--yliluoma":
+            order = next(iter_args, 8)
+            try:
+                order = int(order)
+            except ValueError:
+                await ctx.send("The order must be a positive integer.")
+                return
+            await _dither(ctx, url, colors.pixelcanvas, "yliluoma", order)
+            return
+        await ctx.send("Please specify what kind of dither to use")
 
     # =======================
     #         GRIDIFY
@@ -570,7 +594,7 @@ async def select_url(ctx, input_url):
     if len(ctx.message.attachments) > 0:
         return ctx.message.attachments[0].url
 
-async def _dither(ctx, url, palette, threshold):
+async def _dither(ctx, url, palette, type, options):
 
     start_time = datetime.datetime.now()
 
@@ -588,13 +612,26 @@ async def _dither(ctx, url, palette, threshold):
 
                 dithered_image = None
 
-                valid_thresholds = [2, 4, 8, 16, 32, 64, 128, 256, 512]
-
-                if threshold in valid_thresholds:
-                    dithered_image = await render.bayer_dither(origImg, palette, threshold)
-                else:
-                    # threshold val provided is not valid
-                    return
+                if type == "bayer":
+                    threshold = options[0]
+                    order = options[1]
+                    valid_thresholds = [2, 4, 8, 16, 32, 64, 128, 256, 512]
+                    valid_orders = [2, 4, 8, 16]
+                    if threshold in valid_thresholds and order in valid_orders:
+                        dithered_image = await render.bayer_dither(origImg, palette, threshold, order)
+                    else:
+                        # threshold or order val provided is not valid
+                        await ctx.send("Threshold or order value provided is not valid.")
+                        return
+                elif type == "yliluoma":
+                    order = options
+                    valid_orders = [2, 4, 8, 16]
+                    if order in valid_orders:
+                        dithered_image = await render.yliluoma_dither(origImg, palette, order)
+                    else:
+                        # order val provided is not valid
+                        await ctx.send("Order value provided is not valid.")
+                        return
 
                 with io.BytesIO() as bio:
                     dithered_image.save(bio, format="PNG")
