@@ -9,7 +9,12 @@ geo32 = [
     (223, 136, 19), #light orange
     (231, 188, 21), #muted yellow
     (243, 212, 43), #yellow
-    (113, 169, 42)  #light green
+    (113, 169, 42), #light green
+    (57, 124, 41),  #green
+    (27, 105, 53),  #olive green
+    (9, 73, 37),    #forest green
+    (26, 128, 107), #turquoise
+    (56, 172, 169), #cyan
 ]
 
 pixelcanvas = [
