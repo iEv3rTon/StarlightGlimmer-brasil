@@ -299,6 +299,15 @@ class Canvas(commands.Cog):
                 return
             await _dither(ctx, url, colors.pixelcanvas, "yliluoma", order)
             return
+        if arg == "-f" or arg == "-fs" or arg == "--floyd-steinberg":
+            order = next(iter_args, 2)
+            try:
+                order = int(order)
+            except ValueError:
+                await ctx.send("The order must be a positive integer.")
+                return
+            await _dither(ctx, url, colors.pixelcanvas, "floyd-steinberg", order)
+            return
         await ctx.send("Please specify what kind of dither to use")
 
     # =======================
@@ -598,6 +607,7 @@ async def _dither(ctx, url, palette, type, options):
 
     start_time = datetime.datetime.now()
 
+    #getting the attachment url
     url = await select_url(ctx, url)
     if url is None:
         await ctx.send("You must attach an image to dither.")
@@ -611,6 +621,7 @@ async def _dither(ctx, url, palette, type, options):
                     return await ctx.send("Image is too big, under 1500x1500 only please.")
 
                 dithered_image = None
+                option_string = ""
 
                 if type == "bayer":
                     threshold = options[0]
@@ -619,6 +630,7 @@ async def _dither(ctx, url, palette, type, options):
                     valid_orders = [2, 4, 8, 16]
                     if threshold in valid_thresholds and order in valid_orders:
                         dithered_image = await render.bayer_dither(origImg, palette, threshold, order)
+                        option_string = "Threshold: {}/4 Order: {}".format(threshold, order)
                     else:
                         # threshold or order val provided is not valid
                         await ctx.send("Threshold or order value provided is not valid.")
@@ -628,6 +640,17 @@ async def _dither(ctx, url, palette, type, options):
                     valid_orders = [2, 4, 8, 16]
                     if order in valid_orders:
                         dithered_image = await render.yliluoma_dither(origImg, palette, order)
+                        option_string = "Order: {}".format(order)
+                    else:
+                        # order val provided is not valid
+                        await ctx.send("Order value provided is not valid.")
+                        return
+                elif type == "floyd-steinberg":
+                    order = options
+                    valid_orders = [2, 4, 8, 16]
+                    if order in valid_orders:
+                        dithered_image = await render.floyd_steinberg_dither(origImg, palette, order)
+                        option_string = "Order: {}".format(order)
                     else:
                         # order val provided is not valid
                         await ctx.send("Order value provided is not valid.")
@@ -641,7 +664,8 @@ async def _dither(ctx, url, palette, type, options):
                     end_time = datetime.datetime.now()
                     duration = (end_time - start_time).total_seconds()
 
-                    return await ctx.send(content="`Image dithered in {:.2f} seconds`".format(duration), file=f)
+                    return await ctx.send(
+    content="`Image dithered in {:.2f} seconds with {} dithering. {}`".format(duration, type, option_string), file=f)
 
     except aiohttp.client_exceptions.InvalidURL:
         raise UrlError
