@@ -1,3 +1,8 @@
+geo32 = [
+    (),
+    ()
+]
+
 pixelcanvas = [
     (255, 255, 255),  # White
     (228, 228, 228),  # Light Grey

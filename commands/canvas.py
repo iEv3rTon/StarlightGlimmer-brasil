@@ -288,7 +288,7 @@ class Canvas(commands.Cog):
                 await ctx.send("The order must be a positive integer.")
                 return
             bayer_options = (threshold, order)
-            await _dither(ctx, url, colors.pixelcanvas, "bayer", bayer_options)
+            await _dither(ctx, url, colors.geo32, "bayer", bayer_options)
             return
         if arg == "-y" or arg == "--yliluoma":
             order = next(iter_args, 8)
