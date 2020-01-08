@@ -8,7 +8,8 @@ geo32 = [
     (212, 99, 7),   #orange
     (223, 136, 19), #light orange
     (231, 188, 21), #muted yellow
-    (243, 212, 43)  #yellow
+    (243, 212, 43), #yellow
+    (113, 169, 42)  #light green
 ]
 
 pixelcanvas = [
