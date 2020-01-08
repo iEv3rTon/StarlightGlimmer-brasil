@@ -1,20 +1,36 @@
 geo32 = [
-    (180, 26, 13),  #red
-    (128, 34, 10),  #maroon
-    (78, 41, 12),   #dark brown
-    (164, 80, 24),  #brown
-    (204, 148, 91), #tan
-    (193, 70, 13),  #dark orange
-    (212, 99, 7),   #orange
-    (223, 136, 19), #light orange
-    (231, 188, 21), #muted yellow
-    (243, 212, 43), #yellow
-    (113, 169, 42), #light green
-    (57, 124, 41),  #green
-    (27, 105, 53),  #olive green
-    (9, 73, 37),    #forest green
-    (26, 128, 107), #turquoise
-    (56, 172, 169), #cyan
+    (180, 26, 13),   #red
+    (128, 34, 10),   #maroon
+    (78, 41, 12),    #dark brown
+    (164, 80, 24),   #brown
+    (204, 148, 91),  #tan
+    (193, 70, 13),   #dark orange
+    (212, 99, 7),    #orange
+    (223, 136, 19),  #light orange
+    (231, 188, 21),  #muted yellow
+    (243, 212, 43),  #yellow
+    (113, 169, 42),  #light green
+    (57, 124, 41),   #green
+    (27, 105, 53),   #olive green
+    (9, 73, 37),     #forest green
+    (26, 128, 107),  #turquoise
+    (56, 172, 169),  #cyan
+    (54, 107, 151),  #pale blue
+    (38, 63, 120),   #blue
+    (28, 39, 101),   #dark blue
+    (18, 20, 80),    #navy blue
+    (96, 35, 144),   #light purple
+    (188, 70, 154),  #dark pink
+    (248, 132, 177), #pale pink
+    (228, 64, 89),   #salmon
+    (237, 237, 237), #white
+    (181, 181, 181), #light grey
+    (136, 136, 136), #grey
+    (71, 71, 71),    #dark grey
+    (20, 20, 20),    #black
+    (72, 29, 127),   #dark purple
+    (141, 17, 124),  #fushia
+    (182, 0, 103)    #hot pink
 ]
 
 pixelcanvas = [

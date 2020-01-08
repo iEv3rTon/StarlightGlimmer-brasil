@@ -269,6 +269,48 @@ class Canvas(commands.Cog):
         await ctx.invoke_default("dither")
 
     @commands.cooldown(1, 5, BucketType.guild)
+    @dither.command(name="geo32", aliases=["geo"])
+    async def dither_geo32(self, ctx, *args):
+        url = None
+        iter_args = iter(args)
+        arg = next(iter_args, None)
+        if arg == "-b" or arg == "--bayer":
+            threshold = next(iter_args, 256)
+            try:
+                threshold = int(threshold)
+            except ValueError:
+                await ctx.send("The threshold must be a positive integer.")
+                return
+            order = next(iter_args, 4)
+            try:
+                order = int(order)
+            except ValueError:
+                await ctx.send("The order must be a positive integer.")
+                return
+            bayer_options = (threshold, order)
+            await _dither(ctx, url, colors.geo32, "bayer", bayer_options)
+            return
+        if arg == "-y" or arg == "--yliluoma":
+            order = next(iter_args, 8)
+            try:
+                order = int(order)
+            except ValueError:
+                await ctx.send("The order must be a positive integer.")
+                return
+            await _dither(ctx, url, colors.geo32, "yliluoma", order)
+            return
+        if arg == "-f" or arg == "-fs" or arg == "--floyd-steinberg":
+            order = next(iter_args, 2)
+            try:
+                order = int(order)
+            except ValueError:
+                await ctx.send("The order must be a positive integer.")
+                return
+            await _dither(ctx, url, colors.geo32, "floyd-steinberg", order)
+            return
+        await ctx.send("Please specify what kind of dither to use")
+
+    @commands.cooldown(1, 5, BucketType.guild)
     @dither.command(name="pixelcanvas", aliases=["pc"])
     async def dither_pixelcanvas(self, ctx, *args):
         url = None
@@ -288,7 +330,7 @@ class Canvas(commands.Cog):
                 await ctx.send("The order must be a positive integer.")
                 return
             bayer_options = (threshold, order)
-            await _dither(ctx, url, colors.geo32, "bayer", bayer_options)
+            await _dither(ctx, url, colors.pixelcanvas, "bayer", bayer_options)
             return
         if arg == "-y" or arg == "--yliluoma":
             order = next(iter_args, 8)
