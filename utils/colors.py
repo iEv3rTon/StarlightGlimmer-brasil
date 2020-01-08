@@ -1,5 +1,14 @@
 geo32 = [
-    (),
+    (180, 26, 13),  #red
+    (128, 34, 10),  #maroon
+    (78, 41, 12),   #dark brown
+    (164, 80, 24),  #brown
+    (204, 148, 91), #tan
+    (193, 70, 13),  #dark orange
+    (212, 99, 7),   #orange
+    (223, 136, 19), #light orange
+    (231, 188, 21), #muted yellow
+    (243, 212, 43), #yellow
     ()
 ]
 
@@ -71,5 +80,6 @@ pxlsspace = [
 by_name = {
     "pixelcanvas": pixelcanvas,
     "pixelzone": pixelzone,
-    "pxlsspace": pxlsspace
+    "pxlsspace": pxlsspace,
+    "geo32": geo32
 }
