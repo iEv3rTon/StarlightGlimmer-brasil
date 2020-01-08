@@ -332,6 +332,7 @@ STRINGS = {
     "signature.diff.pixelcanvas": "(-e) <coordinates> (zoom)",
     "signature.diff.pixelzone": "(-e) <coordinates> (zoom)",
     "signature.diff.pxlsspace": "(-e) <coordinates> (zoom)",
+    "signature.dither": "[-b|-y|-fs] (threshold) <order>",
     "signature.ditherchart": "(subcommand)",
     "signature.faction": "(subcommand)",
     "signature.faction.name": "(subcommand)",
