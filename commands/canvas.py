@@ -487,10 +487,14 @@ async def _diff(ctx, args, canvas, fetch, palette):
     async with ctx.typing():
         att = await utils.verify_attachment(ctx)
         list_pixels = False
+        create_snapshot = False
         iter_args = iter(args)
         a = next(iter_args, None)
         if a == "-e":
             list_pixels = True
+            a = next(iter_args, None)
+        if a == "-s" or a == "--snapshot":
+            create_snapshot = True
             a = next(iter_args, None)
         if a and ',' in a:
             x, y = a.split(',')
@@ -518,7 +522,7 @@ async def _diff(ctx, args, canvas, fetch, palette):
         await att.save(data)
         max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
         zoom = max(1, min(zoom, max_zoom))
-        diff_img, tot, err, bad, err_list = await render.diff(x, y, data, zoom, fetch, palette)
+        diff_img, tot, err, bad, err_list = await render.diff(x, y, data, zoom, fetch, palette, create_snapshot)
 
         done = tot - err
         perc = done / tot
