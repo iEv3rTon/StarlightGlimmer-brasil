@@ -263,12 +263,12 @@ class Canvas(commands.Cog):
     #         DITHER
     # =======================
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(1, 30, BucketType.guild)
     @commands.group(name="dither", invoke_without_command=True)
     async def dither(self, ctx):
         await ctx.invoke_default("dither")
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(1, 30, BucketType.guild)
     @dither.command(name="geo32", aliases=["geo"])
     async def dither_geo32(self, ctx, *args):
         url = None
@@ -310,7 +310,7 @@ class Canvas(commands.Cog):
             return
         await ctx.send("Please specify what kind of dither to use")
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(1, 30, BucketType.guild)
     @dither.command(name="pixelcanvas", aliases=["pc"])
     async def dither_pixelcanvas(self, ctx, *args):
         url = None
@@ -663,13 +663,12 @@ async def _dither(ctx, url, palette, type, options):
     try:
         with await http.get_template(url, "image") as data:
             with Image.open(data).convert("RGBA") as origImg:
-                if origImg.height > 1500 or origImg.width > 1500:
-                    return await ctx.send("Image is too big, under 1500x1500 only please.")
-
                 dithered_image = None
                 option_string = ""
 
                 if type == "bayer":
+                    if origImg.height > 1500 or origImg.width > 1500:
+                        return await ctx.send("Image is too big, under 1500x1500 only please.")
                     threshold = options[0]
                     order = options[1]
                     valid_thresholds = [2, 4, 8, 16, 32, 64, 128, 256, 512]
@@ -682,6 +681,8 @@ async def _dither(ctx, url, palette, type, options):
                         await ctx.send("Threshold or order value provided is not valid.")
                         return
                 elif type == "yliluoma":
+                    if origImg.height > 100 or origImg.width > 100:
+                        return await ctx.send("Image is too big, under 100x100 only please.")
                     order = options
                     valid_orders = [2, 4, 8, 16]
                     if order in valid_orders:
@@ -692,6 +693,8 @@ async def _dither(ctx, url, palette, type, options):
                         await ctx.send("Order value provided is not valid.")
                         return
                 elif type == "floyd-steinberg":
+                    if origImg.height > 100 or origImg.width > 100:
+                        return await ctx.send("Image is too big, under 100x100 only please.")
                     order = options
                     valid_orders = [2, 4, 8, 16]
                     if order in valid_orders:
