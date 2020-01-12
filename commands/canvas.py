@@ -649,6 +649,15 @@ async def select_url(ctx, input_url):
     if len(ctx.message.attachments) > 0:
         return ctx.message.attachments[0].url
 
+async def get_dither_image(url, name):
+    async with aiohttp.ClientSession() as sess:
+        async with sess.get(url) as resp:
+            if resp.status != 200:
+                raise TemplateHttpError(name)
+            if resp.content_type != "image/png" and resp.content_type != "image/jpg" and resp.content_type != "image/jpeg":
+                await ctx.send("Only png's or jpg's can be dithered.")
+            return io.BytesIO(await resp.read())
+
 async def _dither(ctx, url, palette, type, options):
 
     start_time = datetime.datetime.now()
@@ -661,7 +670,7 @@ async def _dither(ctx, url, palette, type, options):
 
     #load user's image
     try:
-        with await http.get_template(url, "image") as data:
+        with await get_dither_image(url, "image") as data:
             with Image.open(data).convert("RGBA") as origImg:
                 dithered_image = None
                 option_string = ""
