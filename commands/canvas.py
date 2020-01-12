@@ -659,73 +659,73 @@ async def get_dither_image(url, name):
             return io.BytesIO(await resp.read())
 
 async def _dither(ctx, url, palette, type, options):
-
     start_time = datetime.datetime.now()
 
-    #getting the attachment url
-    url = await select_url(ctx, url)
-    if url is None:
-        await ctx.send("You must attach an image to dither.")
-        return
+    with ctx.typing():
+        #getting the attachment url
+        url = await select_url(ctx, url)
+        if url is None:
+            await ctx.send("You must attach an image to dither.")
+            return
 
-    #load user's image
-    try:
-        with await get_dither_image(url, "image") as data:
-            with Image.open(data).convert("RGBA") as origImg:
-                dithered_image = None
-                option_string = ""
+        #load user's image
+        try:
+            with await get_dither_image(url, "image") as data:
+                with Image.open(data).convert("RGBA") as origImg:
+                    dithered_image = None
+                    option_string = ""
 
-                if type == "bayer":
-                    if origImg.height > 1500 or origImg.width > 1500:
-                        return await ctx.send("Image is too big, under 1500x1500 only please.")
-                    threshold = options[0]
-                    order = options[1]
-                    valid_thresholds = [2, 4, 8, 16, 32, 64, 128, 256, 512]
-                    valid_orders = [2, 4, 8, 16]
-                    if threshold in valid_thresholds and order in valid_orders:
-                        dithered_image = await render.bayer_dither(origImg, palette, threshold, order)
-                        option_string = "Threshold: {}/4 Order: {}".format(threshold, order)
-                    else:
-                        # threshold or order val provided is not valid
-                        await ctx.send("Threshold or order value provided is not valid.")
-                        return
-                elif type == "yliluoma":
-                    if origImg.height > 100 or origImg.width > 100:
-                        return await ctx.send("Image is too big, under 100x100 only please.")
-                    order = options
-                    valid_orders = [2, 4, 8, 16]
-                    if order in valid_orders:
-                        dithered_image = await render.yliluoma_dither(origImg, palette, order)
-                        option_string = "Order: {}".format(order)
-                    else:
-                        # order val provided is not valid
-                        await ctx.send("Order value provided is not valid.")
-                        return
-                elif type == "floyd-steinberg":
-                    if origImg.height > 100 or origImg.width > 100:
-                        return await ctx.send("Image is too big, under 100x100 only please.")
-                    order = options
-                    valid_orders = [2, 4, 8, 16]
-                    if order in valid_orders:
-                        dithered_image = await render.floyd_steinberg_dither(origImg, palette, order)
-                        option_string = "Order: {}".format(order)
-                    else:
-                        # order val provided is not valid
-                        await ctx.send("Order value provided is not valid.")
-                        return
+                    if type == "bayer":
+                        if origImg.height > 1500 or origImg.width > 1500:
+                            return await ctx.send("Image is too big, under 1500x1500 only please.")
+                        threshold = options[0]
+                        order = options[1]
+                        valid_thresholds = [2, 4, 8, 16, 32, 64, 128, 256, 512]
+                        valid_orders = [2, 4, 8, 16]
+                        if threshold in valid_thresholds and order in valid_orders:
+                            dithered_image = await render.bayer_dither(origImg, palette, threshold, order)
+                            option_string = "Threshold: {}/4 Order: {}".format(threshold, order)
+                        else:
+                            # threshold or order val provided is not valid
+                            await ctx.send("Threshold or order value provided is not valid.")
+                            return
+                    elif type == "yliluoma":
+                        if origImg.height > 100 or origImg.width > 100:
+                            return await ctx.send("Image is too big, under 100x100 only please.")
+                        order = options
+                        valid_orders = [2, 4, 8, 16]
+                        if order in valid_orders:
+                            dithered_image = await render.yliluoma_dither(origImg, palette, order)
+                            option_string = "Order: {}".format(order)
+                        else:
+                            # order val provided is not valid
+                            await ctx.send("Order value provided is not valid.")
+                            return
+                    elif type == "floyd-steinberg":
+                        if origImg.height > 100 or origImg.width > 100:
+                            return await ctx.send("Image is too big, under 100x100 only please.")
+                        order = options
+                        valid_orders = [2, 4, 8, 16]
+                        if order in valid_orders:
+                            dithered_image = await render.floyd_steinberg_dither(origImg, palette, order)
+                            option_string = "Order: {}".format(order)
+                        else:
+                            # order val provided is not valid
+                            await ctx.send("Order value provided is not valid.")
+                            return
 
-                with io.BytesIO() as bio:
-                    dithered_image.save(bio, format="PNG")
-                    bio.seek(0)
-                    f = discord.File(bio, "dithered.png")
+                    with io.BytesIO() as bio:
+                        dithered_image.save(bio, format="PNG")
+                        bio.seek(0)
+                        f = discord.File(bio, "dithered.png")
 
-                    end_time = datetime.datetime.now()
-                    duration = (end_time - start_time).total_seconds()
+                        end_time = datetime.datetime.now()
+                        duration = (end_time - start_time).total_seconds()
 
-                    return await ctx.send(
-    content="`Image dithered in {:.2f} seconds with {} dithering. {}`".format(duration, type, option_string), file=f)
+                        return await ctx.send(
+        content="`Image dithered in {:.2f} seconds with {} dithering. {}`".format(duration, type, option_string), file=f)
 
-    except aiohttp.client_exceptions.InvalidURL:
-        raise UrlError
-    except IOError:
-        raise PilImageError
+        except aiohttp.client_exceptions.InvalidURL:
+            raise UrlError
+        except IOError:
+            raise PilImageError
