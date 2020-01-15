@@ -123,7 +123,7 @@ class Template(commands.Cog):
                                                           ctx.s("bot.coordinates"), w1=w1)
             ]
             for t, f in ts_with_f[(page - 1) * 10:page * 10]:
-                coords = "({}, {})".format(t.x, t.y)
+                coords = "{}, {}".format(t.x, t.y)
                 faction = '"{}"'.format(f)
                 name = '"{}"'.format(t.name)
                 canvas_name = canvases.pretty_print[t.canvas]
@@ -271,7 +271,7 @@ class Template(commands.Cog):
             return
 
         canvas_name = canvases.pretty_print[t.canvas]
-        coords = "({}, {})".format(t.x, t.y)
+        coords = "{}, {}".format(t.x, t.y)
         dimensions = "{} x {}".format(t.width, t.height)
         size = t.size
         visibility = ctx.s("bot.private") if bool(t.private) else ctx.s("bot.public")
@@ -332,10 +332,13 @@ class Template(commands.Cog):
         url = await Template.select_url(ctx, url)
         if url is None:
             return
-
-        #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
-        x = int(re.sub('[^0-9-]','', x))
-        y = int(re.sub('[^0-9-]','', y))
+        try:
+            #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
+            x = int(re.sub('[^0-9-]','', x))
+            y = int(re.sub('[^0-9-]','', y))
+        except ValueError:
+            await ctx.send("Coordinates must be numbers!")
+            return
 
         t = await Template.build_template(ctx, name, x, y, url, canvas)
         if not t:
