@@ -373,7 +373,7 @@ class Template(commands.Cog):
                             row = t[0+template]
                             name = "\"{}\"".format(row.name)
                             canvas = canvases.pretty_print[row.canvas]
-                            coordinates = "({}, {})".format(row.x, row.y)
+                            coordinates = "{}, {}".format(row.x, row.y)
                             table.add_row([name, canvas, coordinates])
                         except:
                             pass
@@ -383,7 +383,7 @@ class Template(commands.Cog):
                             row = t[(p*10)+template]
                             name = "\"{}\"".format(row.name)
                             canvas = canvases.pretty_print[row.canvas]
-                            coordinates = "({}, {})".format(row.x, row.y)
+                            coordinates = "{}, {}".format(row.x, row.y)
                             table.add_row([name, canvas, coordinates])
                         except:
                             pass
@@ -447,7 +447,7 @@ class Template(commands.Cog):
             for d in dups:
                 name = '"{}"'.format(d.name)
                 canvas_name = canvases.pretty_print[d.canvas]
-                msg.append("{0:<{w}} {1:>15} ({2}, {3})\n".format(name, canvas_name, d.x, d.y, w=w))
+                msg.append("{0:<{w}} {1:>15} {2}, {3}\n".format(name, canvas_name, d.x, d.y, w=w))
             msg.append("```")
             msg.append(ctx.s("template.duplicate_list_close"))
             return await utils.yes_no(ctx, '\n'.join(msg))
