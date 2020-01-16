@@ -103,40 +103,47 @@ class Canvas(commands.Cog):
 
                 if list_pixels and len(err_list) > 0:
                     out = ["```xl"]
-                    if err <= 15:
-                        for p in err_list:
-                            x, y, current, target = p
+                    if len(err_list) <= 15:
+                        for i, pixel in enumerate(err_list):
+                            x, y, current, target = pixel
                             current = ctx.s("color.{}.{}".format(t.canvas, current))
                             target = ctx.s("color.{}.{}".format(t.canvas, target))
-                            out.append("({},{}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
-                            if err == 15:
+                            out.append("({}, {}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
+                            if i == 15:
                                 break
                         out.append("```")
-                        out = '\n'.join(out)
-                    if err > 15:
+                        await ctx.send('\n'.join(out))
+                        return
+                    if len(err_list) > 15:
                         haste = []
-                        for i, p in enumerate(err_list):
-                            x, y, current, target = p
+                        for i, pixel in enumerate(err_list):
+                            x, y, current, target = pixel
                             current = ctx.s("color.{}.{}".format(t.canvas, current))
                             target = ctx.s("color.{}.{}".format(t.canvas, target))
-                            haste.append("({},{}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
+                            haste.append("({}, {}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
                             if i == 50:
                                 haste.append("...")
                                 break
-                        """And here send the haste list to hastebin formatted correctly"""
-                        r = requests.post('https://hastebin.com/documents', data = '\n'.join(haste))
-                        """Catch 503 errors lol"""
-                        if r.status_code == 503:
-                            for x in range(16):
+                        #And here send the haste list to hastebin formatted correctly
+                        try:
+                            r = requests.post('https://hastebin.com/documents', data = '\n'.join(haste), timeout=10)
+                        except requests.exceptions.Timeout:
+                            #Send as 15 as codeblock if timed out
+                            for x in range(15):
                                 out.append(haste[x])
-                            out.append("```")
-                            out.append("**Hastebin returned a 503 error. :(**")
-                            out = '\n'.join(out)
-                        else:
-                            """Capture the returned code and make out hastbin.com/<code>"""
+                            out.append("...```**Hastebin returned an error.**")
+                            await ctx.send('\n'.join(out))
+                            return
+                        if r.status == 200:
+                            #Capture the returned code and make out hastbin.com/<code>
                             out = "Errors: https://hastebin.com/" + str(r.content)[10:20]
-                    await ctx.send(out)
-
+                            await ctx.send(out)
+                            return
+                        #Send as 15 as codeblock since the response code wasn't 200
+                        for x in range(15):
+                            out.append(haste[x])
+                        out.append("...```**Hastebin returned an error.**")
+                        await ctx.send('\n'.join(out))
                 return
         await ctx.invoke_default("diff")
 
