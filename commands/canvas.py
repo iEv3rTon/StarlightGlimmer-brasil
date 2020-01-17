@@ -108,7 +108,7 @@ class Canvas(commands.Cog):
                             x, y, current, target = pixel
                             current = ctx.s("color.{}.{}".format(t.canvas, current))
                             target = ctx.s("color.{}.{}".format(t.canvas, target))
-                            out.append("({}, {}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
+                            out.append("({},{}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
                             if i == 15:
                                 break
                         out.append("```")
@@ -120,7 +120,7 @@ class Canvas(commands.Cog):
                             x, y, current, target = pixel
                             current = ctx.s("color.{}.{}".format(t.canvas, current))
                             target = ctx.s("color.{}.{}".format(t.canvas, target))
-                            haste.append("({}, {}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
+                            haste.append("({},{}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
                             if i == 50:
                                 haste.append("...")
                                 break
@@ -134,7 +134,7 @@ class Canvas(commands.Cog):
                             out.append("...```**Hastebin returned an error.**")
                             await ctx.send('\n'.join(out))
                             return
-                        if r.status == 200:
+                        if r.status_code == 200:
                             #Capture the returned code and make out hastbin.com/<code>
                             out = "Errors: https://hastebin.com/" + str(r.content)[10:20]
                             await ctx.send(out)
