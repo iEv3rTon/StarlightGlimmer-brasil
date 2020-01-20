@@ -63,6 +63,7 @@ class General(commands.Cog):
 
     @commands.Cog.listener()
     async def onready(self):
+        print("IMA HERE")
         log.info("Setting status")
         name = "Pixels!"
         type = discord.ActivityType.watching
