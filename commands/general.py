@@ -61,14 +61,6 @@ class General(commands.Cog):
     async def version(self, ctx):
         await ctx.send(ctx.s("general.version").format(VERSION))
 
-    @commands.Cog.listener()
-    async def onready(self):
-        print("IMA HERE")
-        log.info("Setting status")
-        name = "Pixels!"
-        type = discord.ActivityType.watching
-        await self.bot.change_presence(status=discord.Status.online, activity=discord.Activity(name=name, type=type))
-
 class GlimmerHelpCommand(HelpCommand):
 
     async def send_bot_help(self, mapping):
