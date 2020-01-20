@@ -61,6 +61,12 @@ class General(commands.Cog):
     async def version(self, ctx):
         await ctx.send(ctx.s("general.version").format(VERSION))
 
+    @commands.Cog.listener()
+    async def onready(self):
+        log.debug("Setting status")
+        name = "Pixels!".format(pixels)
+        type = discord.ActivityType.watching
+        await self.bot.change_presence(status=discord.Status.online, activity=discord.Activity(name=name, type=type))
 
 class GlimmerHelpCommand(HelpCommand):
 
@@ -181,4 +187,3 @@ class GlimmerHelpCommand(HelpCommand):
                 out.append("`{}{} {}` {}".format(self.clean_prefix, group.qualified_name, *ex))
 
         await self.get_destination().send('\n'.join(out))
-
