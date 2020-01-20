@@ -23,8 +23,12 @@ sql.menu_locks_delete_all()
 
 
 @bot.event
-async def on_ready():
+async def on_ready(self):
     log.info("Starting Starlight Glimmer v{}!".format(VERSION))
+    log.debug("Setting status")
+    name = "Pixels!".format(pixels)
+    type = discord.ActivityType.watching
+    await self.change_presence(status=discord.Status.online, activity=discord.Activity(name=name, type=type))
     if sql.version_get() is None:
         sql.version_init(VERSION)
         is_new_version = False
