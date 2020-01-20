@@ -63,8 +63,8 @@ class General(commands.Cog):
 
     @commands.Cog.listener()
     async def onready(self):
-        log.debug("Setting status")
-        name = "Pixels!".format(pixels)
+        log.info("Setting status")
+        name = "Pixels!"
         type = discord.ActivityType.watching
         await self.bot.change_presence(status=discord.Status.online, activity=discord.Activity(name=name, type=type))
 
