@@ -64,6 +64,7 @@ class Configuration(commands.Cog):
         # Guild has autoscan enabled, disable it
         else:
             sql.guild_update(ctx.guild.id, autoscan=0)
+            print(sql.guild_get_by_id(ctx.guild.id))
             log.info("Autoscan disabled for {0.name} (GID: {0.id})".format(ctx.guild))
             await ctx.send(ctx.s("configuration.autoscan_disabled"))
 
