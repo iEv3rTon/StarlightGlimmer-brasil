@@ -252,7 +252,7 @@ class Faction(commands.Cog):
     async def hide(self, ctx):
         # try to find faction by guild id
         faction = [x for x in sql.guild_get_all_factions() if x.id == ctx.guild.id]
-        if len(factions) == 0:
+        if len(faction) == 0:
             await ctx.send(ctx.s("faction.not_a_faction_yet"))
             return
         faction = faction[0]
