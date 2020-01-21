@@ -353,7 +353,7 @@ def guild_get_canvas_by_id(gid) -> str:
 def guild_get_language_by_id(gid) -> str:
     c.execute("""SELECT language FROM guilds WHERE id=?""", (gid,))
     g = c.fetchone()
-    return g[0] if c else None
+    return g[0] if g else None
 
 
 def guild_get_prefix_by_id(gid) -> Optional[str]:
@@ -364,11 +364,11 @@ def guild_get_prefix_by_id(gid) -> Optional[str]:
 def guild_is_autoscan(gid) -> bool:
     c.execute("SELECT autoscan FROM guilds WHERE id=?", (gid,))
     fetched = c.fetchone()
-    print(fetched[1])
-    if fetched[0] == 1:
-        return True
-    else:
-        return False
+    print(fetched[0])
+    if fetched:
+        if fetched[0] == 1:
+            return True
+    return False
 
 
 def guild_is_faction(gid) -> bool:
