@@ -253,7 +253,9 @@ async def on_message(message):
         return
 
     # Autoscan
-    await utils.autoscan(ctx)
+    check = await utils.autoscan(ctx)
+    if check == False:
+        return
 
 
 async def print_welcome_message(guild):
