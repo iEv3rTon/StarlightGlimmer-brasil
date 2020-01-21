@@ -246,15 +246,24 @@ class Faction(commands.Cog):
         else:
             await ctx.send(ctx.s("faction.no_factions"))
 
+    # Merged hide and unhide
     @checks.admin_only()
     @commands.command(name="hide")
-    async def hide(self, ctx, other):
-        other_fac = sql.guild_get_by_faction_name_or_alias(other)
-        if not other_fac:
-            await ctx.send(ctx.s("error.faction_not_found"))
+    async def hide(self, ctx):
+        # try to find faction by guild id
+        factions = [x for x in sql.guild_get_all_factions() if x.id == ctx.guild.id]
+        if len(factions) == 0:
+            await ctx.send(ctx.s("faction.not_a_faction_yet"))
             return
-        sql.faction_hides_add(ctx.guild.id, other_fac.id)
-        await ctx.send(ctx.s("faction.set_hide").format(other_fac.faction_name))
+        # see if faction is currently hidden
+        hidden = sql.faction_hides_get_all(ctx.guild.id)
+        hidden = hidden[0]
+        if hidden == ctx.guild.id:
+            sql.faction_hides_remove(ctx.guild.id, other_fac.id)
+            await ctx.send(ctx.s("faction.clear_hide").format(other_fac.faction_name))
+            return
+        sql.faction_hides_add(ctx.guild.id, fac.id)
+        await ctx.send(ctx.s("faction.set_hide").format(fac.faction_name))
 
     @commands.command(name="factioninfo", aliases=['fi'])
     async def factioninfo(self, ctx, other=None):
@@ -292,29 +301,3 @@ class Faction(commands.Cog):
             e.set_thumbnail(url=g.faction_emblem)
 
         await ctx.send(embed=e)
-
-    @checks.admin_only()
-    @commands.command(name="unhide")
-    async def unhide(self, ctx, other=None):
-        if other is None:
-            fs = [x for x in sql.guild_get_all_factions() if x.id not in sql.faction_hides_get_all(ctx.guild.id)]
-            if len(fs) == 0:
-                await ctx.send(ctx.s("faction.no_factions_hidden"))
-                return
-            out = [
-                ctx.s("faction.currently_hidden"),
-                "```xl",
-                "{0:<34}  {1:<5}".format(ctx.s("bot.name"), ctx.s("bot.alias"))
-            ]
-            for f in fs:
-                alias = '"{}"'.format(f.faction_alias) if f.faction_alias else ""
-                out.append("{0:<34}  {1:<5}".format('"{}"'.format(f.faction_name), alias))
-            out.append('```')
-            await ctx.send('\n'.join(out))
-            return
-        other_fac = sql.guild_get_by_faction_name_or_alias(other)
-        if not other_fac:
-            await ctx.send(ctx.s("error.faction_not_found"))
-            return
-        sql.faction_hides_remove(ctx.guild.id, other_fac.id)
-        await ctx.send(ctx.s("faction.clear_hide").format(other_fac.faction_name))

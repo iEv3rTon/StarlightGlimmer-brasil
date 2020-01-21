@@ -110,7 +110,6 @@ STRINGS = {
     "faction.clear_emblem": "Faction emblem cleared.",
     "faction.clear_hide": "Unhid faction `{}`.",
     "faction.clear_invite": "Faction invite cleared. NOTE: Invite link is still active and must be removed manually.",
-    "faction.currently_hidden": "The following factions are currently hidden:",
     "faction.disbanded": "Faction successfully disbanded.",
     "faction.err.alias_length": "Faction aliases must be between 1 and 5 characters.",
     "faction.err.description_length": "Faction descriptions must be at most 240 characters.",
@@ -127,7 +126,6 @@ STRINGS = {
     "faction.no_emblem": "This faction does not have an emblem.",
     "faction.no_invite": "This faction has not set a public invite.",
     "faction.no_factions": "There doesn't seem to be any guilds yet...",
-    "faction.no_factions_hidden": "This guild has not hidden any factions.",
     "faction.not_a_faction_yet": "This guild has not created a faction yet.",
     "faction.set_alias": "Faction alias set to `{}`.",
     "faction.set_color": "Faction color set.",
@@ -217,7 +215,7 @@ STRINGS = {
     "brief.github": "Gets a link to my GitHub repository.",
     "brief.gridify": "Adds a grid to a template.",
     "brief.help": "Displays this message.",
-    "brief.hide": "Hide a faction from public lists.",
+    "brief.hide": "Toggle hiding a faction from public lists on and off.",
     "brief.info": "Get info about a faction.",
     "brief.invite": "Gets my invite link.",
     "brief.language": "Sets my language.",
@@ -260,7 +258,6 @@ STRINGS = {
     "brief.template.check.pxlsspace": "Check the completion status of all Pxls.space templates.",
     "brief.template.info": "Displays info about a template.",
     "brief.template.remove": "Removes a template.",
-    "brief.unhide": "Unhide a faction from public lists.",
     "brief.unregister": "Opt-out of animated emoji replacement.",
     "brief.version": "Gets my version number.",
 
@@ -352,7 +349,6 @@ STRINGS = {
     "signature.faction.color.set": "<color>",
     "signature.factioninfo": "(faction)",
     "signature.gridify": ["(-f) (-c) (size)", "(f) (c) <template> (size)"],
-    "signature.hide": "<faction>",
     "signature.info": "<faction>",
     "signature.language": "(code)",
     "signature.online": "(subcommand)",
@@ -381,7 +377,6 @@ STRINGS = {
     "signature.template.check": "(subcommand)",
     "signature.template.info": "(-r) (-f faction) <template> (zoom)",
     "signature.template.remove": "<template>",
-    "signature.unhide": "(faction)",
 
     # Examples
     "example.alertchannel": [("clear", "Clear the alert channel if there is one"),
@@ -433,8 +428,6 @@ STRINGS = {
     "example.gridify": [("#8", "(with an attachment) Gridify an image magnified 8 times"),
                         ("MyTemplate #16", "Gridify a template named 'MyTemplate' magnified 16 times"),
                         ("-c 080808 MyTemplate #10", "Gridify a template named 'MyTemplate' magnified 10 times using hex 0x080808 as the grid color")],
-    "example.hide": [("\"GTFO Faction\"", "Hides a faction named 'GTFO Faction'"),
-                     ("gtfo", "Hides a faction with the alias 'gtfo'")],
     "example.language": [("", "View my current language and available language options"),
                          ("en-us", "Set my language to English (US)")],
     "example.online": ["pc", "Gets the number of players currently online on Pixelcanvas.io"],
@@ -499,9 +492,6 @@ STRINGS = {
                               ("-r RawTemplate 5", "Get just the image for template named 'RawTemplate' magnified 5 times"),
                               ("-r -f CoolFaction CoolRawTemplate 4", "Get just the image for a template named 'CoolRawTemplate' belonging to a faction named 'CoolFaction' magnified 4 times")],
     "example.template.remove": [("MyTemplate", "Remove a template named 'MyTemplate'")],
-    "example.unhide": [("", "Lists all currently hidden factions"),
-                       ("\"GTFO Faction\"", "Unhides a faction named 'GTFO Faction'"),
-                       ("gtfo", "Unhides a faction with the alias 'gtfo'")],
 
     # Canvas colors
     "color.unknown": "Unknown",
