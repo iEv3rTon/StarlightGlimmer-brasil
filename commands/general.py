@@ -75,8 +75,8 @@ class GlimmerHelpCommand(HelpCommand):
                 'Canvas':        '2. Canvas',
                 'Template':      '3. Template',
                 'Faction':       '4. Faction',
-                'Animotes':      '5. Fun',
-                'Configuration': '6. Animotes'
+                'Animotes':      '5. Animotes',
+                'Configuration': '6. Configuration'
             }[command.cog_name]
 
         filtered = await self.filter_commands(self.context.bot.commands, sort=True, key=get_category)
