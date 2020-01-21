@@ -363,7 +363,12 @@ def guild_get_prefix_by_id(gid) -> Optional[str]:
 
 def guild_is_autoscan(gid) -> bool:
     c.execute("SELECT autoscan FROM guilds WHERE id=?", (gid,))
-    return bool(c.fetchone())
+    fetched = c.fetchone()
+    print(fetched)
+    if fetched == 1:
+        return True
+    else:
+        return False
 
 
 def guild_is_faction(gid) -> bool:
