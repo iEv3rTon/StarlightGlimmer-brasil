@@ -366,7 +366,6 @@ def guild_get_prefix_by_id(gid) -> Optional[str]:
 def guild_is_autoscan(gid) -> bool:
     c.execute("SELECT autoscan FROM guilds WHERE id=?", (gid,))
     fetched = c.fetchone()
-    print(fetched[0])
     if fetched:
         if fetched[0] == 1:
             return True
