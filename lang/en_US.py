@@ -314,9 +314,9 @@ STRINGS = {
         Using this command to create templates from raw images is not suggested, use the {p}dither command instead.""",
     "help.register":
         """Opting into this feature means that whenever you type :animated_emoji_name: I will delete
-        your message and replace it with the emoji specified, as long as that emoji is in a server 
+        your message and replace it with the emoji specified, as long as that emoji is in a server
         that I can see.
-        
+
         You only need to register once for this to apply to all guilds.
         This feature requires that I have the Manage Messages permission.""",
     "help.repeat": "This command only applies to 'preview', 'diff', and their autoscan invocations. Only the last 50 messages will be searched.",
@@ -399,7 +399,7 @@ STRINGS = {
                      ("520 -94 7", "(with an attachment) Check an image against the default canvas at (520, -94) and magnify the result 7 times"),
                      ("-e -256 345", "(with an attachment) Check an image against the default canvas at (-256, 345) and print a short list of specific error pixels"),
                      ("\"My Template\"", "Check a template named 'My Template'"),
-                     ("niceTemplate -s", "Generate a snapshot of all the finished pixels of a template named 'niceTemplate'")
+                     ("niceTemplate -s", "Generate a snapshot of all the finished pixels of a template named 'niceTemplate'"),
                      ("-f CoolFaction CoolTemplate", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction'"),
                      ("-e -f CoolFaction CoolTemplate", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction' and print a short list of specific error pixels")],
     "example.dither": [("-y 4", "(with an attachment) Dither an image using yliluoma dithering and an order of 4"),
