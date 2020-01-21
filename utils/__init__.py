@@ -15,6 +15,8 @@ log = logging.getLogger(__name__)
 
 async def autoscan(ctx):
     if ctx.guild and sql.guild_is_autoscan(ctx.guild.id):
+        print(ctx.guild)
+        print(sql.guild_is_autoscan(ctx.guild.id))
         return False
 
     canvas = sql.guild_get_canvas_by_id(ctx.guild.id) if ctx.guild else "pixelcanvas"
