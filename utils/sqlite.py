@@ -361,6 +361,8 @@ def guild_get_prefix_by_id(gid) -> Optional[str]:
     return g.prefix if g and g.prefix else config.PREFIX
 
 
+# Decided to make 1==True and 2==False here, cause 0 was converting to NULL and then
+# defaulting to 0 lmao
 def guild_is_autoscan(gid) -> bool:
     c.execute("SELECT autoscan FROM guilds WHERE id=?", (gid,))
     fetched = c.fetchone()

@@ -59,12 +59,15 @@ class Configuration(commands.Cog):
         if sql.guild_is_autoscan(ctx.guild.id) == False:
             sql.guild_update(ctx.guild.id, autoscan=1)
             print(dir(sql.guild_get_by_id(ctx.guild.id)))
+            print(sql.guild_get_by_id(ctx.guild.id).autoscan)
             log.info("Autoscan enabled for {0.name} (GID: {0.id})".format(ctx.guild))
             await ctx.send(ctx.s("configuration.autoscan_enabled"))
         # Guild has autoscan enabled, disable it
         else:
-            sql.guild_update(ctx.guild.id, autoscan=0)
+            # for autoscan 2==False, cause 0 was converting to null and fucking up
+            sql.guild_update(ctx.guild.id, autoscan=2)
             print(dir(sql.guild_get_by_id(ctx.guild.id)))
+            print(sql.guild_get_by_id(ctx.guild.id).autoscan)
             log.info("Autoscan disabled for {0.name} (GID: {0.id})".format(ctx.guild))
             await ctx.send(ctx.s("configuration.autoscan_disabled"))
 
