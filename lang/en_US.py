@@ -172,7 +172,7 @@ STRINGS = {
     "template.updated": "Template '{0}' updated!",
 
     # Command brief help
-    "brief.alertchannel": "Set or clear the channel used for update alerts.",
+    "brief.alertchannel": "Set or clear the channel used for receiving bot update alerts from my github page.",
     "brief.alertchannel.clear": "Clears the alert channel.",
     "brief.alertchannel.set": "Sets the alert channel.",
     "brief.assemble": "Assemble this guild into a faction.",
@@ -308,7 +308,11 @@ STRINGS = {
         """This should primarily be used if `{p}diff` is telling you your image has 'bad color' in it.
         Using this command to create templates from raw images is not suggested.""",
     "help.register":
-        """You only need to register once for this to apply to all guilds.
+        """Opting into this feature means that whenever you type :animated_emoji_name: I will delete
+        your message and replace it with the emoji specified, as long as that emoji is in a server 
+        that I can see.
+        
+        You only need to register once for this to apply to all guilds.
         This feature requires that I have the Manage Messages permission.""",
     "help.repeat": "This command only applies to 'preview', 'diff', and their autoscan invocations. Only 50 messages back will be searched.",
     "help.role.botadmin": "If a user has a role with this privilege bound to it, that user can use any of my commands with no restrictions. They will have the same permissions as guild Administrators.",
@@ -380,7 +384,7 @@ STRINGS = {
 
     # Examples
     "example.alertchannel": [("clear", "Clear the alert channel if there is one"),
-                             ("set #bot-spam", "Set the alert channel to a channel named 'bot-spam")],
+                             ("set #bot-spam", "Set the alert channel to a channel named 'bot-spam'")],
     "example.alertchannel.set": [("#bot-spam", "Set the alert channel to a channel named 'bot-spam'")],
     "example.assemble": [("CoolFaction", "Assembles your guild into a faction named 'CoolFaction'"),
                          ("\"Cool Faction\" cf", "Assembles your guild into a faction named 'Cool Faction' with alias 'cf'")],
