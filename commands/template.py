@@ -455,7 +455,7 @@ class Template(commands.Cog):
             if yesnomenu == True:
                 return True
             else:
-                await ctx.s("template.menuclose")
+                await ctx.send(ctx.s("template.menuclose"))
                 return False
 
     @staticmethod
@@ -471,7 +471,7 @@ class Template(commands.Cog):
             if yesnomenu == True:
                 return True
             else:
-                await ctx.s("template.menuclose")
+                await ctx.send(ctx.s("template.menuclose"))
                 return False
 
     @staticmethod
