@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 
 async def autoscan(ctx):
-    if ctx.guild and sql.guild_is_autoscan(ctx.guild.id):
+    if ctx.guild and not sql.guild_is_autoscan(ctx.guild.id):
         print(ctx.guild)
         print(sql.guild_is_autoscan(ctx.guild.id))
         return False
