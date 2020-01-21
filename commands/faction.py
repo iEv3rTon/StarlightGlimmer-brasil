@@ -258,13 +258,13 @@ class Faction(commands.Cog):
         faction = faction[0]
         # see if faction is currently hidden
         hidden = sql.faction_hides_get_all(ctx.guild.id)
-        print(hidden)
-        if hidden == ctx.guild.id:
+        if hidden == []:
+            sql.faction_hides_add(ctx.guild.id, faction.id)
+            await ctx.send(ctx.s("faction.set_hide").format(faction.faction_name))
+        elif hidden[0] == ctx.guild.id:
             sql.faction_hides_remove(ctx.guild.id, faction.id)
             await ctx.send(ctx.s("faction.clear_hide").format(faction.faction_name))
-            return
-        sql.faction_hides_add(ctx.guild.id, faction.id)
-        await ctx.send(ctx.s("faction.set_hide").format(faction.faction_name))
+        
 
     @commands.command(name="factioninfo", aliases=['fi'])
     async def factioninfo(self, ctx, other=None):
