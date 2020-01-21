@@ -56,7 +56,7 @@ class Configuration(commands.Cog):
     @commands.command()
     async def autoscan(self, ctx):
         # Guild does not have autoscan enabled, enable it
-        if not sql.guild_is_autoscan(ctx.guild.id):
+        if sql.guild_is_autoscan(ctx.guild.id) == False:
             sql.guild_update(ctx.guild.id, autoscan=1)
             print(sql.guild_get_by_id(ctx.guild.id))
             log.info("Autoscan enabled for {0.name} (GID: {0.id})".format(ctx.guild))
