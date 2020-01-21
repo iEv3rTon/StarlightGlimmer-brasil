@@ -403,7 +403,7 @@ class Template(commands.Cog):
                     quantized = await Template.check_colors(tmp, colors.by_name[canvas])
                 if not quantized:
                     if not await utils.yes_no(ctx, ctx.s("template.not_quantized")):
-                        await ctx.send("Menu exited.")
+                        ctx.send(ctx.s("template.menuclose"))
                         return 
 
                     template, bad_pixels = await render.quantize(data, colors.by_name[canvas])
