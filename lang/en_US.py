@@ -188,8 +188,9 @@ STRINGS = {
     "brief.diff.pixelzone": "Creates a diff using Pixelzone.io.",
     "brief.diff.pxlsspace": "Creates a diff using Pxls.space.",
     "brief.disband": "Disband this guild's faction.",
-    "brief.dither": "Dither a png image.",
+    "brief.dither": "Dither a png or jpg image.",
     "brief.dither.pixelcanvas": "Dithers an image using the pixelcanvas palette",
+    "brief.dither.geo32": "Dithers an image using the geo32 palette",
     "brief.ditherchart": "Gets a chart of canvas colors dithered together.",
     "brief.ditherchart.pixelcanvas": "Gets a dither chart of Pixelcanvas.io colors.",
     "brief.ditherchart.pixelzone": "Gets a dither chart of Pixelzone.io colors.",
@@ -278,11 +279,16 @@ STRINGS = {
         """Images must be in PNG format.
         Error pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `{p}help quantize`).
         You cannot zoom an image to contain more than 4 million pixels.
-        Use the `-e` flag to print out the specific coordinates of the first 15 error pixels.""",
+        Use the `-e` flag to print out the specific coordinates of the first 50 error pixels. If there are 15 or less pixels I will post them to discord, if there are more I will send the information to hastebin and a link to it.
+        Use the `-s` or `--snapshot` flag to get a snapshot of a template. All correct pixels will be the colour they are on your template and all other pixels will be transparent. You can use these images to track what you have finished on a template.""",
     "help.dither":
-        """Images must be in PNG format.
+        """Images must be in PNG or JPEG format.
         The image will be converted to the palette you select using the dithering algorithm specified.
-        You cannot dither an image that is larger than 1500 by 1500 pixels.
+        Please be aware that the algorthims other than Bayer dithering can be quite slow, you may need to wait a while.
+        The dimension limits on each algorithm are as follows:
+        Bayer dithering: 1500px by 1500px
+        Yliluoma dithering: 100px by 100px
+        Floyd Steinberg dithering: 100px by 100px
 
         Bayer dithering: `[-b|--bayer] <threshold> <order>`
         Yliluoma dithering: `[-y|--yliluoma] <order>`
@@ -307,19 +313,21 @@ STRINGS = {
         Use the '-t' flag to create a default size preview centered on a template.""",
     "help.quantize":
         """This should primarily be used if `{p}diff` is telling you your image has 'bad color' in it.
-        Using this command to create templates from raw images is not suggested.""",
+        Using this command to create templates from raw images is not suggested, use the {p}dither command instead.""",
     "help.register":
         """You only need to register once for this to apply to all guilds.
         This feature requires that I have the Manage Messages permission.""",
-    "help.repeat": "This command only applies to 'preview', 'diff', and their autoscan invocations. Only 50 messages back will be searched.",
+    "help.repeat": "This command only applies to 'preview', 'diff', and their autoscan invocations. Only the last 50 messages will be searched.",
     "help.role.botadmin": "If a user has a role with this privilege bound to it, that user can use any of my commands with no restrictions. They will have the same permissions as guild Administrators.",
     "help.role.templateadder": "If this privilege is bound to a role, all regular members will lose the ability to modify templates unless they have that role.",
     "help.role.templateadmin": "If a user has a role with this privilege bound to it, that user can add and remove any template using the 'templates' command, regardless of ownership.",
+    "help.template": "You can scroll through the pages of the templates listed using the reactions underneath, this times out and stops responding after 5 minutes",
     "help.template.add":
         """Image must be in PNG format. If the image is not quantized to the target canvas's palette, I will offer to quantize it for you.
         A guild can have up to 25 templates at any time.
         Templates must have unique names (max 32 chars, case sensitive). If you attempt to add a new template with the same name as an existing one, it will be replaced if you have permission to remove the old one (see `{p}help remove`).
         I only store URLs to templates. If the message that originally uploaded a template is deleted, its URL will break and the template will be lost. Save backups to your computer just in case.""",
+    "help.template.check": "If you have more than 15 templates use `{p}template check (page-number)` to see additional pages.",
     "help.template.info": "Use the `-r` flag to return just the raw image without extra info. You can also add a zoom factor when using this option.",
     "help.template.remove": "This command can only be used if the template being removed was added by you, unless you are a Template Admin, Bot Admin, or have the Administrator permission (see 'role').",
     "help.unregister": "You only need to unregister once for this to apply to all guilds.",
@@ -329,7 +337,7 @@ STRINGS = {
     "signature.alertchannel.set": "<channel>",
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
-    "signature.diff": ["(subcommand) (-e) <coordinates> (zoom)", "(-e) (-f faction) <template> (zoom)"],
+    "signature.diff": ["(subcommand) (-e) (-s|--snapshot) <coordinates> (zoom)", "(-e) (-f faction) <template> (zoom)"],
     "signature.diff.pixelcanvas": "(-e) <coordinates> (zoom)",
     "signature.diff.pixelzone": "(-e) <coordinates> (zoom)",
     "signature.diff.pxlsspace": "(-e) <coordinates> (zoom)",
@@ -374,7 +382,7 @@ STRINGS = {
     "signature.template.add.pixelcanvas": "<name> <x> <y> (url)",
     "signature.template.add.pixelzone": "<name> <x> <y> (url)",
     "signature.template.add.pxlsspace": "<name> <x> <y> (url)",
-    "signature.template.check": "(subcommand)",
+    "signature.template.check": "(subcommand) (page number)",
     "signature.template.info": "(-r) (-f faction) <template> (zoom)",
     "signature.template.remove": "<template>",
     "signature.unhide": "(faction)",
@@ -391,6 +399,7 @@ STRINGS = {
                      ("520 -94 7", "(with an attachment) Check an image against the default canvas at (520, -94) and magnify the result 7 times"),
                      ("-e -256 345", "(with an attachment) Check an image against the default canvas at (-256, 345) and print a short list of specific error pixels"),
                      ("\"My Template\"", "Check a template named 'My Template'"),
+                     ("niceTemplate -s", "Generate a snapshot of all the finished pixels of a template named 'niceTemplate'")
                      ("-f CoolFaction CoolTemplate", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction'"),
                      ("-e -f CoolFaction CoolTemplate", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction' and print a short list of specific error pixels")],
     "example.dither": [("-y 4", "(with an attachment) Dither an image using yliluoma dithering and an order of 4"),
