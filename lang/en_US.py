@@ -170,6 +170,7 @@ STRINGS = {
     "template.remove": "Successfully removed '{0}'.",
     "template.template_report_header": "Template Report",
     "template.updated": "Template '{0}' updated!",
+    "template.menuclose": "Menu exited!",
 
     # Command brief help
     "brief.alertchannel": "Set or clear the channel used for receiving bot update alerts from my github page.",

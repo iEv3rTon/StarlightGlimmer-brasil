@@ -450,7 +450,12 @@ class Template(commands.Cog):
                 msg.append("{0:<{w}} {1:>15} {2}, {3}\n".format(name, canvas_name, d.x, d.y, w=w))
             msg.append("```")
             msg.append(ctx.s("template.duplicate_list_close"))
-            return await utils.yes_no(ctx, '\n'.join(msg))
+            yesnomenu = await utils.yes_no(ctx, '\n'.join(msg))
+            if yesnomenu == True:
+                return True
+            else:
+                await ctx.s("template.menuclose")
+                return False
 
     @staticmethod
     async def check_for_duplicate_by_name(ctx, template):
@@ -461,7 +466,12 @@ class Template(commands.Cog):
                 return False
             q = ctx.s("template.name_exists_ask_replace") \
                 .format(dup.name, canvases.pretty_print[dup.canvas], dup.x, dup.y)
-            return await utils.yes_no(ctx, q)
+            yesnomenu = await utils.yes_no(ctx, q)
+            if yesnomenu == True:
+                return True
+            else:
+                await ctx.s("template.menuclose")
+                return False
 
     @staticmethod
     async def select_url(ctx, input_url):
