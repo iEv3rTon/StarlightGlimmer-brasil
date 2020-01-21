@@ -353,7 +353,7 @@ def guild_get_canvas_by_id(gid) -> str:
 def guild_get_language_by_id(gid) -> str:
     c.execute("""SELECT language FROM guilds WHERE id=?""", (gid,))
     g = c.fetchone()
-    return g[0] if c else None
+    return g[0] if g else None
 
 
 def guild_get_prefix_by_id(gid) -> Optional[str]:
@@ -361,9 +361,15 @@ def guild_get_prefix_by_id(gid) -> Optional[str]:
     return g.prefix if g and g.prefix else config.PREFIX
 
 
+# Decided to make 1==True and 2==False here, cause 0 was converting to NULL and then
+# defaulting to 0 lmao
 def guild_is_autoscan(gid) -> bool:
     c.execute("SELECT autoscan FROM guilds WHERE id=?", (gid,))
-    return bool(c.fetchone())
+    fetched = c.fetchone()
+    if fetched:
+        if fetched[0] == 1:
+            return True
+    return False
 
 
 def guild_is_faction(gid) -> bool:

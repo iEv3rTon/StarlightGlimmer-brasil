@@ -38,8 +38,8 @@ class Animotes(commands.Cog):
         sql.animotes_users_delete(ctx.author.id)
         await ctx.send(ctx.s("animotes.opt_out"))
 
-    @staticmethod
-    async def on_message(message):
+    @commands.Cog.listener()
+    async def on_message(self, message):
         if not message.author.bot and sql.animotes_users_is_registered(message.author.id):
             channel = message.channel
             content = emote_corrector(message)
