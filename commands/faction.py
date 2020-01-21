@@ -257,7 +257,7 @@ class Faction(commands.Cog):
             return
         # see if faction is currently hidden
         hidden = sql.faction_hides_get_all(ctx.guild.id)
-        hidden = hidden[0]
+        print(hidden)
         if hidden == ctx.guild.id:
             sql.faction_hides_remove(ctx.guild.id, other_fac.id)
             await ctx.send(ctx.s("faction.clear_hide").format(other_fac.faction_name))
