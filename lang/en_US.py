@@ -40,6 +40,7 @@ STRINGS = {
     "error.invalid_color": "That is not a valid color.",
     "error.invalid_option": "That is not a valid option. Please try again.",
     "error.jpeg": "Seriously? A JPEG? Gross! Please create a PNG template instead.",
+    "error.missing_argument": "You are missing a required argument. Please try again.",
     "error.missing_arg_faction": "Missing argument: The `-f` flag must be followed by a faction name or alias.",
     "error.no_attachment": "That command requires an attachment.",
     "error.no_dm": "That command only works in guilds.",

@@ -172,7 +172,7 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.CommandNotFound):
         pass
     elif isinstance(error, commands.MissingRequiredArgument):
-        pass
+        await ctx.send(ctx.s("error.missing_argument"))
     elif isinstance(error, commands.NoPrivateMessage):
         await ctx.send(ctx.s("error.no_dm"))
 
