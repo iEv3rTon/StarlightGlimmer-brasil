@@ -323,7 +323,7 @@ STRINGS = {
     "help.role.botadmin": "If a user has a role with this privilege bound to it, that user can use any of my commands with no restrictions. They will have the same permissions as guild Administrators.",
     "help.role.templateadder": "If this privilege is bound to a role, all regular members will lose the ability to modify templates unless they have that role.",
     "help.role.templateadmin": "If a user has a role with this privilege bound to it, that user can add and remove any template using the 'templates' command, regardless of ownership.",
-    "help.template": "You can scroll through the pages of the templates listed using the reactions underneath, this times out and stops responding after 5 minutes",
+    "help.template": "You can scroll through the pages of the templates listed using the reactions underneath, this times out and stops responding after 5 minutes.",
     "help.template.add":
         """Image must be in PNG format. If the image is not quantized to the target canvas's palette, I will offer to quantize it for you.
         A guild can have up to 25 templates at any time.
@@ -339,7 +339,7 @@ STRINGS = {
     "signature.alertchannel.set": "<channel>",
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
-    "signature.diff": ["(subcommand) (-e) (-s|--snapshot) <coordinates> (zoom)", "(-e) (-f faction) <template> (zoom)"],
+    "signature.diff": "(subcommand) (-e|-s|--snapshot) (-f) <coordinates> (zoom)",
     "signature.diff.pixelcanvas": "(-e) <coordinates> (zoom)",
     "signature.diff.pixelzone": "(-e) <coordinates> (zoom)",
     "signature.diff.pxlsspace": "(-e) <coordinates> (zoom)",
