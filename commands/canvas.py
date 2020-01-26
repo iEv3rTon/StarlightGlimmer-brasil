@@ -29,7 +29,7 @@ class Canvas(commands.Cog):
     #          DIFF
     # =======================
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(1, 5, BucketType.global)
     @commands.group(name="diff", invoke_without_command=True, aliases=["d"])
     async def diff(self, ctx, *args):
         if len(args) < 1:
@@ -164,7 +164,7 @@ class Canvas(commands.Cog):
     #        PREVIEW
     # =======================
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(1, 5, BucketType.global)
     @commands.group(name="preview", invoke_without_command=True, aliases=["p"])
     async def preview(self, ctx, *args):
         if len(args) < 1:
@@ -263,7 +263,7 @@ class Canvas(commands.Cog):
     #         DITHER
     # =======================
 
-    @commands.cooldown(1, 30, BucketType.guild)
+    @commands.cooldown(1, 30, BucketType.global)
     @commands.group(name="dither", invoke_without_command=True)
     async def dither(self, ctx):
         await ctx.invoke_default("dither")
