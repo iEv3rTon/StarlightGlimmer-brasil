@@ -29,6 +29,7 @@ class Canvas(commands.Cog):
     #          DIFF
     # =======================
 
+    @commands.cooldown(1, 5, BucketType.guild)
     @commands.group(name="diff", invoke_without_command=True, aliases=["d"])
     async def diff(self, ctx, *args):
         if len(args) < 1:
@@ -151,12 +152,10 @@ class Canvas(commands.Cog):
     async def diff_pixelcanvas(self, ctx, *args):
         await _diff(ctx, args, "pixelcanvas", render.fetch_pixelcanvas, colors.pixelcanvas)
 
-    @commands.cooldown(1, 5, BucketType.guild)
     @diff.command(name="pixelzone", aliases=["pz"])
     async def diff_pixelzone(self, ctx, *args):
         await _diff(ctx, args, "pixelzone", render.fetch_pixelzone, colors.pixelzone)
 
-    @commands.cooldown(1, 5, BucketType.guild)
     @diff.command(name="pxlsspace", aliases=["ps"])
     async def diff_pxlsspace(self, ctx, *args):
         await _diff(ctx, args, "pxlsspace", render.fetch_pxlsspace, colors.pxlsspace)
@@ -227,17 +226,14 @@ class Canvas(commands.Cog):
                 return
         await ctx.invoke_default("preview")
 
-    @commands.cooldown(1, 5, BucketType.guild)
     @preview.command(name="pixelcanvas", aliases=["pc"])
     async def preview_pixelcanvas(self, ctx, *args):
         await _preview(ctx, args, render.fetch_pixelcanvas)
 
-    @commands.cooldown(1, 5, BucketType.guild)
     @preview.command(name="pixelzone", aliases=["pz"])
     async def preview_pixelzone(self, ctx, *args):
         await _preview(ctx, args, render.fetch_pixelzone)
 
-    @commands.cooldown(1, 5, BucketType.guild)
     @preview.command(name="pxlsspace", aliases=["ps"])
     async def preview_pxlsspace(self, ctx, *args):
         await _preview(ctx, args, render.fetch_pxlsspace)
@@ -251,17 +247,14 @@ class Canvas(commands.Cog):
     async def quantize(self, ctx):
         await ctx.invoke_default("quantize")
 
-    @commands.cooldown(1, 5, BucketType.guild)
     @quantize.command(name="pixelcanvas", aliases=["pc"])
     async def quantize_pixelcanvas(self, ctx, *args):
         await _quantize(ctx, args, "pixelcanvas", colors.pixelcanvas)
 
-    @commands.cooldown(1, 5, BucketType.guild)
     @quantize.command(name="pixelzone", aliases=["pz"])
     async def quantize_pixelzone(self, ctx, *args):
         await _quantize(ctx, args, "pixelzone", colors.pixelzone)
 
-    @commands.cooldown(1, 5, BucketType.guild)
     @quantize.command(name="pxlsspace", aliases=["ps"])
     async def quantize_pxlsspace(self, ctx, *args):
         await _quantize(ctx, args, "pxlsspace", colors.pxlsspace)
@@ -275,7 +268,6 @@ class Canvas(commands.Cog):
     async def dither(self, ctx):
         await ctx.invoke_default("dither")
 
-    @commands.cooldown(1, 30, BucketType.guild)
     @dither.command(name="geo32", aliases=["geo"])
     async def dither_geo32(self, ctx, *args):
         url = None
@@ -317,7 +309,6 @@ class Canvas(commands.Cog):
             return
         await ctx.send("Please specify what kind of dither to use")
 
-    @commands.cooldown(1, 30, BucketType.guild)
     @dither.command(name="pixelcanvas", aliases=["pc"])
     async def dither_pixelcanvas(self, ctx, *args):
         url = None
@@ -426,6 +417,7 @@ class Canvas(commands.Cog):
     #       DITHERCHART
     # ======================
 
+    @commands.cooldown(1, 5, BucketType.guild)
     @commands.group(name="ditherchart", invoke_without_command=True)
     async def ditherchart(self, ctx):
         await ctx.invoke_default("ditherchart")
