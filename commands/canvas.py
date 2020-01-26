@@ -29,7 +29,7 @@ class Canvas(commands.Cog):
     #          DIFF
     # =======================
 
-    @commands.cooldown(1, 5, BucketType.global)
+    @commands.cooldown(1, 5, BucketType.guild)
     @commands.group(name="diff", invoke_without_command=True, aliases=["d"])
     async def diff(self, ctx, *args):
         if len(args) < 1:
@@ -164,7 +164,7 @@ class Canvas(commands.Cog):
     #        PREVIEW
     # =======================
 
-    @commands.cooldown(1, 5, BucketType.global)
+    @commands.cooldown(1, 5, BucketType.guild)
     @commands.group(name="preview", invoke_without_command=True, aliases=["p"])
     async def preview(self, ctx, *args):
         if len(args) < 1:
@@ -263,7 +263,7 @@ class Canvas(commands.Cog):
     #         DITHER
     # =======================
 
-    @commands.cooldown(1, 30, BucketType.global)
+    @commands.cooldown(1, 30, BucketType.default)
     @commands.group(name="dither", invoke_without_command=True)
     async def dither(self, ctx):
         await ctx.invoke_default("dither")
@@ -438,6 +438,7 @@ class Canvas(commands.Cog):
     #         REPEAT
     # ======================
 
+    @commands.cooldown(1, 5, BucketType.guild)
     @commands.command(name="repeat", aliases=["r"])
     async def repeat(self, ctx):
         async for msg in ctx.history(limit=50, before=ctx.message):
@@ -446,7 +447,7 @@ class Canvas(commands.Cog):
 
             match = re.match('^{}(diff|d|preview|p)'.format(ctx.prefix), msg.content)
             if match:
-                await self.bot.invoke(new_ctx)
+                await new_ctx.reinvoke()
                 return
 
             if await utils.autoscan(new_ctx):
