@@ -503,9 +503,10 @@ async def _diff(ctx, args, canvas, fetch, palette):
             y = next(iter_args, None)
 
         try:
-            x = int(x)
-            y = int(y)
-        except (ValueError, TypeError):
+            #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
+            x = int(re.sub('[^0-9-]','', x))
+            y = int(re.sub('[^0-9-]','', y))
+        except ValueError:
             await ctx.send(ctx.s("canvas.invalid_input"))
             return
 
@@ -579,9 +580,10 @@ async def _preview(ctx, args, fetch):
             y = next(iter_args, None)
 
         try:
-            x = int(x)
-            y = int(y)
-        except (ValueError, TypeError):
+            #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
+            x = int(re.sub('[^0-9-]','', x))
+            y = int(re.sub('[^0-9-]','', y))
+        except ValueError:
             await ctx.send(ctx.s("canvas.invalid_input"))
             return
 
