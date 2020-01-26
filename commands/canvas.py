@@ -496,11 +496,9 @@ async def _diff(ctx, args, canvas, fetch, palette):
         if a == "-s" or a == "--snapshot":
             create_snapshot = True
             a = next(iter_args, None)
-        if a and ',' in a:
-            x, y = a.split(',')
-        else:
-            x = a
-            y = next(iter_args, None)
+
+        x = a
+        y = next(iter_args, None)
 
         try:
             #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
@@ -573,11 +571,8 @@ async def _preview(ctx, args, fetch):
     async with ctx.typing():
         iter_args = iter(args)
         a = next(iter_args, None)
-        if a and ',' in a:
-            x, y = a.split(',')
-        else:
-            x = a
-            y = next(iter_args, None)
+        x = a
+        y = next(iter_args, None)
 
         try:
             #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
