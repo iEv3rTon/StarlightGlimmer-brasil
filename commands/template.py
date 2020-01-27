@@ -168,17 +168,17 @@ class Template(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(1, 60, BucketType.guild)
     @template.group(name='check')
-    async def template_check(self, ctx, page_number=1):
+    async def template_check(self, ctx, page=1):
         if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "check":
-            ts = sql.template_get_all_by_guild_id(ctx.guild.id)
+            templates = sql.template_get_all_by_guild_id(ctx.guild.id)
 
-            if len(ts) < 1:
+            if len(templates) < 1:
                 ctx.command.parent.reset_cooldown(ctx)
                 raise NoTemplatesError(False)
 
             msg = None
-            ts = sorted(ts, key=lambda tx: tx.name)
-            ts = sorted(ts, key=lambda tx: tx.canvas)
+            templates = sorted(templates, key=lambda tx: tx.name)
+            templates = sorted(templates, key=lambda tx: tx.canvas)
 
             # Find number of pages given there are 20 templates per page.
             pages = int(math.ceil(len(templates) / 20))
@@ -191,7 +191,7 @@ class Template(commands.Cog):
             templates = templates[start:end]
 
             # Calc info + send temp msg
-            for canvas, canvas_ts in itertools.groupby(ts, lambda tx: tx.canvas):
+            for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
                 ct = list(canvas_ts)
                 msg = await _check_canvas(ctx, ct, canvas, msg=msg)
 
@@ -201,12 +201,12 @@ class Template(commands.Cog):
 
     @commands.guild_only()
     @template_check.command(name='pixelcanvas', aliases=['pc'])
-    async def template_check_pixelcanvas(self, ctx, page_number=1):
-        ts = [x for x in sql.template_get_all_by_guild_id(ctx.guild.id) if x.canvas == 'pixelcanvas']
-        if len(ts) <= 0:
+    async def template_check_pixelcanvas(self, ctx, page=1):
+        templates = [x for x in sql.template_get_all_by_guild_id(ctx.guild.id) if x.canvas == 'pixelcanvas']
+        if len(templates) <= 0:
             ctx.command.parent.reset_cooldown(ctx)
             raise NoTemplatesError(True)
-        ts = sorted(ts, key=lambda tx: tx.name)
+        templates = sorted(templates, key=lambda tx: tx.name)
 
         # Find number of pages given there are 20 templates per page.
         pages = int(math.ceil(len(templates) / 20))
@@ -226,12 +226,12 @@ class Template(commands.Cog):
 
     @commands.guild_only()
     @template_check.command(name='pixelzone', aliases=['pz'])
-    async def template_check_pixelzone(self, ctx, page_number=1):
-        ts = [x for x in sql.template_get_all_by_guild_id(ctx.guild.id) if x.canvas == 'pixelzone']
-        if len(ts) <= 0:
+    async def template_check_pixelzone(self, ctx, page=1):
+        templates = [x for x in sql.template_get_all_by_guild_id(ctx.guild.id) if x.canvas == 'pixelzone']
+        if len(templates) <= 0:
             ctx.command.parent.reset_cooldown(ctx)
             raise NoTemplatesError(True)
-        ts = sorted(ts, key=lambda tx: tx.name)
+        templates = sorted(templates, key=lambda tx: tx.name)
 
         # Find number of pages given there are 20 templates per page.
         pages = int(math.ceil(len(templates) / 20))
@@ -554,7 +554,8 @@ async def _build_template_report(ctx, templates: List[DbTemplate], page, pages):
         perc = "{:>6.2f}%".format(100 * (tot - template.errors) / tot)
         table.add_row([name, tot, errors, perc])
 
-    await ctx.send(f"**{ctx.s("template.template_report_header")} | Page {page} of {pages}**```xl\n{table}```")
+    header = ctx.s("template.template_report_header")
+    await ctx.send(f"**{header} | Page {page} of {pages}**```xl\n{table}```")
 
 async def _check_canvas(ctx, templates, canvas, msg=None):
     chunk_classes = {
