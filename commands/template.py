@@ -404,7 +404,7 @@ class Template(commands.Cog):
                 if not quantized:
                     if not await utils.yes_no(ctx, ctx.s("template.not_quantized")):
                         ctx.send(ctx.s("template.menuclose"))
-                        return 
+                        return
 
                     template, bad_pixels = await render.quantize(data, colors.by_name[canvas])
                     with io.BytesIO() as bio:
@@ -497,27 +497,30 @@ async def _build_template_report(ctx, ts: List[DbTemplate], page_number):
     message_text = await build_check_table(ctx, ts, page_number, pages)
     message = await ctx.send(message_text)
 
-async def build_check_table(ctx, ts, page, pages):
+async def build_check_table(ctx, templates, page, pages):
     # Begin building table
     table = PrettyTable(["Name", "Total", "Errors", "Percent"])
     table.align = "l"
     table.set_style(prettytable.PLAIN_COLUMNS)
 
+    # Create list of all template's info
     temp = []
-    for x, t in enumerate(ts):
-        name = '"{}"'.format(t.name)
-        tot = t.size
+    for x, template in enumerate(templates):
+        name = '"{}"'.format(template.name)
+        tot = template.size
         if tot == 0:
-            t.size = await render.calculate_size(await http.get_template(t.url, t.name))
-            sql.template_update(t)
-        errors = t.errors
-        perc = "{:>6.2f}%".format(100 * (tot - t.errors) / tot)
+            template.size = await render.calculate_size(await http.get_template(template.url, template.name))
+            sql.template_update(template)
+        errors = template.errors
+        perc = "{:>6.2f}%".format(100 * (tot - template.errors) / tot)
         temp.append([name, tot, errors, perc])
 
     page_index = page-1
 
+    # Add the info from temp that is on the page requested
     for p in range(pages):
         if p == page_index:
+            # Try to add 20 pages from the start point the page given specifies
             for x in range(20):
                 if page_index == 0:
                     try:
