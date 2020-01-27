@@ -179,12 +179,25 @@ class Template(commands.Cog):
             msg = None
             ts = sorted(ts, key=lambda tx: tx.name)
             ts = sorted(ts, key=lambda tx: tx.canvas)
+
+            # Find number of pages given there are 20 templates per page.
+            pages = int(math.ceil(len(templates) / 20))
+            # Make sure page is in the range (1 <= page <= pages).
+            page = min(max(page, 0), pages)
+
+            # Slice so templates only contains the page we want
+            start = (page-1)*20
+            end = page*20
+            templates = templates[start:end]
+
+            # Calc info + send temp msg
             for canvas, canvas_ts in itertools.groupby(ts, lambda tx: tx.canvas):
                 ct = list(canvas_ts)
                 msg = await _check_canvas(ctx, ct, canvas, msg=msg)
 
+            # Delete temp msg and send final report
             await msg.delete()
-            await _build_template_report(ctx, ts, page_number)
+            await _build_template_report(ctx, templates, page, pages)
 
     @commands.guild_only()
     @template_check.command(name='pixelcanvas', aliases=['pc'])
@@ -194,9 +207,22 @@ class Template(commands.Cog):
             ctx.command.parent.reset_cooldown(ctx)
             raise NoTemplatesError(True)
         ts = sorted(ts, key=lambda tx: tx.name)
-        msg = await _check_canvas(ctx, ts, "pixelcanvas")
+
+        # Find number of pages given there are 20 templates per page.
+        pages = int(math.ceil(len(templates) / 20))
+        # Make sure page is in the range (1 <= page <= pages).
+        page = min(max(page, 0), pages)
+
+        # Slice so templates only contains the page we want
+        start = (page-1)*20
+        end = page*20
+        templates = templates[start:end]
+
+        # Calc info + send temp msg
+        msg = await _check_canvas(ctx, templates, "pixelcanvas")
+        # Delete temp msg and send final report
         await msg.delete()
-        await _build_template_report(ctx, ts, page_number)
+        await _build_template_report(ctx, templates, page, pages)
 
     @commands.guild_only()
     @template_check.command(name='pixelzone', aliases=['pz'])
@@ -206,21 +232,48 @@ class Template(commands.Cog):
             ctx.command.parent.reset_cooldown(ctx)
             raise NoTemplatesError(True)
         ts = sorted(ts, key=lambda tx: tx.name)
-        msg = await _check_canvas(ctx, ts, "pixelzone")
+
+        # Find number of pages given there are 20 templates per page.
+        pages = int(math.ceil(len(templates) / 20))
+        # Make sure page is in the range (1 <= page <= pages).
+        page = min(max(page, 0), pages)
+
+        # Slice so templates only contains the page we want
+        start = (page-1)*20
+        end = page*20
+        templates = templates[start:end]
+
+        # Calc info + send temp msg
+        msg = await _check_canvas(ctx, templates, "pixelzone")
+        # Delete temp msg and send final report
         await msg.delete()
-        await _build_template_report(ctx, ts, page_number)
+        await _build_template_report(ctx, templates, page, pages)
 
     @commands.guild_only()
     @template_check.command(name='pxlsspace', aliases=['ps'])
-    async def template_check_pxlsspace(self, ctx, page_number=1):
-        ts = [x for x in sql.template_get_all_by_guild_id(ctx.guild.id) if x.canvas == 'pxlsspace']
-        if len(ts) <= 0:
+    async def template_check_pxlsspace(self, ctx, page=1):
+        # Get all templates that could be checked, sort them
+        templates = [x for x in sql.template_get_all_by_guild_id(ctx.guild.id) if x.canvas == 'pxlsspace']
+        if len(templates) <= 0:
             ctx.command.parent.reset_cooldown(ctx)
             raise NoTemplatesError(True)
-        ts = sorted(ts, key=lambda tx: tx.name)
-        msg = await _check_canvas(ctx, ts, "pxlsspace")
+        templates = sorted(templates, key=lambda tx: tx.name)
+
+        # Find number of pages given there are 20 templates per page.
+        pages = int(math.ceil(len(templates) / 20))
+        # Make sure page is in the range (1 <= page <= pages).
+        page = min(max(page, 0), pages)
+
+        # Slice so templates only contains the page we want
+        start = (page-1)*20
+        end = page*20
+        templates = templates[start:end]
+
+        # Calc info + send temp msg
+        msg = await _check_canvas(ctx, templates, "pxlsspace")
+        # Delete temp msg and send final report
         await msg.delete()
-        await _build_template_report(ctx, ts, page_number)
+        await _build_template_report(ctx, templates, page, pages)
 
     @commands.guild_only()
     @commands.cooldown(1, 5, BucketType.guild)
@@ -483,56 +536,25 @@ class Template(commands.Cog):
         if len(ctx.message.attachments) > 0:
             return ctx.message.attachments[0].url
 
-async def _build_template_report(ctx, ts: List[DbTemplate], page_number):
-    name = ctx.s("bot.name")
-    tot = ctx.s("bot.total")
-    err = ctx.s("bot.errors")
-    perc = ctx.s("bot.percent")
-
-    # Find number of pages given there are 20 templates per page.
-    pages = int(math.ceil(len(ts) / 20))
-    # Makes sure page is in the range (1 <= page <= pages).
-    page_number = min(max(page_number, 0), pages)
-
-    message_text = await build_check_table(ctx, ts, page_number, pages)
-    message = await ctx.send(message_text)
-
-async def build_check_table(ctx, templates, page, pages):
+async def _build_template_report(ctx, templates: List[DbTemplate], page, pages):
     # Begin building table
-    table = PrettyTable(["Name", "Total", "Errors", "Percent"])
+    table = PrettyTable([ctx.s("bot.name"), ctx.s("bot.total"), ctx.s("bot.errors"), ctx.s("bot.percent")])
     table.align = "l"
     table.set_style(prettytable.PLAIN_COLUMNS)
 
-    # Create list of all template's info
+    # Add formatted info to table
     temp = []
     for x, template in enumerate(templates):
         name = '"{}"'.format(template.name)
         tot = template.size
-        if tot == 0:
+        if tot == 0: # This looks like legacy code to fix a db bug, might be okay to remove at some point
             template.size = await render.calculate_size(await http.get_template(template.url, template.name))
             sql.template_update(template)
         errors = template.errors
         perc = "{:>6.2f}%".format(100 * (tot - template.errors) / tot)
-        temp.append([name, tot, errors, perc])
+        table.add_row([name, tot, errors, perc])
 
-    page_index = page-1
-
-    # Add the info from temp that is on the page requested
-    for p in range(pages):
-        if p == page_index:
-            # Try to add 20 pages from the start point the page given specifies
-            for x in range(20):
-                if page_index == 0:
-                    try:
-                        table.add_row(temp[0+x])
-                    except:
-                        pass
-                else:
-                    try:
-                        table.add_row(temp[(page_index*20)+x])
-                    except:
-                        pass
-            return "**{} | Page {} of {}**```xl\n{}```".format(ctx.s("template.template_report_header"), str(page), str(pages), table)
+    await ctx.send(f"**{ctx.s("template.template_report_header")} | Page {page} of {pages}**```xl\n{table}```")
 
 async def _check_canvas(ctx, templates, canvas, msg=None):
     chunk_classes = {
