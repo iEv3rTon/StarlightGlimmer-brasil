@@ -166,7 +166,7 @@ class Template(commands.Cog):
 
 
     @commands.guild_only()
-    @commands.cooldown(1, 60, BucketType.guild)
+    @commands.cooldown(1, 10, BucketType.guild)
     @template.group(name='check')
     async def template_check(self, ctx, page=1):
         if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "check":
@@ -180,14 +180,14 @@ class Template(commands.Cog):
             templates = sorted(templates, key=lambda tx: tx.name)
             templates = sorted(templates, key=lambda tx: tx.canvas)
 
-            # Find number of pages given there are 20 templates per page.
-            pages = int(math.ceil(len(templates) / 20))
+            # Find number of pages given there are 10 templates per page.
+            pages = int(math.ceil(len(templates) / 10))
             # Make sure page is in the range (1 <= page <= pages).
             page = min(max(page, 0), pages)
 
             # Slice so templates only contains the page we want
-            start = (page-1)*20
-            end = page*20
+            start = (page-1)*10
+            end = page*10
             templates = templates[start:end]
 
             # Calc info + send temp msg
@@ -208,14 +208,14 @@ class Template(commands.Cog):
             raise NoTemplatesError(True)
         templates = sorted(templates, key=lambda tx: tx.name)
 
-        # Find number of pages given there are 20 templates per page.
-        pages = int(math.ceil(len(templates) / 20))
+        # Find number of pages given there are 10 templates per page.
+        pages = int(math.ceil(len(templates) / 10))
         # Make sure page is in the range (1 <= page <= pages).
         page = min(max(page, 0), pages)
 
         # Slice so templates only contains the page we want
-        start = (page-1)*20
-        end = page*20
+        start = (page-1)*10
+        end = page*10
         templates = templates[start:end]
 
         # Calc info + send temp msg
@@ -233,14 +233,14 @@ class Template(commands.Cog):
             raise NoTemplatesError(True)
         templates = sorted(templates, key=lambda tx: tx.name)
 
-        # Find number of pages given there are 20 templates per page.
-        pages = int(math.ceil(len(templates) / 20))
+        # Find number of pages given there are 10 templates per page.
+        pages = int(math.ceil(len(templates) / 10))
         # Make sure page is in the range (1 <= page <= pages).
         page = min(max(page, 0), pages)
 
         # Slice so templates only contains the page we want
-        start = (page-1)*20
-        end = page*20
+        start = (page-1)*10
+        end = page*10
         templates = templates[start:end]
 
         # Calc info + send temp msg
@@ -259,14 +259,14 @@ class Template(commands.Cog):
             raise NoTemplatesError(True)
         templates = sorted(templates, key=lambda tx: tx.name)
 
-        # Find number of pages given there are 20 templates per page.
-        pages = int(math.ceil(len(templates) / 20))
+        # Find number of pages given there are 10 templates per page.
+        pages = int(math.ceil(len(templates) / 10))
         # Make sure page is in the range (1 <= page <= pages).
         page = min(max(page, 0), pages)
 
         # Slice so templates only contains the page we want
-        start = (page-1)*20
-        end = page*20
+        start = (page-1)*10
+        end = page*10
         templates = templates[start:end]
 
         # Calc info + send temp msg
@@ -540,6 +540,7 @@ async def _build_template_report(ctx, templates: List[DbTemplate], page, pages):
     embed = discord.Embed(
         title=ctx.s("template.template_report_header"),
         description=f"Page {page} of {pages}")
+    embed.set_footer(text="Do g!t check <page_number> to see other pages")
 
     for x, template in enumerate(templates):
         embed.add_field(
