@@ -103,27 +103,27 @@ class Canvas(commands.Cog):
                     await ctx.send(content=out, file=f)
 
                 if list_pixels and len(err_list) > 0:
-                    out = ["```xl"]
+                    embed = discord.Embed()
+                    text = ""
+                    for i, pixel in enumerate(err_list):
+                        x, y, current, target = pixel
+                        x += t.x
+                        y += t.y
+                        current = ctx.s("color.{}.{}".format(t.canvas, current))
+                        target = ctx.s("color.{}.{}".format(t.canvas, target))
+                        text += f"[({x},{y})](https://pixelcanvas.io/@{x},{y}) is {current}, should be {target}\n"
+                        if i == 10:
+                            break
+                    embed.add_field(
+                        name="Errors",
+                        value=text,
+                        inline=False)
                     if len(err_list) <= 10:
                         # Less than 10 errs, send them as an embed w links to canvas
-                        embed = discord.Embed()
-                        text = ""
-                        for i, pixel in enumerate(err_list):
-                            x, y, current, target = pixel
-                            x += t.x
-                            y += t.y
-                            current = ctx.s("color.{}.{}".format(t.canvas, current))
-                            target = ctx.s("color.{}.{}".format(t.canvas, target))
-                            text += f"[({x},{y})](https://pixelcanvas.io/@{x},{y}) is {current}, should be {target}\n"
-                            if i == 10:
-                                break
-                        embed.add_field(
-                            name="Errors",
-                            value=text,
-                            inline=False)
                         await ctx.send(embed=embed)
                         return
                     if len(err_list) > 10:
+                        out = ["```xl"]
                         # More than 10, send them to hastebin as plain text
                         haste = []
                         for i, pixel in enumerate(err_list):
@@ -149,11 +149,8 @@ class Canvas(commands.Cog):
                             out = "Errors: https://hastebin.com/" + str(r.content)[10:20]
                             await ctx.send(out)
                             return
-                        #Send as 15 as codeblock since the response code wasn't 200
-                        for x in range(15):
-                            out.append(haste[x])
-                        out.append("...```**Hastebin returned an error.**")
-                        await ctx.send('\n'.join(out))
+                        # Code other than 200, send them as an embed w links to canvas instead
+                        await ctx.send(content="**Hastebin returned an error.**", embed=embed)
                 return
         await ctx.invoke_default("diff")
 
