@@ -1,5 +1,6 @@
 import logging
 import traceback
+import re
 
 import discord
 from discord import TextChannel
@@ -245,6 +246,15 @@ async def on_message(message):
     for l in locks:
         if message.author.id == l['user_id'] and message.channel.id == l['channel_id']:
             return
+
+    # Ignore messages with spoilered images
+    for attachment in message.attachments:
+        if attachment.is_spoiler():
+            return
+
+    # Ignore messages with any spoilered text
+    if re.match(".*\|\|.*\|\|.*", message.content):
+        return
 
     # Invoke a command if there is one
     ctx = await bot.get_context(message, cls=GlimContext)
