@@ -537,25 +537,23 @@ class Template(commands.Cog):
             return ctx.message.attachments[0].url
 
 async def _build_template_report(ctx, templates: List[DbTemplate], page, pages):
-    # Begin building table
-    table = PrettyTable([ctx.s("bot.name"), ctx.s("bot.total"), ctx.s("bot.errors"), ctx.s("bot.percent")])
-    table.align = "l"
-    table.set_style(prettytable.PLAIN_COLUMNS)
+    embed = discord.Embed(
+        title=ctx.s("template.template_report_header"),
+        description=f"Page {page} of {pages}")
 
-    # Add formatted info to table
-    temp = []
     for x, template in enumerate(templates):
-        name = '"{}"'.format(template.name)
-        tot = template.size
-        if tot == 0: # This looks like legacy code to fix a db bug, might be okay to remove at some point
-            template.size = await render.calculate_size(await http.get_template(template.url, template.name))
-            sql.template_update(template)
-        errors = template.errors
-        perc = "{:>6.2f}%".format(100 * (tot - template.errors) / tot)
-        table.add_row([name, tot, errors, perc])
+        embed.add_field(
+            name=f"({template.name})[https://pixelcanvas.io/@{},{}]",
+            value="{t}: {t_val} | {e}: {e_val} | {p}: {p_val}".format(
+                t=ctx.s("bot.total"),
+                t_val=template.size,
+                e=ctx.s("bot.errors"),
+                e_val=template.errors,
+                p=ctx.s("bot.percent"),
+                p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size)),
+            inline=False)
 
-    header = ctx.s("template.template_report_header")
-    await ctx.send(f"**{header} | Page {page} of {pages}**```xl\n{table}```")
+    await ctx.send(embed=embed)
 
 async def _check_canvas(ctx, templates, canvas, msg=None):
     chunk_classes = {
@@ -564,6 +562,7 @@ async def _check_canvas(ctx, templates, canvas, msg=None):
         'pxlsspace': PxlsBoard
     }
 
+    # Find all chunks that have templates on them
     chunks = set()
     for t in templates:
         empty_bcs, shape = chunk_classes[canvas].get_intersecting(t.x, t.y, t.width, t.height)
@@ -573,7 +572,7 @@ async def _check_canvas(ctx, templates, canvas, msg=None):
         await msg.edit(content=ctx.s("template.fetching_data").format(canvases.pretty_print[canvas]))
     else:
         msg = await ctx.send(ctx.s("template.fetching_data").format(canvases.pretty_print[canvas]))
-    await http.fetch_chunks(chunks)
+    await http.fetch_chunks(chunks) # Fetch all chunks
 
     await msg.edit(content=ctx.s("template.calculating"))
     example_chunk = next(iter(chunks))
