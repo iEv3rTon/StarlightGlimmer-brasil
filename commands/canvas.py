@@ -104,18 +104,27 @@ class Canvas(commands.Cog):
 
                 if list_pixels and len(err_list) > 0:
                     out = ["```xl"]
-                    if len(err_list) <= 15:
+                    if len(err_list) <= 10:
+                        # Less than 10 errs, send them as an embed w links to canvas
+                        embed = discord.Embed()
+                        text = ""
                         for i, pixel in enumerate(err_list):
                             x, y, current, target = pixel
+                            x += t.x
+                            y += t.y
                             current = ctx.s("color.{}.{}".format(t.canvas, current))
                             target = ctx.s("color.{}.{}".format(t.canvas, target))
-                            out.append("({},{}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
-                            if i == 15:
+                            text += f"[({x},{y})](https://pixelcanvas.io/@{x},{y}) is {current}, should be {target}\n"
+                            if i == 10:
                                 break
-                        out.append("```")
-                        await ctx.send('\n'.join(out))
+                        embed.add_field(
+                            name="Errors",
+                            value=text,
+                            inline=False)
+                        await ctx.send(embed=embed)
                         return
-                    if len(err_list) > 15:
+                    if len(err_list) > 10:
+                        # More than 10, send them to hastebin as plain text
                         haste = []
                         for i, pixel in enumerate(err_list):
                             x, y, current, target = pixel
