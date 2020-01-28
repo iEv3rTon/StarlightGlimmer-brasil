@@ -17,7 +17,7 @@ class Configuration(commands.Cog):
 
     @checks.admin_only()
     @commands.guild_only()
-    @commands.group(name="alertchannel", invoke_without_command=True)
+    @commands.group(name="alertchannel", invoke_without_command=True, case_insensitive=True)
     async def alertchannel(self, ctx):
         channel = dget(ctx.guild.channels, id=sql.guild_get_by_id(ctx.guild.id).alert_channel)
         if channel:
@@ -69,7 +69,7 @@ class Configuration(commands.Cog):
 
     @checks.admin_only()
     @commands.guild_only()
-    @commands.group(name="canvas", invoke_without_command=True)
+    @commands.group(name="canvas", invoke_without_command=True, case_insensitive)
     async def canvas(self, ctx):
         out = [ctx.s("configuration.canvas_check_1").format(ctx.canvas_pretty),
                ctx.s("configuration.canvas_check_2").format(ctx.prefix)]
@@ -122,7 +122,7 @@ class Configuration(commands.Cog):
 
     @checks.admin_only()
     @commands.guild_only()
-    @commands.group(name="role", invoke_without_command=True)
+    @commands.group(name="role", invoke_without_command=True, case_insensitive=True)
     async def role(self, ctx):
         roles = ["botadmin", "templateadder", "templateadmin"]
         out = ["**{}**".format(ctx.s("configuration.role_list_header")), "```xl"]
@@ -134,7 +134,7 @@ class Configuration(commands.Cog):
 
     @checks.admin_only()
     @commands.guild_only()
-    @role.group(name="botadmin", invoke_without_command=True)
+    @role.group(name="botadmin", invoke_without_command=True, case_insensitive=True)
     async def role_botadmin(self, ctx):
         r = utils.get_botadmin_role(ctx)
         if r:
@@ -163,7 +163,7 @@ class Configuration(commands.Cog):
 
     @checks.admin_only()
     @commands.guild_only()
-    @role.group(name="templateadder", invoke_without_command=True)
+    @role.group(name="templateadder", invoke_without_command=True, case_insensitive=True)
     async def role_templateadder(self, ctx):
         r = utils.get_templateadder_role(ctx)
         if r:
@@ -192,7 +192,7 @@ class Configuration(commands.Cog):
 
     @checks.admin_only()
     @commands.guild_only()
-    @role.group(name="templateadmin", invoke_without_command=True)
+    @role.group(name="templateadmin", invoke_without_command=True, case_insensitive=True)
     async def role_templateadmin(self, ctx):
         r = utils.get_templateadmin_role(ctx)
         if r:
