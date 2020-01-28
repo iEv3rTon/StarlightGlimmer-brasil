@@ -436,6 +436,17 @@ class Template(commands.Cog):
 
     @staticmethod
     def build_table(ctx, page_index, pages, t):
+        """Builds a template table.
+        
+        Arguments:
+        ctx - commands.Context
+        page_index - The index of the page you wish to fetch a table for, counts from 0, integer.
+        pages - The total number of pages there are for the set of templates you are building a template for, integer.
+        t - A list of template objects.
+        
+        Returns:
+        A fully formatted table, string.
+        """
         # Begin building table
         table = PrettyTable(["Name", "Canvas", "Coordinates"])
         table.align = "l"
@@ -472,6 +483,19 @@ class Template(commands.Cog):
 
     @staticmethod
     async def build_template(ctx, name, x, y, url, canvas):
+        """ Builds a template object from the given data.
+        
+        Arguments:
+        ctx - commands.Context
+        name - The name of the template, string.
+        x - The x coordinate of the template, integer.
+        y - The y coordinate of the template, integer.
+        url - The url of the template’s image, string.
+        canvas - The canvas this template is on, string.
+        
+        Returns:
+        A template object.
+        """
         try:
             with await http.get_template(url, name) as data:
                 size = await render.calculate_size(data)
@@ -504,6 +528,15 @@ class Template(commands.Cog):
 
     @staticmethod
     async def check_colors(img, palette):
+        """Checks if an image is quantised.
+        
+        Arguments:
+        img - A PIL Image object.
+        palette - The palette to check against, a list of rgb tuples.
+        
+        Returns:
+        A boolean.
+        """
         for py in range(img.height):
             await asyncio.sleep(0)
             for px in range(img.width):
@@ -518,6 +551,15 @@ class Template(commands.Cog):
 
     @staticmethod
     async def check_for_duplicates_by_md5(ctx, template):
+        """Checks for duplicates using md5 hashing, will bypass this check if the user verifies that they want to.
+        
+        Arguments:
+        ctx - commands.Context.
+        template - A template object.
+        
+        Returns:
+        A boolean or nothing.
+        """
         dups = sql.template_get_by_hash(ctx.guild.id, template.md5)
         if len(dups) > 0:
             msg = [ctx.s("template.duplicate_list_open"),
@@ -538,6 +580,15 @@ class Template(commands.Cog):
 
     @staticmethod
     async def check_for_duplicate_by_name(ctx, template):
+        """Checks for duplicates by name, will bypass and signal to overwrite if told to.
+        
+        Arguments:
+        ctx - commands.Context.
+        template - A template object.
+        
+        Returns:
+        A boolean or nothing.
+        """
         dup = sql.template_get_by_name(ctx.guild.id, template.name)
         if dup:
             if template.owner_id != ctx.author.id and not utils.is_admin(ctx):
