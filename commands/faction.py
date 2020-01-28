@@ -246,7 +246,6 @@ class Faction(commands.Cog):
         else:
             await ctx.send(ctx.s("faction.no_factions"))
 
-    # Merged hide and unhide
     @checks.admin_only()
     @commands.command(name="hide")
     async def hide(self, ctx):

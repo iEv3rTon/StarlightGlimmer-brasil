@@ -512,6 +512,15 @@ class Canvas(commands.Cog):
 
 
 async def _diff(ctx, args, canvas, fetch, palette):
+    """Sends a diff on the image provided.
+
+    Arguments:
+    ctx - commands.Context object.
+    args - A list of arguments from the user, all strings.
+    canvas - The name of the canvas to look at, string.
+    fetch - The current state of all pixels that the image covers, PIL Image object.
+    palette - The palette in use on this canvas, a list of rgb tuples.
+    """
     async with ctx.typing():
         att = await utils.verify_attachment(ctx)
         list_pixels = False
@@ -596,6 +605,13 @@ async def _diff(ctx, args, canvas, fetch, palette):
             await ctx.send('\n'.join(out))
 
 async def _preview(ctx, args, fetch):
+    """Sends a preview of the image provided.
+
+    Arguments:
+    ctx - A commands.Context object.
+    args - A list of arguments from the user, all strings.
+    fetch - The current state of all pixels that the template/specified area covers, PIL Image object.
+    """
     async with ctx.typing():
         iter_args = iter(args)
         a = next(iter_args, None)
@@ -630,6 +646,17 @@ async def _preview(ctx, args, fetch):
 
 
 async def _quantize(ctx, args, canvas, palette):
+    """Sends a message containing a quantised version of the image given.
+
+    Arguments:
+    ctx - A commands.Context object.
+    args - A list of arguments from the user, all strings.
+    canvas - The canvas to use, string.
+    palette - The palette to quantise to, a list of rgb tuples.
+
+    Returns:
+    The discord.Message object returned when ctx.send() is called to send the quantised image.
+    """
     gid = ctx.guild.id
     iter_args = iter(args)
     name = next(iter_args, None)
@@ -667,6 +694,15 @@ async def _quantize(ctx, args, canvas, palette):
             return await ctx.send(ctx.s("canvas.quantize").format(bad_pixels), file=f)
 
 async def select_url(ctx, input_url):
+    """Selects a url from the available information.
+
+    Arguments:
+    ctx - commands.Context object.
+    input_url - A string containing a possible url, or None.
+
+    Returns:
+    Nothing or a discord url, string.
+    """
     if input_url:
         if re.search('^(?:https?://)cdn\.discordapp\.com/', input_url):
             return input_url
@@ -674,11 +710,19 @@ async def select_url(ctx, input_url):
     if len(ctx.message.attachments) > 0:
         return ctx.message.attachments[0].url
 
-async def get_dither_image(url, name):
+async def get_dither_image(url):
+    """Fetches and opens an image as a bytestream
+
+    Arguments:
+    url - The url of the image to fetch, string.
+    
+    Returns:
+    A bytestream of an image, or nothing. 
+    """
     async with aiohttp.ClientSession() as sess:
         async with sess.get(url) as resp:
             if resp.status != 200:
-                raise TemplateHttpError(name)
+                raise TemplateHttpError("Image")
             if resp.content_type != "image/png" and resp.content_type != "image/jpg" and resp.content_type != "image/jpeg":
                 await ctx.send("Only png's or jpg's can be dithered.")
             return io.BytesIO(await resp.read())
@@ -695,7 +739,7 @@ async def _dither(ctx, url, palette, type, options):
 
         #load user's image
         try:
-            with await get_dither_image(url, "image") as data:
+            with await get_dither_image(url) as data:
                 with Image.open(data).convert("RGBA") as origImg:
                     dithered_image = None
                     option_string = ""

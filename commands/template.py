@@ -192,11 +192,11 @@ class Template(commands.Cog):
         # Calc info + send temp msg
         for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
             ct = list(canvas_ts)
-            msg = await _check_canvas(ctx, ct, canvas, msg=msg)
+            msg = await Template.check_canvas(ctx, ct, canvas, msg=msg)
 
         # Delete temp msg and send final report
         await msg.delete()
-        await _build_template_report(ctx, templates, page, pages)
+        await Template.build_template_report(ctx, templates, page, pages)
 
     @commands.guild_only()
     @commands.cooldown(1, 40, BucketType.default)
@@ -218,11 +218,11 @@ class Template(commands.Cog):
         # Calc info + send temp msg
         for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
             ct = list(canvas_ts)
-            msg = await _check_canvas(ctx, ct, canvas, msg=msg)
+            msg = await Template.check_canvas(ctx, ct, canvas, msg=msg)
 
         # Delete temp msg and send final report
         await msg.delete()
-        await _build_template_report(ctx, templates, None, pages)
+        await Template.build_template_report(ctx, templates, None, pages)
 
     @commands.guild_only()
     @template_check.command(name='pixelcanvas', aliases=['pc'])
@@ -244,10 +244,10 @@ class Template(commands.Cog):
         templates = templates[start:end]
 
         # Calc info + send temp msg
-        msg = await _check_canvas(ctx, templates, "pixelcanvas")
+        msg = await Template.check_canvas(ctx, templates, "pixelcanvas")
         # Delete temp msg and send final report
         await msg.delete()
-        await _build_template_report(ctx, templates, page, pages)
+        await Template.build_template_report(ctx, templates, page, pages)
 
     @commands.guild_only()
     @template_check.command(name='pixelzone', aliases=['pz'])
@@ -269,10 +269,10 @@ class Template(commands.Cog):
         templates = templates[start:end]
 
         # Calc info + send temp msg
-        msg = await _check_canvas(ctx, templates, "pixelzone")
+        msg = await Template.check_canvas(ctx, templates, "pixelzone")
         # Delete temp msg and send final report
         await msg.delete()
-        await _build_template_report(ctx, templates, page, pages)
+        await Template.build_template_report(ctx, templates, page, pages)
 
     @commands.guild_only()
     @template_check.command(name='pxlsspace', aliases=['ps'])
@@ -295,10 +295,10 @@ class Template(commands.Cog):
         templates = templates[start:end]
 
         # Calc info + send temp msg
-        msg = await _check_canvas(ctx, templates, "pxlsspace")
+        msg = await Template.check_canvas(ctx, templates, "pxlsspace")
         # Delete temp msg and send final report
         await msg.delete()
-        await _build_template_report(ctx, templates, page, pages)
+        await Template.build_template_report(ctx, templates, page, pages)
 
     @commands.guild_only()
     @commands.cooldown(1, 5, BucketType.guild)
@@ -401,6 +401,16 @@ class Template(commands.Cog):
 
     @staticmethod
     async def add_template(ctx, canvas, name, x, y, url):
+        """Adds a template to the database.
+
+        Arguments:
+        ctx - commands.Context object.
+        canvas - The canvas that the template is for, string.
+        name - The name of the template, string.
+        x - The x coordinate of the template, integer.
+        y - The y coordinate of the template, integer.
+        url - The url of the template's image, string.
+        """
         if len(name) > config.MAX_TEMPLATE_NAME_LENGTH:
             await ctx.send(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
             return
@@ -439,7 +449,7 @@ class Template(commands.Cog):
         """Builds a template table.
         
         Arguments:
-        ctx - commands.Context
+        ctx - commands.Context object.
         page_index - The index of the page you wish to fetch a table for, counts from 0, integer.
         pages - The total number of pages there are for the set of templates you are building a template for, integer.
         t - A list of template objects.
@@ -486,7 +496,7 @@ class Template(commands.Cog):
         """ Builds a template object from the given data.
         
         Arguments:
-        ctx - commands.Context
+        ctx - commands.Context object.
         name - The name of the template, string.
         x - The x coordinate of the template, integer.
         y - The y coordinate of the template, integer.
@@ -554,7 +564,7 @@ class Template(commands.Cog):
         """Checks for duplicates using md5 hashing, will bypass this check if the user verifies that they want to.
         
         Arguments:
-        ctx - commands.Context.
+        ctx - commands.Context object.
         template - A template object.
         
         Returns:
@@ -605,6 +615,15 @@ class Template(commands.Cog):
 
     @staticmethod
     async def select_url(ctx, input_url):
+        """Selects a url from the available information.
+
+        Arguments:
+        ctx - commands.Context object.
+        input_url - A string containing a possible url, or None.
+
+        Returns:
+        Nothing or a discord url, string.
+        """
         if input_url:
             if re.search('^(?:https?://)cdn\.discordapp\.com/', input_url):
                 return input_url
@@ -612,39 +631,23 @@ class Template(commands.Cog):
         if len(ctx.message.attachments) > 0:
             return ctx.message.attachments[0].url
 
-async def _build_template_report(ctx, templates: List[DbTemplate], page, pages):
-    if page != None:
-        embed = discord.Embed(
-            title=ctx.s("template.template_report_header"),
-            description=f"Page {page} of {pages}")
-        embed.set_footer(text="Do g!t check <page_number> to see other pages")
+    @staticmethod
+    async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
+        """Builds and sends a template check embed on the set of templates provided.
 
-        for x, template in enumerate(templates):
-            embed.add_field(
-                name=template.name,
-                value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
-                    e=ctx.s("bot.errors"),
-                    e_val=template.errors,
-                    t_val=template.size,
-                    p=ctx.s("bot.percent"),
-                    p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
-                    x=template.x,
-                    y=template.y),
-                inline=False)
-        await ctx.send(embed=embed)
-    else:
-        for page in range(pages):
-            page += 1
-            # Slice so templates only contains the page we want
-            start = (page-1)*25
-            end = page*25
-            templates_copy = templates[start:end]
-
+        Arguments:
+        ctx - commands.Context object.
+        templates - A list of template objects.
+        page - An integer specifying the page that the user is on, or nothing.
+        pages - The total number of pages for the current set of templates, integer.
+        """
+        if page != None: # Sending one page
             embed = discord.Embed(
                 title=ctx.s("template.template_report_header"),
                 description=f"Page {page} of {pages}")
+            embed.set_footer(text="Do g!t check <page_number> to see other pages")
 
-            for x, template in enumerate(templates_copy):
+            for x, template in enumerate(templates):
                 embed.add_field(
                     name=template.name,
                     value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
@@ -657,43 +660,80 @@ async def _build_template_report(ctx, templates: List[DbTemplate], page, pages):
                         y=template.y),
                     inline=False)
             await ctx.send(embed=embed)
+        else: # Sending *all* pages
+            for page in range(pages):
+                page += 1
+                # Slice so templates only contains the page we want
+                start = (page-1)*25
+                end = page*25
+                templates_copy = templates[start:end]
 
-async def _check_canvas(ctx, templates, canvas, msg=None):
-    chunk_classes = {
-        'pixelcanvas': BigChunk,
-        'pixelzone': ChunkPz,
-        'pxlsspace': PxlsBoard
-    }
+                embed = discord.Embed(
+                    title=ctx.s("template.template_report_header"),
+                    description=f"Page {page} of {pages}")
 
-    # Find all chunks that have templates on them
-    chunks = set()
-    for t in templates:
-        empty_bcs, shape = chunk_classes[canvas].get_intersecting(t.x, t.y, t.width, t.height)
-        chunks.update(empty_bcs)
+                for x, template in enumerate(templates_copy):
+                    embed.add_field(
+                        name=template.name,
+                        value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
+                            e=ctx.s("bot.errors"),
+                            e_val=template.errors,
+                            t_val=template.size,
+                            p=ctx.s("bot.percent"),
+                            p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
+                            x=template.x,
+                            y=template.y),
+                        inline=False)
+                await ctx.send(embed=embed)
 
-    if msg is not None:
-        await msg.edit(content=ctx.s("template.fetching_data").format(canvases.pretty_print[canvas]))
-    else:
-        msg = await ctx.send(ctx.s("template.fetching_data").format(canvases.pretty_print[canvas]))
-    await http.fetch_chunks(chunks) # Fetch all chunks
+    @staticmethod
+    async def check_canvas(ctx, templates, canvas, msg=None):
+        """Update the current total errors for a list of templates.
 
-    await msg.edit(content=ctx.s("template.calculating"))
-    example_chunk = next(iter(chunks))
-    for t in templates:
-        empty_bcs, shape = example_chunk.get_intersecting(t.x, t.y, t.width, t.height)
-        tmp = Image.new("RGBA", (example_chunk.width * shape[0], example_chunk.height * shape[1]))
-        for i, ch in enumerate(empty_bcs):
-            ch = next((x for x in chunks if x == ch))
-            if ch.is_in_bounds():
-                tmp.paste(ch.image, ((i % shape[0]) * ch.width, (i // shape[0]) * ch.height))
+        Arguments:
+        ctx - commands.Context object.
+        templates - A list of template objects.
+        canvas - The canvas that the above templates are on, string.
+        msg - A discord.Message object, or nothing. This object is used to continually edit the same message.
 
-        x, y = t.x - empty_bcs[0].p_x, t.y - empty_bcs[0].p_y
-        tmp = tmp.crop((x, y, x + t.width, y + t.height))
-        template = Image.open(await http.get_template(t.url, t.name)).convert('RGBA')
-        alpha = Image.new('RGBA', template.size, (255, 255, 255, 0))
-        template = Image.composite(template, alpha, template)
-        tmp = Image.composite(tmp, alpha, template)
-        tmp = ImageChops.difference(tmp.convert('RGB'), template.convert('RGB'))
-        t.errors = np.array(tmp).any(axis=-1).sum()
+        Returns:
+        A discord.Message object.
+        """
+        chunk_classes = {
+            'pixelcanvas': BigChunk,
+            'pixelzone': ChunkPz,
+            'pxlsspace': PxlsBoard
+        }
 
-    return msg
+        # Find all chunks that have templates on them
+        chunks = set()
+        for t in templates:
+            empty_bcs, shape = chunk_classes[canvas].get_intersecting(t.x, t.y, t.width, t.height)
+            chunks.update(empty_bcs)
+
+        if msg is not None:
+            await msg.edit(content=ctx.s("template.fetching_data").format(canvases.pretty_print[canvas]))
+        else:
+            msg = await ctx.send(ctx.s("template.fetching_data").format(canvases.pretty_print[canvas]))
+        await http.fetch_chunks(chunks) # Fetch all chunks
+
+        await msg.edit(content=ctx.s("template.calculating"))
+        example_chunk = next(iter(chunks))
+        for t in templates:
+            empty_bcs, shape = example_chunk.get_intersecting(t.x, t.y, t.width, t.height)
+            tmp = Image.new("RGBA", (example_chunk.width * shape[0], example_chunk.height * shape[1]))
+            for i, ch in enumerate(empty_bcs):
+                ch = next((x for x in chunks if x == ch))
+                if ch.is_in_bounds():
+                    tmp.paste(ch.image, ((i % shape[0]) * ch.width, (i // shape[0]) * ch.height))
+
+            x, y = t.x - empty_bcs[0].p_x, t.y - empty_bcs[0].p_y
+            tmp = tmp.crop((x, y, x + t.width, y + t.height))
+            template = Image.open(await http.get_template(t.url, t.name)).convert('RGBA')
+            alpha = Image.new('RGBA', template.size, (255, 255, 255, 0))
+            template = Image.composite(template, alpha, template)
+            tmp = Image.composite(tmp, alpha, template)
+            tmp = ImageChops.difference(tmp.convert('RGB'), template.convert('RGB'))
+            t.errors = np.array(tmp).any(axis=-1).sum()
+
+        return msg
