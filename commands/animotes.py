@@ -50,6 +50,14 @@ class Animotes(commands.Cog):
 
 # noinspection PyTypeChecker
 def emote_corrector(message):
+    """Recognises if a message needs to be replaced with an animote message and returns the text for that message if so.
+
+    Arguments:
+    message - A discord.Message object.
+
+    Returns:
+    A fully formatted string containing the emoji requested.
+    """
     r = re.compile(r'(?<![a<]):[\w~]+:')
     found = r.findall(message.content)
     emotes = []

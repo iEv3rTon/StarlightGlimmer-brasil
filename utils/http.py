@@ -25,6 +25,7 @@ pz_rate_limiter = None
 
 
 async def fetch_chunks(chunks: Iterable):
+    """Calls the correct fetching function for all kinds of chunks"""
     c = next(iter(chunks))
     if type(c) is BigChunk:
         await _fetch_chunks_pixelcanvas(chunks)
@@ -35,6 +36,10 @@ async def fetch_chunks(chunks: Iterable):
 
 
 async def _fetch_chunks_pixelcanvas(bigchunks: Iterable[BigChunk]):
+    """Fetches chunk data from pixelcanvas.io.
+    
+    Arguments:
+    bigchunks - An iterable of a list of BigChunk objects."""
     async with aiohttp.ClientSession() as session:
         for bc in bigchunks:
             await asyncio.sleep(0)
@@ -58,6 +63,10 @@ async def _fetch_chunks_pixelcanvas(bigchunks: Iterable[BigChunk]):
 
 
 async def _fetch_chunks_pixelzone(chunks: Iterable[ChunkPz]):
+    """Fetches chunk data from pixelzone.io.
+    
+    Arguments:
+    chunks - An iterable of a list of ChunkPz objects."""
     global pz_rate_limiter
     if pz_rate_limiter is None:
         pz_rate_limiter = RateLimitingSemaphore(2, 0.4, asyncio.get_event_loop())
@@ -124,6 +133,10 @@ async def _fetch_chunks_pixelzone(chunks: Iterable[ChunkPz]):
 
 
 async def _fetch_pxlsspace(chunks: Iterable[PxlsBoard]):
+    """Fetches chunk data from pxls.space.
+    
+    Arguments:
+    chunks - An iterable of a list of PxlsBoard objects."""
     board = next(iter(chunks))
     async with aiohttp.ClientSession() as session:
         async with session.get("https://pxls.space/info", headers=useragent) as resp:
@@ -135,6 +148,7 @@ async def _fetch_pxlsspace(chunks: Iterable[PxlsBoard]):
 
 
 async def fetch_online_pixelcanvas():
+    """Returns the number of users who are currently online pixelcanvas, integer."""
     async with aiohttp.ClientSession() as sess:
         async with sess.get("https://pixelcanvas.io/api/online", headers=useragent) as resp:
             if resp.status != 200:
@@ -144,6 +158,7 @@ async def fetch_online_pixelcanvas():
 
 
 async def fetch_online_pixelzone():
+    """Returns the number of users who are currently online pixelzone, integer."""
     socket_url = "{0}://pixelzone.io/socket.io/?EIO=3&transport={1}"
     sid = None
     async with aiohttp.ClientSession() as session:
@@ -189,6 +204,7 @@ async def fetch_online_pixelzone():
 
 
 async def fetch_online_pxlsspace():
+    """Returns the number of users who are currently online pxls.space, integer."""
     async with websockets.connect("wss://pxls.space/ws", extra_headers=useragent) as ws:
         async for msg in ws:
             d = json.loads(msg)
@@ -197,6 +213,14 @@ async def fetch_online_pxlsspace():
 
 
 async def get_changelog(version):
+    """Gets recent changelog data from my github page.
+    
+    Arguments:
+    version - Version number, float.
+
+    Returns:
+    An iterable of all data from the changelog which matches the current version number.
+    """
     url = "https://api.github.com/repos/DiamondIceNS/StarlightGlimmer/releases"
     async with aiohttp.ClientSession() as sess:
         async with sess.get(url) as resp:
@@ -207,6 +231,15 @@ async def get_changelog(version):
 
 
 async def get_template(url, name):
+    """Fetches and loads an image as a bytestream.
+
+    Arguments:
+    url - The url of the image, string.
+    name - The name of the image, string.
+
+    Returns:
+    The image as a bytestream.
+    """
     async with aiohttp.ClientSession() as sess:
         async with sess.get(url) as resp:
             if resp.status != 200:

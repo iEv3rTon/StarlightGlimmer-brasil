@@ -13,6 +13,14 @@ log = logging.getLogger(__name__)
 
 
 async def calculate_size(data):
+    """Calculates the number of non-transparent pixels there are in an image.
+
+    Arguments:
+    data - A bytestream of an image.
+
+    Returns:
+    The number of non-transparent pixels, integer.
+    """
     template = Image.open(data).convert('RGBA')
     alpha = Image.new('RGBA', template.size, (0, 0, 0, 0))
     white = Image.new('RGBA', template.size, (255, 255, 255, 255))
@@ -65,14 +73,25 @@ async def floyd_steinberg_dither(origImg, canvas_palette, order):
 
     return dithered_image
 
-# x: x coord, int
-# y: y coord, int
-# data: template image
-# zoom: amount to zoom by, int
-# fetch: current state of the area of the template on canvas, image
-# palette: valid colours for this canvas, list of tuples
-# create_snapshot: if you should create a "finished template" where the only non-transparent pixels are those that are correct on canvas right now, bool
 async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
+    """Calculates and renders a diff image.
+
+    Arguments:
+    x - The x coord, integer.
+    y - The y coord, integer.
+    data - The image, a bytestream.
+    zoom - The factor to zoom by, integer.
+    fetch - A fetching function.
+    palette - The palette to use, a list of rgb tuples.
+    create_snapshot - If a "finished template" should be made, where the only non-transparent pixels are those that are correct on canvas right now, boolean.
+
+    Returns:
+    diff_img - The rendered image, a PIL Image object.
+    tot - The total number of pixels in this image, integer. (don't know if it counts transparent px's or not)
+    err - The total number of errors, integer. 
+    bad - The total number of off-palette pixels, integer.
+    error_list - A list of errors, each error being a tuple like (pixel, is_colour, should_be_colour).
+    """
     with data:
         template = Image.open(data).convert('RGBA')
 
@@ -132,6 +151,17 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
 
 
 async def preview(x, y, zoom, fetch):
+    """Get a preview image from coordinates.
+    
+    Arguments:
+    x - The x coord, integer.
+    y - The y coord, integer.
+    zoom - The factor to zoom by, integer.
+    fetch - A fetching function.
+
+    Returns:
+    The preview, as a PIL Image object.
+    """
     log.info("(X:{0} | Y:{1} | Zoom:{2})".format(x, y, zoom))
 
     dim = Coords(config.PREVIEW_W, config.PREVIEW_H)
@@ -151,6 +181,16 @@ async def preview(x, y, zoom, fetch):
 
 
 async def preview_template(t, zoom, fetch):
+    """Get a preview image from a template.
+    
+    Arguments:
+    t - A template object.
+    zoom - The factor to zoom by, integer.
+    fetch - A fetching function.
+
+    Returns:
+    The preview, as a PIL Image object.
+    """
     log.info("(X:{0} | Y:{1} | Dim:{2}x{3} | Zoom:{4})".format(t.x, t.y, t.width, t.height, zoom))
 
     dim = Coords(t.width, t.height)

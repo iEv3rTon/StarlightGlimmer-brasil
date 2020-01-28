@@ -518,7 +518,7 @@ async def _diff(ctx, args, canvas, fetch, palette):
     ctx - commands.Context object.
     args - A list of arguments from the user, all strings.
     canvas - The name of the canvas to look at, string.
-    fetch - The current state of all pixels that the image covers, PIL Image object.
+    fetch - The fetch function to use, points to a fetch function from render.py.
     palette - The palette in use on this canvas, a list of rgb tuples.
     """
     async with ctx.typing():
@@ -728,6 +728,19 @@ async def get_dither_image(url):
             return io.BytesIO(await resp.read())
 
 async def _dither(ctx, url, palette, type, options):
+    """Sends a message containing a dithered version of the image given.
+
+    Arguments:
+    ctx - A commands.Context object.
+    url - The url of the image, string.
+    palette - The palette to be used, a list of rgb tuples.
+    type - The dithering algorithm to use, string.
+    options - The options to give to the dithering algorithm, a tuple containing integers. 
+        Can be either (order) or (order, threshold) depending on the algorithm being used.
+    
+    Returns:
+    The discord.Message object returned from ctx.send().
+    """
     start_time = datetime.datetime.now()
 
     with ctx.typing():
@@ -792,7 +805,8 @@ async def _dither(ctx, url, palette, type, options):
                         duration = (end_time - start_time).total_seconds()
 
                         return await ctx.send(
-        content="`Image dithered in {:.2f} seconds with {} dithering. {}`".format(duration, type, option_string), file=f)
+                            content=f"`Image dithered in {duration:.2f} seconds with {type} dithering. {option_string}`",
+                            file=f)
 
         except aiohttp.client_exceptions.InvalidURL:
             raise UrlError

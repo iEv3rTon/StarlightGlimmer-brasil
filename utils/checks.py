@@ -5,6 +5,7 @@ import utils
 
 
 def admin_only():
+    """Check decorator that requires admin perms to pass"""
     def predicate(ctx):
         if not ctx.guild:
             return True
@@ -16,6 +17,7 @@ def admin_only():
 
 
 def template_admin_only():
+    """Check decorator that requires template admin perms to pass"""
     def predicate(ctx):
         if not ctx.guild:
             return True
@@ -27,6 +29,7 @@ def template_admin_only():
 
 
 def template_adder_only():
+    """Check decorator that requires the template adder to pass"""
     def predicate(ctx):
         if not ctx.guild:
             return True
