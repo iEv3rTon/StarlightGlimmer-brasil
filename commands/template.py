@@ -622,11 +622,10 @@ async def _build_template_report(ctx, templates: List[DbTemplate], page, pages):
         for x, template in enumerate(templates):
             embed.add_field(
                 name=template.name,
-                value="[{t}: {t_val} | {e}: {e_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
+                value="[{t}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
                     t=ctx.s("bot.total"),
-                    t_val=template.size,
-                    e=ctx.s("bot.errors"),
                     e_val=template.errors,
+                    t_val=template.size,
                     p=ctx.s("bot.percent"),
                     p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
                     x=template.x,
