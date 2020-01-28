@@ -48,7 +48,7 @@ class Faction(commands.Cog):
         await ctx.send(ctx.s("faction.disbanded"))
 
     @checks.admin_only()
-    @commands.group(name="faction")
+    @commands.group(name="faction", case_insensitive=True)
     async def faction(self, ctx):
         pass
 
@@ -80,7 +80,7 @@ class Faction(commands.Cog):
         sql.guild_faction_set(ctx.guild.id, alias=new_alias)
         await ctx.send(ctx.s("faction.set_alias").format(new_alias))
 
-    @faction.group(name="color", aliases=["colour"])
+    @faction.group(name="color", aliases=["colour"], case_insensitive=True)
     async def faction_color(self, ctx):
         if not sql.guild_is_faction(ctx.guild.id):
             await ctx.send(ctx.s("faction.must_be_a_faction"))
@@ -109,7 +109,7 @@ class Faction(commands.Cog):
         sql.guild_faction_set(ctx.guild.id, color=color)
         await ctx.send(ctx.s("faction.set_color"))
 
-    @faction.group(name="desc")
+    @faction.group(name="desc", case_insensitive=True)
     async def faction_desc(self, ctx):
         if not sql.guild_is_faction(ctx.guild.id):
             await ctx.send(ctx.s("faction.must_be_a_faction"))
@@ -134,7 +134,7 @@ class Faction(commands.Cog):
         sql.guild_faction_set(ctx.guild.id, desc=description)
         await ctx.send(ctx.s("faction.set_description"))
 
-    @faction.group(name="emblem")
+    @faction.group(name="emblem", case_insensitive)
     async def faction_emblem(self, ctx):
         if not sql.guild_is_faction(ctx.guild.id):
             await ctx.send(ctx.s("faction.must_be_a_faction"))
@@ -165,7 +165,7 @@ class Faction(commands.Cog):
         sql.guild_faction_set(ctx.guild.id, emblem=emblem_url)
         await ctx.send(ctx.s("faction.set_emblem"))
 
-    @faction.group(name="invite")
+    @faction.group(name="invite", case_insensitive=True)
     async def faction_invite(self, ctx):
         if not sql.guild_is_faction(ctx.guild.id):
             await ctx.send(ctx.s("faction.must_be_a_faction"))
@@ -203,7 +203,7 @@ class Faction(commands.Cog):
         sql.guild_faction_set(ctx.guild.id, invite=url)
         await ctx.send(ctx.s("faction.set_invite"))
 
-    @faction.group(name="name")
+    @faction.group(name="name", case_insensitive=True)
     async def faction_name(self, ctx):
         if not sql.guild_is_faction(ctx.guild.id):
             await ctx.send(ctx.s("faction.must_be_a_faction"))
