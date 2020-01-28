@@ -212,6 +212,9 @@ class Template(commands.Cog):
         templates = sorted(templates, key=lambda tx: tx.name)
         templates = sorted(templates, key=lambda tx: tx.canvas)
 
+        # Find number of pages given there are 25 templates per page.
+        pages = int(math.ceil(len(templates) / 25))
+
         # Calc info + send temp msg
         for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
             ct = list(canvas_ts)
@@ -219,7 +222,7 @@ class Template(commands.Cog):
 
         # Delete temp msg and send final report
         await msg.delete()
-        await _build_template_report(ctx, templates, None, None)
+        await _build_template_report(ctx, templates, None, pages)
 
     @commands.guild_only()
     @template_check.command(name='pixelcanvas', aliases=['pc'])
@@ -559,26 +562,51 @@ class Template(commands.Cog):
             return ctx.message.attachments[0].url
 
 async def _build_template_report(ctx, templates: List[DbTemplate], page, pages):
-    embed = discord.Embed(title=ctx.s("template.template_report_header"))
-    if page != None and pages != None:
-        embed.description = f"Page {page} of {pages}"
+    if page != None:
+        embed = discord.Embed(
+            title=ctx.s("template.template_report_header"),
+            description=f"Page {page} of {pages}")
         embed.set_footer(text="Do g!t check <page_number> to see other pages")
 
-    for x, template in enumerate(templates):
-        embed.add_field(
-            name=template.name,
-            value="[{t}: {t_val} | {e}: {e_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
-                t=ctx.s("bot.total"),
-                t_val=template.size,
-                e=ctx.s("bot.errors"),
-                e_val=template.errors,
-                p=ctx.s("bot.percent"),
-                p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
-                x=template.x,
-                y=template.y),
-            inline=False)
+        for x, template in enumerate(templates):
+            embed.add_field(
+                name=template.name,
+                value="[{t}: {t_val} | {e}: {e_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
+                    t=ctx.s("bot.total"),
+                    t_val=template.size,
+                    e=ctx.s("bot.errors"),
+                    e_val=template.errors,
+                    p=ctx.s("bot.percent"),
+                    p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
+                    x=template.x,
+                    y=template.y),
+                inline=False)
+        await ctx.send(embed=embed)
+    else:
+        for page in pages:
+            # Slice so templates only contains the page we want
+            start = (page-1)*25
+            end = page*25
+            templates_copy = templates[start:end]
 
-    await ctx.send(embed=embed)
+            embed = discord.Embed(
+                title=ctx.s("template.template_report_header"),
+                description=f"Page {page} of {pages}")
+
+            for x, template in enumerate(templates_copy):
+                embed.add_field(
+                    name=template.name,
+                    value="[{t}: {t_val} | {e}: {e_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
+                        t=ctx.s("bot.total"),
+                        t_val=template.size,
+                        e=ctx.s("bot.errors"),
+                        e_val=template.errors,
+                        p=ctx.s("bot.percent"),
+                        p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
+                        x=template.x,
+                        y=template.y),
+                    inline=False)
+            await ctx.send(embed=embed)
 
 async def _check_canvas(ctx, templates, canvas, msg=None):
     chunk_classes = {
