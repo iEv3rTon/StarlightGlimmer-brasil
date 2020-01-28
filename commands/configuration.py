@@ -69,7 +69,7 @@ class Configuration(commands.Cog):
 
     @checks.admin_only()
     @commands.guild_only()
-    @commands.group(name="canvas", invoke_without_command=True, case_insensitive)
+    @commands.group(name="canvas", invoke_without_command=True, case_insensitive=True)
     async def canvas(self, ctx):
         out = [ctx.s("configuration.canvas_check_1").format(ctx.canvas_pretty),
                ctx.s("configuration.canvas_check_2").format(ctx.prefix)]

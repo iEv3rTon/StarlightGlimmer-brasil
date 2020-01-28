@@ -52,7 +52,7 @@ class Faction(commands.Cog):
     async def faction(self, ctx):
         pass
 
-    @faction.group(name="alias")
+    @faction.group(name="alias", case_insensitive=True)
     async def faction_alias(self, ctx):
         if not sql.guild_is_faction(ctx.guild.id):
             await ctx.send(ctx.s("faction.must_be_a_faction"))
@@ -134,7 +134,7 @@ class Faction(commands.Cog):
         sql.guild_faction_set(ctx.guild.id, desc=description)
         await ctx.send(ctx.s("faction.set_description"))
 
-    @faction.group(name="emblem", case_insensitive)
+    @faction.group(name="emblem", case_insensitive=True)
     async def faction_emblem(self, ctx):
         if not sql.guild_is_faction(ctx.guild.id):
             await ctx.send(ctx.s("faction.must_be_a_faction"))

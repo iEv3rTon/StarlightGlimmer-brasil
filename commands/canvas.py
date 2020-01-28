@@ -261,7 +261,7 @@ class Canvas(commands.Cog):
         name="quantize", 
         invoke_without_command=True, 
         aliases=["q"],
-        case_insensitive)
+        case_insensitive=True)
     async def quantize(self, ctx):
         await ctx.invoke_default("quantize")
 
