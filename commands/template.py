@@ -167,37 +167,59 @@ class Template(commands.Cog):
 
     @commands.guild_only()
     @commands.cooldown(1, 10, BucketType.guild)
-    @template.group(name='check')
+    @template.group(name='check', invoke_without_command=True)
     async def template_check(self, ctx, page=1):
-        if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "check":
-            templates = sql.template_get_all_by_guild_id(ctx.guild.id)
+        templates = sql.template_get_all_by_guild_id(ctx.guild.id)
 
-            if len(templates) < 1:
-                ctx.command.parent.reset_cooldown(ctx)
-                raise NoTemplatesError(False)
+        if len(templates) < 1:
+            ctx.command.parent.reset_cooldown(ctx)
+            raise NoTemplatesError(False)
 
-            msg = None
-            templates = sorted(templates, key=lambda tx: tx.name)
-            templates = sorted(templates, key=lambda tx: tx.canvas)
+        msg = None
+        templates = sorted(templates, key=lambda tx: tx.name)
+        templates = sorted(templates, key=lambda tx: tx.canvas)
 
-            # Find number of pages given there are 10 templates per page.
-            pages = int(math.ceil(len(templates) / 10))
-            # Make sure page is in the range (1 <= page <= pages).
-            page = min(max(page, 0), pages)
+        # Find number of pages given there are 10 templates per page.
+        pages = int(math.ceil(len(templates) / 10))
+        # Make sure page is in the range (1 <= page <= pages).
+        page = min(max(page, 0), pages)
 
-            # Slice so templates only contains the page we want
-            start = (page-1)*10
-            end = page*10
-            templates = templates[start:end]
+        # Slice so templates only contains the page we want
+        start = (page-1)*10
+        end = page*10
+        templates = templates[start:end]
 
-            # Calc info + send temp msg
-            for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
-                ct = list(canvas_ts)
-                msg = await _check_canvas(ctx, ct, canvas, msg=msg)
+        # Calc info + send temp msg
+        for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
+            ct = list(canvas_ts)
+            msg = await _check_canvas(ctx, ct, canvas, msg=msg)
 
-            # Delete temp msg and send final report
-            await msg.delete()
-            await _build_template_report(ctx, templates, page, pages)
+        # Delete temp msg and send final report
+        await msg.delete()
+        await _build_template_report(ctx, templates, page, pages)
+
+    @commands.guild_only()
+    @commands.cooldown(1, 40, BucketType.default)
+    @template_check.command(name='all', aliases=['a'])
+    async def template_check_all(self, ctx):
+        templates = sql.template_get_all_by_guild_id(ctx.guild.id)
+
+        if len(templates) < 1:
+            ctx.command.parent.reset_cooldown(ctx)
+            raise NoTemplatesError(False)
+
+        msg = None
+        templates = sorted(templates, key=lambda tx: tx.name)
+        templates = sorted(templates, key=lambda tx: tx.canvas)
+
+        # Calc info + send temp msg
+        for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
+            ct = list(canvas_ts)
+            msg = await _check_canvas(ctx, ct, canvas, msg=msg)
+
+        # Delete temp msg and send final report
+        await msg.delete()
+        await _build_template_report(ctx, templates, None, None)
 
     @commands.guild_only()
     @template_check.command(name='pixelcanvas', aliases=['pc'])
@@ -537,10 +559,10 @@ class Template(commands.Cog):
             return ctx.message.attachments[0].url
 
 async def _build_template_report(ctx, templates: List[DbTemplate], page, pages):
-    embed = discord.Embed(
-        title=ctx.s("template.template_report_header"),
-        description=f"Page {page} of {pages}")
-    embed.set_footer(text="Do g!t check <page_number> to see other pages")
+    embed = discord.Embed(title=ctx.s("template.template_report_header"))
+    if page != None and pages != None:
+        embed.description = f"Page {page} of {pages}"
+        embed.set_footer(text="Do g!t check <page_number> to see other pages")
 
     for x, template in enumerate(templates):
         embed.add_field(
