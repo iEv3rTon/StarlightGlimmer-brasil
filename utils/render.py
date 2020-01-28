@@ -209,6 +209,16 @@ async def preview_template(t, zoom, fetch):
 
 
 async def quantize(data, palette):
+    """Quantizes an image.
+
+    Arguments:
+    data - An image as a bytestream.
+    palette - The palette to quantize it with, a list of rgb tuples.
+
+    Returns:
+    q - The rendered quantized image, a PIL Image object.
+    bad_pixels - A numpy array of every pixel that is off palette.
+    """
     with data:
         template = Image.open(data).convert('RGBA')
 
