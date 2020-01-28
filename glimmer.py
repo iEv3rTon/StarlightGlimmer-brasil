@@ -19,7 +19,9 @@ def get_prefix(bot_, msg: discord.Message):
 
 
 log = logging.getLogger(__name__)
-bot = commands.Bot(command_prefix=get_prefix)
+bot = commands.Bot(
+    command_prefix=get_prefix,
+    case_insensitive=True)
 sql.menu_locks_delete_all()
 
 
