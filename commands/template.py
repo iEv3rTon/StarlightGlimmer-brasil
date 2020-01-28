@@ -583,7 +583,8 @@ async def _build_template_report(ctx, templates: List[DbTemplate], page, pages):
                 inline=False)
         await ctx.send(embed=embed)
     else:
-        for page in pages:
+        for page in range(pages):
+            page += 1
             # Slice so templates only contains the page we want
             start = (page-1)*25
             end = page*25
