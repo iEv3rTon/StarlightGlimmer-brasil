@@ -32,7 +32,7 @@ class Template(commands.Cog):
 
     @commands.guild_only()
     @commands.cooldown(1, 5, BucketType.guild)
-    @commands.group(name='template', invoke_without_command=True, aliases=['t'])
+    @commands.group(name='template', invoke_without_command=True, aliases=['t'], case_insensitive=True)
     async def template(self, ctx, *args):
         gid = ctx.guild.id
         iter_args = iter(args)
@@ -139,7 +139,7 @@ class Template(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(1, 5, BucketType.guild)
     @checks.template_adder_only()
-    @template.group(name='add', invoke_without_command=True)
+    @template.group(name='add', invoke_without_command=True, case_insensitive=True)
     async def template_add(self, ctx):
         await ctx.invoke_default("template.add")
 
@@ -167,7 +167,7 @@ class Template(commands.Cog):
 
     @commands.guild_only()
     @commands.cooldown(1, 10, BucketType.guild)
-    @template.group(name='check', invoke_without_command=True)
+    @template.group(name='check', invoke_without_command=True, case_insensitive=True)
     async def template_check(self, ctx, page=1):
         templates = sql.template_get_all_by_guild_id(ctx.guild.id)
 
