@@ -30,7 +30,11 @@ class Canvas(commands.Cog):
     # =======================
 
     @commands.cooldown(1, 5, BucketType.guild)
-    @commands.group(name="diff", invoke_without_command=True, aliases=["d"])
+    @commands.group(
+        name="diff", 
+        invoke_without_command=True, 
+        aliases=["d"],
+        case_insensitive=True)
     async def diff(self, ctx, *args):
         if len(args) < 1:
             return
@@ -171,7 +175,11 @@ class Canvas(commands.Cog):
     # =======================
 
     @commands.cooldown(1, 5, BucketType.guild)
-    @commands.group(name="preview", invoke_without_command=True, aliases=["p"])
+    @commands.group(
+        name="preview", 
+        invoke_without_command=True, 
+        aliases=["p"],
+        case_insensitive=True)
     async def preview(self, ctx, *args):
         if len(args) < 1:
             return
@@ -249,7 +257,11 @@ class Canvas(commands.Cog):
     # =======================
 
     @commands.cooldown(1, 5, BucketType.guild)
-    @commands.group(name="quantize", invoke_without_command=True, aliases=["q"])
+    @commands.group(
+        name="quantize", 
+        invoke_without_command=True, 
+        aliases=["q"],
+        case_insensitive)
     async def quantize(self, ctx):
         await ctx.invoke_default("quantize")
 
@@ -270,7 +282,10 @@ class Canvas(commands.Cog):
     # =======================
 
     @commands.cooldown(1, 30, BucketType.default)
-    @commands.group(name="dither", invoke_without_command=True)
+    @commands.group(
+        name="dither", 
+        invoke_without_command=True,
+        case_insensitive=True)
     async def dither(self, ctx):
         await ctx.invoke_default("dither")
 
@@ -424,7 +439,10 @@ class Canvas(commands.Cog):
     # ======================
 
     @commands.cooldown(1, 5, BucketType.guild)
-    @commands.group(name="ditherchart", invoke_without_command=True)
+    @commands.group(
+        name="ditherchart", 
+        invoke_without_command=True,
+        case_insensitive=True)
     async def ditherchart(self, ctx):
         await ctx.invoke_default("ditherchart")
 
@@ -465,7 +483,11 @@ class Canvas(commands.Cog):
     # ======================
 
     @commands.cooldown(1, 5, BucketType.guild)
-    @commands.group(name="online", aliases=["o"], invoke_without_command=True)
+    @commands.group(
+        name="online", 
+        aliases=["o"], 
+        invoke_without_command=True,
+        case_insensitive=True)
     async def online(self, ctx):
         await ctx.invoke_default("online")
 
