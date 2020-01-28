@@ -245,6 +245,16 @@ async def quantize(data, palette):
 
 
 async def gridify(data, color, zoom):
+    """Make a gridified version of an image.
+
+    Arguments:
+    data - The image as a bytestream.
+    color - The colour to make the grid lines, hexadecimal value.
+    zoom - The factor to zoom by, integer.
+
+    Returns:
+    template - The gridified image, a PIL Image object.
+    """
     color = (color >> 16 & 255, color >> 8 & 255, color & 255, 255)
     zoom += 1
     with data:
@@ -261,6 +271,15 @@ async def gridify(data, color, zoom):
 
 
 def zoom(data, zoom):
+    """Zooms an image by a given factor.
+
+    Arguments:
+    data - The image, a bytestream.
+    zoom - The factor to zoom by, integer.
+
+    Returns:
+    A PIL Image object.
+    """
     with data:
         template = Image.open(data).convert('RGBA')
         log.info("(Dim:{0}x{1} | Zoom:{2})".format(template.width, template.height, zoom))
@@ -269,6 +288,17 @@ def zoom(data, zoom):
 
 
 async def fetch_pixelcanvas(x, y, dx, dy):
+    """Fetches the current state of a given section of pixelcanvas.
+
+    Arguments:
+    x - The x coordinate, integer.
+    y - The y coordinate, integer.
+    dx - The width, integer.
+    dy - The height, integer.
+
+    Returns:
+    A PIL Image object of the area requested.
+    """
     bigchunks, shape = BigChunk.get_intersecting(x, y, dx, dy)
     fetched = Image.new('RGB', tuple([960 * x for x in shape]), colors.pixelcanvas[1])
 
@@ -283,6 +313,17 @@ async def fetch_pixelcanvas(x, y, dx, dy):
 
 
 async def fetch_pixelzone(x, y, dx, dy):
+    """Fetches the current state of a given section of pixelzone.
+
+    Arguments:
+    x - The x coordinate, integer.
+    y - The y coordinate, integer.
+    dx - The width, integer.
+    dy - The height, integer.
+
+    Returns:
+    A PIL Image object of the area requested.
+    """
     chunks, shape = ChunkPz.get_intersecting(x, y, dx, dy)
     fetched = Image.new('RGB', tuple([512 * x for x in shape]), colors.pixelzone[2])
 
@@ -296,6 +337,17 @@ async def fetch_pixelzone(x, y, dx, dy):
 
 
 async def fetch_pxlsspace(x, y, dx, dy):
+    """Fetches the current state of a given section of pxlsspace.
+
+    Arguments:
+    x - The x coordinate, integer.
+    y - The y coordinate, integer.
+    dx - The width, integer.
+    dy - The height, integer.
+
+    Returns:
+    A PIL Image object of the area requested.
+    """
     board = PxlsBoard()
     fetched = Image.new('RGB', (dx, dy), colors.pxlsspace[1])
     await http.fetch_chunks([board])
