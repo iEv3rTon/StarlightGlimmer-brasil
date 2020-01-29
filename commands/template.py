@@ -201,7 +201,9 @@ class Template(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(1, 40, BucketType.default)
     @template_check.command(name='all', aliases=['a'])
-    async def template_check_all(self, ctx):
+    async def template_check_all(self, ctx, only_errors=False):
+        only_errors = True if only_errors == "-e" or only_errors == "--errors" else False
+
         templates = sql.template_get_all_by_guild_id(ctx.guild.id)
 
         if len(templates) < 1:
@@ -222,7 +224,16 @@ class Template(commands.Cog):
 
         # Delete temp msg and send final report
         await msg.delete()
-        await Template.build_template_report(ctx, templates, None, pages)
+
+        if only_errors:
+            ts = []
+            for template in enumerate(templates):
+                if template.errors != 0:
+                    ts.append(template)
+
+            await Template.build_template_report(ctx, ts, None, pages)
+        else:
+            await Template.build_template_report(ctx, templates, None, pages)
 
     @commands.guild_only()
     @template_check.command(name='pixelcanvas', aliases=['pc'])
@@ -447,13 +458,13 @@ class Template(commands.Cog):
     @staticmethod
     def build_table(ctx, page_index, pages, t):
         """Builds a template table.
-        
+
         Arguments:
         ctx - commands.Context object.
         page_index - The index of the page you wish to fetch a table for, counts from 0, integer.
         pages - The total number of pages there are for the set of templates you are building a template for, integer.
         t - A list of template objects.
-        
+
         Returns:
         A fully formatted table, string.
         """
@@ -494,7 +505,7 @@ class Template(commands.Cog):
     @staticmethod
     async def build_template(ctx, name, x, y, url, canvas):
         """ Builds a template object from the given data.
-        
+
         Arguments:
         ctx - commands.Context object.
         name - The name of the template, string.
@@ -502,7 +513,7 @@ class Template(commands.Cog):
         y - The y coordinate of the template, integer.
         url - The url of the template’s image, string.
         canvas - The canvas this template is on, string.
-        
+
         Returns:
         A template object.
         """
@@ -539,11 +550,11 @@ class Template(commands.Cog):
     @staticmethod
     async def check_colors(img, palette):
         """Checks if an image is quantised.
-        
+
         Arguments:
         img - A PIL Image object.
         palette - The palette to check against, a list of rgb tuples.
-        
+
         Returns:
         A boolean.
         """
@@ -562,11 +573,11 @@ class Template(commands.Cog):
     @staticmethod
     async def check_for_duplicates_by_md5(ctx, template):
         """Checks for duplicates using md5 hashing, will bypass this check if the user verifies that they want to.
-        
+
         Arguments:
         ctx - commands.Context object.
         template - A template object.
-        
+
         Returns:
         A boolean or nothing.
         """
@@ -591,11 +602,11 @@ class Template(commands.Cog):
     @staticmethod
     async def check_for_duplicate_by_name(ctx, template):
         """Checks for duplicates by name, will bypass and signal to overwrite if told to.
-        
+
         Arguments:
         ctx - commands.Context.
         template - A template object.
-        
+
         Returns:
         A boolean or nothing.
         """
