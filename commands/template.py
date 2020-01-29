@@ -215,9 +215,6 @@ class Template(commands.Cog):
         templates = sorted(templates, key=lambda tx: tx.name)
         templates = sorted(templates, key=lambda tx: tx.canvas)
 
-        # Find number of pages given there are 25 templates per page.
-        pages = int(math.ceil(len(templates) / 25))
-
         # Calc info + send temp msg
         for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
             ct = list(canvas_ts)
@@ -229,12 +226,15 @@ class Template(commands.Cog):
         if only_errors:
             ts = []
             for template in templates:
-                print(template.errors)
                 if template.errors != 0:
                     ts.append(template)
 
+            # Find number of pages given there are 25 templates per page.
+            pages = int(math.ceil(len(ts) / 25))
             await Template.build_template_report(ctx, ts, None, pages)
         else:
+            # Find number of pages given there are 25 templates per page.
+            pages = int(math.ceil(len(templates) / 25))
             await Template.build_template_report(ctx, templates, None, pages)
 
     @commands.guild_only()
