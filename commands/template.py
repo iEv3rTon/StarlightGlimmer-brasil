@@ -201,8 +201,9 @@ class Template(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(1, 40, BucketType.default)
     @template_check.command(name='all', aliases=['a'])
-    async def template_check_all(self, ctx, only_errors=False):
-        only_errors = True if only_errors == "-e" or only_errors == "--errors" else False
+    async def template_check_all(self, ctx, only_errors="Nope"):
+        if only_errors == "-e" or only_errors == "--error":
+            only_errors = True
 
         templates = sql.template_get_all_by_guild_id(ctx.guild.id)
 
@@ -226,6 +227,12 @@ class Template(commands.Cog):
         await msg.delete()
 
         if only_errors:
+
+            def t_convert(templates: list[DbTemplate]):
+                return templates
+
+            templates = t_convert(templates)
+            
             ts = []
             for template in enumerate(templates):
                 if template.errors != 0:
