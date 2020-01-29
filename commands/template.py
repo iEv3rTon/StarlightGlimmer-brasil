@@ -227,14 +227,9 @@ class Template(commands.Cog):
         await msg.delete()
 
         if only_errors:
-
-            def t_convert(templates: list[DbTemplate]):
-                return templates
-
-            templates = t_convert(templates)
-            
             ts = []
-            for template in enumerate(templates):
+            for template in templates:
+                print(template.errors)
                 if template.errors != 0:
                     ts.append(template)
 
