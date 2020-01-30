@@ -52,18 +52,18 @@ class Template(commands.Cog):
         except ValueError:
             page = 1
 
-        ts = sql.template_get_all_by_guild_id(gid)
-        if len(ts) < 1:
+        templates = sql.template_get_all_by_guild_id(gid)
+        if len(templates) < 1:
             raise NoTemplatesError()
 
-        # Find number of pages given there are 10 templates per page.
-        pages = int(math.ceil(len(ts) / 10))
+        # Find number of pages given there are 25 templates per page.
+        pages = int(math.ceil(len(templates) / 25))
         # Makes sure page is in the range (1 <= page <= pages).
         page = min(max(page, 0), pages)
         page_index = page - 1
 
-        message_text = Template.build_table(ctx, page_index, pages, ts)
-        message = await ctx.send(message_text)
+        embed = Template.build_table(ctx, page_index, pages, templates)
+        message = await ctx.send(embed=embed)
         await message.add_reaction('◀')
         await message.add_reaction('▶')
 
@@ -79,18 +79,18 @@ class Template(commands.Cog):
                     if page_index != 0:
                         #not on first page, scroll left
                         page_index -= 1
-                        message_text = Template.build_table(ctx, page_index, pages, ts)
-                        await message.edit(content=message_text)
+                        embed = Template.build_table(ctx, page_index, pages, templates)
+                        await message.edit(embed=embed)
                 elif reaction.emoji == '▶':
                     if page_index != pages-1:
                         #not on last page, scroll right
                         page_index += 1
-                        message_text = Template.build_table(ctx, page_index, pages, ts)
-                        await message.edit(content=message_text)
+                        embed = Template.build_table(ctx, page_index, pages, templates)
+                        await message.edit(embed=embed)
         except asyncio.TimeoutError:
             pass
-        message_text = "{}\nMenu timed out.".format(message_text)
-        await message.edit(content=message_text)
+        message_text = "**Menu timed out.**"
+        await message.edit(content=message_text, embed=embed)
 
     @commands.guild_only()
     @commands.cooldown(1, 5, BucketType.guild)
@@ -461,50 +461,37 @@ class Template(commands.Cog):
 
     @staticmethod
     def build_table(ctx, page_index, pages, t):
-        """Builds a template table.
+        """Builds a template embed page.
 
         Arguments:
         ctx - commands.Context object.
-        page_index - The index of the page you wish to fetch a table for, counts from 0, integer.
-        pages - The total number of pages there are for the set of templates you are building a template for, integer.
+        page_index - The index of the page you wish to fetch an embed for, counts from 0, integer.
+        pages - The total number of pages there are for the set of templates you are building an embed for, integer.
         t - A list of template objects.
 
         Returns:
-        A fully formatted table, string.
+        A fully formatted discord.Embed object.
         """
-        # Begin building table
-        table = PrettyTable(["Name", "Canvas", "Coordinates"])
-        table.align = "l"
-        table.set_style(prettytable.PLAIN_COLUMNS)
+        embed = discord.Embed(
+            title=ctx.s("template.list_header"),
+            description=f"Page {page_index+1} of {pages}")
+        embed.set_footer(text=f"Do {ctx.gprefix}t check <page_number> to see other pages, or scroll using the reactions below.")
+
         # Go through pages until the page requested is equal to the current page.
         for p in range(pages):
             if p == page_index:
-                # Try to pop 10 template objects from ts into the table.
-                for template in range(10):
-                    #The page is 0, so the first template to pop will be the one at 0
-                    if p == 0:
-                        try:
-                            row = t[0+template]
-                            name = "\"{}\"".format(row.name)
-                            canvas = canvases.pretty_print[row.canvas]
-                            coordinates = "{}, {}".format(row.x, row.y)
-                            table.add_row([name, canvas, coordinates])
-                        except:
-                            pass
-                    #The page is not 0, so by (page*10)-1 find the first template to pop
-                    else:
-                        try:
-                            row = t[(p*10)+template]
-                            name = "\"{}\"".format(row.name)
-                            canvas = canvases.pretty_print[row.canvas]
-                            coordinates = "{}, {}".format(row.x, row.y)
-                            table.add_row([name, canvas, coordinates])
-                        except:
-                            pass
-        #Send the table with a header saying what page it is sending
-        footer1 = "// " + ctx.s("template.list_footer_1").format(ctx.gprefix)
-        footer2 = "// " + ctx.s("template.list_footer_2").format(ctx.gprefix)
-        return "**{}** - {} {}/{}```xl\n{}\n \n{}\n{}```".format(ctx.s("template.list_header"), ctx.s("bot.page"), str(page_index+1), pages, table, footer1, footer2)
+                # Try to pop 25 template objects from t into the embed.
+                for template in range(25):
+                    # Use calculation (page*25) to find the position to iterate from in list.
+                    try:
+                        row = t[(p*25)+template]
+                        embed.add_field(
+                            name=row.name,
+                            value=f"[{0}, {1}](https://pixelcanvas.io/@{0},{1})".format(row.x, row.y),
+                            inline=False)
+                    except:
+                        pass
+        return embed
 
     @staticmethod
     async def build_template(ctx, name, x, y, url, canvas):
@@ -660,7 +647,7 @@ class Template(commands.Cog):
             embed = discord.Embed(
                 title=ctx.s("template.template_report_header"),
                 description=f"Page {page} of {pages}")
-            embed.set_footer(text="Do g!t check <page_number> to see other pages")
+            embed.set_footer(text=f"Do {ctx.gprefix}t check <page_number> to see other pages")
 
             for x, template in enumerate(templates):
                 embed.add_field(
