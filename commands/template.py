@@ -89,8 +89,7 @@ class Template(commands.Cog):
                         await message.edit(embed=embed)
         except asyncio.TimeoutError:
             pass
-        message_text = "**Menu timed out.**"
-        await message.edit(content=message_text, embed=embed)
+        await message.edit(content="**Menu timed out.**", embed=embed)
 
     @commands.guild_only()
     @commands.cooldown(1, 5, BucketType.guild)
@@ -201,7 +200,7 @@ class Template(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(1, 40, BucketType.default)
     @template_check.command(name='all', aliases=['a'])
-    async def template_check_all(self, ctx, only_errors="Nope"):
+    async def template_check_all(self, ctx, only_errors=None):
         if only_errors == "-e" or only_errors == "--error":
             only_errors = True
 
@@ -487,7 +486,7 @@ class Template(commands.Cog):
                         row = t[(p*25)+template]
                         embed.add_field(
                             name=row.name,
-                            value=f"[{0}, {1}](https://pixelcanvas.io/@{0},{1})".format(row.x, row.y),
+                            value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})".format(row.x, row.y, row.url),
                             inline=False)
                     except:
                         pass
