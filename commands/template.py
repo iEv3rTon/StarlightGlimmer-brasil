@@ -432,17 +432,19 @@ class Template(commands.Cog):
             return
         url = await Template.select_url(ctx, url)
         if url is None:
+            await ctx.send(ctx.s("template.err.no_image"))
             return
         try:
             #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
             x = int(re.sub('[^0-9-]','', x))
             y = int(re.sub('[^0-9-]','', y))
         except ValueError:
-            await ctx.send("Coordinates must be numbers!")
+            await ctx.send(ctx.s("template.err.invalid_coords"))
             return
 
         t = await Template.build_template(ctx, name, x, y, url, canvas)
         if not t:
+            await ctx.send(ctx.s("template.err.template_gen_error"))
             return
         log.info("(T:{} | X:{} | Y:{} | Dim:{})".format(t.name, t.x, t.y, t.size))
         chk = await Template.check_for_duplicate_by_name(ctx, t)
