@@ -69,6 +69,7 @@ STRINGS = {
     "canvas.online_await": "Waiting for next player count update...",
     "canvas.quantize": "Fixed {0} pixels.",
     "canvas.repeat_not_found": "Could not find a valid command to repeat, do I have the **Read Message History** permission?",
+    "canvas.err.preview_no_args": "Invalid input: No template or coordinates provided to preview.",
 
     # Configuration command messages
     "configuration.alert_channel_cleared": "Alert channel has been cleared.",

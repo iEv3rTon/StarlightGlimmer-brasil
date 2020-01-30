@@ -31,8 +31,8 @@ class Canvas(commands.Cog):
 
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.group(
-        name="diff", 
-        invoke_without_command=True, 
+        name="diff",
+        invoke_without_command=True,
         aliases=["d"],
         case_insensitive=True)
     async def diff(self, ctx, *args):
@@ -176,12 +176,13 @@ class Canvas(commands.Cog):
 
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.group(
-        name="preview", 
-        invoke_without_command=True, 
+        name="preview",
+        invoke_without_command=True,
         aliases=["p"],
         case_insensitive=True)
     async def preview(self, ctx, *args):
         if len(args) < 1:
+            await ctx.send(ctx.s("canvas.err.preview_no_args"))
             return
         preview_template_region = False
         iter_args = iter(args)
@@ -258,8 +259,8 @@ class Canvas(commands.Cog):
 
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.group(
-        name="quantize", 
-        invoke_without_command=True, 
+        name="quantize",
+        invoke_without_command=True,
         aliases=["q"],
         case_insensitive=True)
     async def quantize(self, ctx):
@@ -283,7 +284,7 @@ class Canvas(commands.Cog):
 
     @commands.cooldown(1, 30, BucketType.default)
     @commands.group(
-        name="dither", 
+        name="dither",
         invoke_without_command=True,
         case_insensitive=True)
     async def dither(self, ctx):
@@ -440,7 +441,7 @@ class Canvas(commands.Cog):
 
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.group(
-        name="ditherchart", 
+        name="ditherchart",
         invoke_without_command=True,
         case_insensitive=True)
     async def ditherchart(self, ctx):
@@ -484,8 +485,8 @@ class Canvas(commands.Cog):
 
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.group(
-        name="online", 
-        aliases=["o"], 
+        name="online",
+        aliases=["o"],
         invoke_without_command=True,
         case_insensitive=True)
     async def online(self, ctx):
@@ -715,9 +716,9 @@ async def get_dither_image(url):
 
     Arguments:
     url - The url of the image to fetch, string.
-    
+
     Returns:
-    A bytestream of an image, or nothing. 
+    A bytestream of an image, or nothing.
     """
     async with aiohttp.ClientSession() as sess:
         async with sess.get(url) as resp:
@@ -735,9 +736,9 @@ async def _dither(ctx, url, palette, type, options):
     url - The url of the image, string.
     palette - The palette to be used, a list of rgb tuples.
     type - The dithering algorithm to use, string.
-    options - The options to give to the dithering algorithm, a tuple containing integers. 
+    options - The options to give to the dithering algorithm, a tuple containing integers.
         Can be either (order) or (order, threshold) depending on the algorithm being used.
-    
+
     Returns:
     The discord.Message object returned from ctx.send().
     """
