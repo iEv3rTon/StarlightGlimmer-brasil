@@ -29,7 +29,7 @@ class Canvas(commands.Cog):
     #          DIFF
     # =======================
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @commands.group(
         name="diff",
         invoke_without_command=True,
@@ -174,7 +174,7 @@ class Canvas(commands.Cog):
     #        PREVIEW
     # =======================
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @commands.group(
         name="preview",
         invoke_without_command=True,
@@ -257,7 +257,7 @@ class Canvas(commands.Cog):
     #        QUANTIZE
     # =======================
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @commands.group(
         name="quantize",
         invoke_without_command=True,
@@ -376,7 +376,7 @@ class Canvas(commands.Cog):
     #         GRIDIFY
     # =======================
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @commands.command(name="gridify", aliases=["g"])
     async def gridify(self, ctx, *args):
         faction = None
@@ -439,7 +439,7 @@ class Canvas(commands.Cog):
     #       DITHERCHART
     # ======================
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @commands.group(
         name="ditherchart",
         invoke_without_command=True,
@@ -463,7 +463,7 @@ class Canvas(commands.Cog):
     #         REPEAT
     # ======================
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @commands.command(name="repeat", aliases=["r"])
     async def repeat(self, ctx):
         async for msg in ctx.history(limit=50, before=ctx.message):

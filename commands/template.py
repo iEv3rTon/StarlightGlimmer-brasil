@@ -31,7 +31,7 @@ class Template(commands.Cog):
         self.bot = bot
 
     @commands.guild_only()
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @commands.group(name='template', invoke_without_command=True, aliases=['t'], case_insensitive=True)
     async def template(self, ctx, *args):
         gid = ctx.guild.id
@@ -92,7 +92,7 @@ class Template(commands.Cog):
         await message.edit(content="**Menu timed out.**", embed=embed)
 
     @commands.guild_only()
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @template.command(name='all')
     async def template_all(self, ctx, page: int = 1):
         gs = [x for x in sql.guild_get_all_factions() if x.id not in sql.faction_hides_get_all(ctx.guild.id)]
@@ -136,28 +136,28 @@ class Template(commands.Cog):
             await ctx.send(ctx.s("template.err.no_public_templates"))
 
     @commands.guild_only()
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @checks.template_adder_only()
     @template.group(name='add', invoke_without_command=True, case_insensitive=True)
     async def template_add(self, ctx):
         await ctx.invoke_default("template.add")
 
     @commands.guild_only()
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @checks.template_adder_only()
     @template_add.command(name="pixelcanvas", aliases=['pc'])
     async def template_add_pixelcanvas(self, ctx, name: str, x, y, url=None):
         await self.add_template(ctx, "pixelcanvas", name, x, y, url)
 
     @commands.guild_only()
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @checks.template_adder_only()
     @template_add.command(name="pixelzone", aliases=['pz'])
     async def template_add_pixelzone(self, ctx, name: str, x, y, url=None):
         await self.add_template(ctx, "pixelzone", name, x, y, url)
 
     @commands.guild_only()
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @checks.template_adder_only()
     @template_add.command(name="pxlsspace", aliases=['ps'])
     async def template_add_pxlsspace(self, ctx, name: str, x, y, url=None):
@@ -313,7 +313,7 @@ class Template(commands.Cog):
         await Template.build_template_report(ctx, templates, page, pages)
 
     @commands.guild_only()
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @template.command(name='info', aliases=['i'])
     async def template_info(self, ctx, *args):
         gid = ctx.guild.id
@@ -397,7 +397,7 @@ class Template(commands.Cog):
         await ctx.send(embed=e)
 
     @commands.guild_only()
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(2, 5, BucketType.guild)
     @checks.template_adder_only()
     @template.command(name='remove', aliases=['rm'])
     async def template_remove(self, ctx, name):
