@@ -142,11 +142,8 @@ class Canvas(commands.Cog):
                         try:
                             r = requests.post('https://hastebin.com/documents', data = '\n'.join(haste), timeout=10)
                         except requests.exceptions.Timeout:
-                            #Send as 15 as codeblock if timed out
-                            for x in range(15):
-                                out.append(haste[x])
-                            out.append("...```**Hastebin returned an error.**")
-                            await ctx.send('\n'.join(out))
+                            # Timed out, send them as an embed w links to canvas instead
+                            await ctx.send(content="**Hastebin returned an error.**", embed=embed)
                             return
                         if r.status_code == 200:
                             #Capture the returned code and make out hastbin.com/<code>
