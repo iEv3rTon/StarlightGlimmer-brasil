@@ -163,6 +163,87 @@ class Template(commands.Cog):
     async def template_add_pxlsspace(self, ctx, name: str, x, y, url=None):
         await self.add_template(ctx, "pxlsspace", name, x, y, url)
 
+    @commands.guild_only()
+    @commands.cooldown(2, 5, BucketType.guild)
+    @checks.template_adder_only()
+    @template.group(name='update', invoke_without_command=True, case_insensitive=True)
+    async def template_update(self, ctx):
+        await ctx.invoke_default("template.update")
+
+    @commands.guild_only()
+    @commands.cooldown(2, 5, BucketType.guild)
+    @checks.template_adder_only()
+    @template_update.command(name="pixelcanvas", aliases=['pc'])
+    async def template_update_pixelcanvas(self, ctx, name, *args):
+        log.info(f"g!t update run in {ctx.guild.name} with name: {name} and args: {args}")
+
+        t = sql.template_get_by_name(ctx.guild.id, name)
+        if not t:
+            raise TemplateNotFoundError
+
+        # Argument Parsing
+        parser = argparse.ArgumentParser(description="Parses update args")
+        parser.add_argument("-n", "--newName", default=False)
+        parser.add_argument("-x", default=False)
+        parser.add_argument("-y", default=False)
+        # if -i not present, False
+        # if no value after -i, True
+        # if value after -i, capture
+        parser.add_argument("-i", "--image", nargs="?", const=True, default=False)
+        args = parser.parse_known_args(args)
+        unknown = args[1]
+        args = vars(args[0])
+
+        new_name = args["newName"]
+        x = args["x"]
+        y = args["y"]
+        image = args["image"]
+
+        out = []
+
+        # Any unrecognised arguments are reported
+        if unknown != []:
+            for value in unknown:
+                out.append(f"Unrecognised argument: {value}")
+
+        if new_name != False:
+            #Check if new name is already in use
+            dup_check = sql.template_get_by_name(ctx.guild.id, new_name)
+            if dup_check != None:
+                out.append(f"Updating name failed, the name {new_name} is already in use")
+                await template.send_end(ctx, out)
+                return
+
+            # None with new nick, update template
+            # sql.template_update(orig_template.id, nickname=newNick)
+            out.append(f"Nickname changed from {name} to {new_name}")
+
+        if x != False:
+            # Update x coord
+            try:
+                x = int(re.sub('[^0-9-]','', x))
+            except ValueError:
+                out.append("Updating x failed, value provided was not a number.")
+                await template.send_end(ctx, out)
+                return
+
+            # sql.template_update(orig_template.id, x=x)
+            out.append(f"X coordinate changed from {t.x} to {x}.")
+
+        if y != False:
+            # Update y coord
+            try:
+                y = int(re.sub('[^0-9-]','', y))
+            except ValueError:
+                out.append("Updating y failed, value provided was not a number.")
+                await template.send_end(ctx, out)
+                return
+
+            sql.template_update(orig_template.id, y=y)
+            out.append(f"Y coordinate changed from {t.y} to {y}.")
+
+
+
 
     @commands.guild_only()
     @commands.cooldown(1, 10, BucketType.guild)
