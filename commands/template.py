@@ -19,7 +19,7 @@ from PIL import Image, ImageChops
 
 from objects import DbTemplate
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from objects.errors import FactionNotFoundError, NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError
+from objects.errors import FactionNotFoundError, NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, IgnoreError
 import utils
 from utils import canvases, checks, colors, config, http, render, sqlite as sql
 
@@ -207,15 +207,19 @@ class Template(commands.Cog):
                 out.append(f"Unrecognised argument: {value}")
 
         if new_name != False:
-            #Check if new name is already in use
+            # Check if new name is already in use
             dup_check = sql.template_get_by_name(ctx.guild.id, new_name)
             if dup_check != None:
                 out.append(f"Updating name failed, the name {new_name} is already in use")
                 await template.send_end(ctx, out)
                 return
+            # Check if new name is too long
+            if len(new_name) > config.MAX_TEMPLATE_NAME_LENGTH:
+                await ctx.send(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
+                return
 
             # None with new nick, update template
-            # sql.template_update(orig_template.id, nickname=newNick)
+            sql.template_kwarg_update(orig_template.id, name=new_name, date_modified=int(time.time()))
             out.append(f"Nickname changed from {name} to {new_name}")
 
         if x != False:
@@ -227,7 +231,7 @@ class Template(commands.Cog):
                 await template.send_end(ctx, out)
                 return
 
-            # sql.template_update(orig_template.id, x=x)
+            sql.template_kwarg_update(orig_template.id, x=x, date_modified=int(time.time()))
             out.append(f"X coordinate changed from {t.x} to {x}.")
 
         if y != False:
@@ -239,11 +243,49 @@ class Template(commands.Cog):
                 await template.send_end(ctx, out)
                 return
 
-            sql.template_update(orig_template.id, y=y)
+            sql.template_kwarg_update(orig_template.id, y=y, date_modified=int(time.time()))
             out.append(f"Y coordinate changed from {t.y} to {y}.")
-
-
-
+        
+        if image != False:
+            # Update image
+            url = None
+            if not isinstance(image, bool):
+                url = image
+            url = await template.select_url_update(ctx, url, out)
+            if url is None:
+                return
+            
+            # TODO: NEEDS ADAPTING
+            t = None
+            #attempt to download the image
+            with await template.get_template_u(ctx, url, out) as data:
+                #hash the image to test for image duplications
+                md5 = hashlib.md5(data.getvalue()).hexdigest()
+                #attempt to open the image
+                with Image.open(data).convert("RGBA") as tmp:
+                    #check if it's quantized
+                    quantized = True
+                    palette = []
+                    for color in values.colors:
+                        palette.append(color[1])
+                    for py in range(tmp.height):
+                        for px in range(tmp.width):
+                            pix = tmp.getpixel((px, py))
+                            if pix[3] == 0: # if fully transparent, skip to next iteration
+                                continue
+                            elif pix[3] != 255: # if not fully opaque, not quantized
+                                quantized = False
+                                break
+                            elif pix[:3] not in palette: # if not in palette, not quantized
+                                quantized = False
+                                break
+                    if quantized == True:
+                        sql.template_update(orig_template.id, file=url, md5=md5)
+                        out.append("File updated.")
+                    else:
+                        out.append("Updating image failed, not in canvas colours.")
+                        await template.send_end(ctx, out)
+                        return
 
     @commands.guild_only()
     @commands.cooldown(1, 10, BucketType.guild)
@@ -694,6 +736,72 @@ class Template(commands.Cog):
             else:
                 await ctx.send(ctx.s("template.menuclose"))
                 return False
+
+    @staticmethod
+    async def select_url_update(ctx, input_url, out):
+        """Selects the url from the user input or the attachments.
+
+        Arguments:
+        ctx - A commands.Context object.
+        input_url - The user's input, string.
+        out - Update changelog, list.
+
+        Returns:
+        A discord url, string.
+        """
+        # some text was sent in the url section of the parameters, check if it's a valid discord url
+        if input_url:
+            if re.search('^(?:https?://)cdn\.discordapp\.com/', input_url):
+                return input_url
+
+            out.append("Updating image failed, invalid url, it must be a discord attachment.")
+            await template.send_end(ctx, out)
+            return None
+
+        # there was no url in the text of the message, is there an attachment
+        if len(ctx.message.attachments) > 0:
+            return ctx.message.attachments[0].url
+
+        out.append("Updating image failed, no attachments could be detected.")
+        await template.send_end(ctx, out)
+        return None
+
+    # downloads the image from discord
+    @staticmethod
+    async def get_template_u(ctx, url, out):
+        """Downloads and opens an image as a bytestream.
+
+        Arguments:
+        ctx - A commands.Context object.
+        url - The url of an image, string.
+        out - Update changelog, list.
+
+        Returns:
+        The bytestream of the image.
+        """
+        async with aiohttp.ClientSession() as sess:
+            async with sess.get(url) as resp:
+                if resp.status != 200:
+                    out.append("Updating image failed, {} Error loading file.".format(resp.status))
+                    await template.send_end(ctx, out)
+                    raise IgnoreError
+                if resp.content_type == "image/jpg" or resp.content_type == "image/jpeg":
+                    out.append("Updating image failed, the image must be a png, not a jpeg.")
+                    await template.send_end(ctx, out)
+                    raise IgnoreError
+                if resp.content_type != "image/png":
+                    out.append("Updating image failed, the image must be a png.")
+                    await template.send_end(ctx, out)
+                    raise IgnoreError
+                return io.BytesIO(await resp.read())
+
+    @staticmethod
+    async def send_end(ctx, out):
+        if out != []:
+            await ctx.send("Template updated!```{}```".format("\n".join(out)))
+        else:
+            await ctx.send("Template not updated as no arguments were provided.")
+
 
     @staticmethod
     async def select_url(ctx, input_url):

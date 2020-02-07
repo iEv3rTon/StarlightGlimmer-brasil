@@ -492,6 +492,29 @@ def template_update(template):
               'WHERE guild_id=? AND name=?', template.to_tuple()[2:] + (template.gid, template.name))
     conn.commit()
 
+def template_kwarg_update(tid, **kwargs):
+    for key, value in kwargs.items():
+        if key == "name":
+            c.execute("UPDATE templates SET name=? WHERE id=?", (value, tid))
+        if key == "x":
+            c.execute("UPDATE templates SET x=? WHERE id=?", (value, tid))
+        if key == "y":
+            c.execute("UPDATE templates SET y=? WHERE id=?", (value, tid))
+        if key == "url":
+            c.execute("UPDATE templates SET url=? WHERE id=?", (value, tid))
+        if key == "md5":
+            c.execute("UPDATE templates SET md5=? WHERE id=?", (value, tid))
+        if key == "w":
+            c.execute("UPDATE templates SET w=? WHERE id=?", (value, tid))
+        if key == "h":
+            c.execute("UPDATE templates SET h=? WHERE id=?", (value, tid))
+        if key == "size":
+            c.execute("UPDATE templates SET size=? WHERE id=?", (value, tid))
+        if key == "date_modified":
+            c.execute("UPDATE templates SET date_modified=? WHERE id=?", (value, tid))
+    conn.commit()
+
+
 
 # =========================
 #      Version queries
