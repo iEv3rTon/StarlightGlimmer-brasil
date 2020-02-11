@@ -9,6 +9,7 @@ import re
 import time
 from typing import List
 from prettytable import *
+import argparse
 
 import aiohttp
 import discord
@@ -19,7 +20,7 @@ from PIL import Image, ImageChops
 
 from objects import DbTemplate
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from objects.errors import FactionNotFoundError, NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError
+from objects.errors import FactionNotFoundError, NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, IgnoreError, TemplateHttpError, NoJpegsError, NotPngError
 import utils
 from utils import canvases, checks, colors, config, http, render, sqlite as sql
 
@@ -163,6 +164,138 @@ class Template(commands.Cog):
     async def template_add_pxlsspace(self, ctx, name: str, x, y, url=None):
         await self.add_template(ctx, "pxlsspace", name, x, y, url)
 
+    @commands.guild_only()
+    @commands.cooldown(2, 5, BucketType.guild)
+    @checks.template_adder_only()
+    @template.group(name='update', invoke_without_command=True, case_insensitive=True)
+    async def template_update(self, ctx):
+        await ctx.invoke_default("template.update")
+
+    @commands.guild_only()
+    @commands.cooldown(2, 5, BucketType.guild)
+    @checks.template_adder_only()
+    @template_update.command(name="pixelcanvas", aliases=['pc'])
+    async def template_update_pixelcanvas(self, ctx, name, *args):
+        log.info(f"g!t update run in {ctx.guild.name} with name: {name} and args: {args}")
+
+        orig_template = sql.template_get_by_name(ctx.guild.id, name)
+        if not orig_template:
+            raise TemplateNotFoundError
+
+        # Argument Parsing
+        parser = argparse.ArgumentParser(description="Parses update args")
+        parser.add_argument("-n", "--newName", default=False)
+        parser.add_argument("-x", default=False)
+        parser.add_argument("-y", default=False)
+        # if -i not present, False
+        # if no value after -i, True
+        # if value after -i, capture
+        parser.add_argument("-i", "--image", nargs="?", const=True, default=False)
+        args = parser.parse_known_args(args)
+        unknown = args[1]
+        args = vars(args[0])
+
+        new_name = args["newName"]
+        x = args["x"]
+        y = args["y"]
+        image = args["image"]
+
+        out = []
+
+        # Any unrecognised arguments are reported
+        if unknown != []:
+            for value in unknown:
+                out.append(f"Unrecognised argument: {value}")
+
+        """Image is done first since I'm using the build_template method to update stuff,
+        and I don't want anything to have changed in orig_template before I use it"""
+        if image != False:
+            # Update image
+            url = None
+            if not isinstance(image, bool):
+                url = image
+            url = await Template.select_url_update(ctx, url, out)
+            if url is None:
+                return # Sending the end is handled in select_url_update if it fails
+
+            try:
+                t = await Template.build_template(ctx, orig_template.name, orig_template.x, orig_template.y, url, "pixelcanvas")
+            except TemplateHttpError:
+                out.append(f"Updating file failed: Could not access URL for template.")
+                await Template.send_end(ctx, out)
+                return
+            except NoJpegsError:
+                out.append(f"Updating file failed: Seriously? A JPEG? Gross! Please create a PNG template instead.")
+                await Template.send_end(ctx, out)
+                return
+            except NotPngError:
+                out.append(f"Updating file failed: That command requires a PNG image.")
+                await Template.send_end(ctx, out)
+                return
+            except (PilImageError, UrlError):
+                out.append(f"Updating file failed")
+                await Template.send_end(ctx, out)
+                return
+            
+            if t is None:
+                out.append(f"Updating file failed")
+                await Template.send_end(ctx, out)
+                return
+
+            # Could check for md5 duplicates here, maybe implement that later
+            sql.template_kwarg_update(
+                ctx.guild.id,
+                orig_template.name,
+                url=t.url,
+                md5=t.md5,
+                w=t.width,
+                h=t.height,
+                size=t.size,
+                date_modified=int(time.time()))
+            out.append(f"File updated.")
+
+        if x != False:
+            # Update x coord
+            try:
+                x = int(re.sub('[^0-9-]','', x))
+            except ValueError:
+                out.append("Updating x failed, value provided was not a number.")
+                await Template.send_end(ctx, out)
+                return
+
+            sql.template_kwarg_update(ctx.guild.id, orig_template.name, x=x, date_modified=int(time.time()))
+            out.append(f"X coordinate changed from {orig_template.x} to {x}.")
+
+        if y != False:
+            # Update y coord
+            try:
+                y = int(re.sub('[^0-9-]','', y))
+            except ValueError:
+                out.append("Updating y failed, value provided was not a number.")
+                await Template.send_end(ctx, out)
+                return
+
+            sql.template_kwarg_update(ctx.guild.id, orig_template.name, y=y, date_modified=int(time.time()))
+            out.append(f"Y coordinate changed from {orig_template.y} to {y}.")
+
+        if new_name != False:
+            # Check if new name is already in use
+            dup_check = sql.template_get_by_name(ctx.guild.id, new_name)
+            if dup_check != None:
+                out.append(f"Updating name failed, the name {new_name} is already in use")
+                await Template.send_end(ctx, out)
+                return
+            # Check if new name is too long
+            if len(new_name) > config.MAX_TEMPLATE_NAME_LENGTH:
+                out.append("Updating name failed: "+ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
+                await Template.send_end(ctx, out)
+                return
+
+            # None with new nick, update template
+            sql.template_kwarg_update(ctx.guild.id, orig_template.name, new_name=new_name, date_modified=int(time.time()))
+            out.append(f"Nickname changed from {name} to {new_name}")
+
+        await Template.send_end(ctx, out)
 
     @commands.guild_only()
     @commands.cooldown(1, 10, BucketType.guild)
@@ -613,6 +746,42 @@ class Template(commands.Cog):
             else:
                 await ctx.send(ctx.s("template.menuclose"))
                 return False
+
+    @staticmethod
+    async def select_url_update(ctx, input_url, out):
+        """Selects the url from the user input or the attachments.
+
+        Arguments:
+        ctx - A commands.Context object.
+        input_url - The user's input, string.
+        out - Update changelog, list.
+
+        Returns:
+        A discord url, string.
+        """
+        # some text was sent in the url section of the parameters, check if it's a valid discord url
+        if input_url:
+            if re.search('^(?:https?://)cdn\.discordapp\.com/', input_url):
+                return input_url
+
+            out.append("Updating image failed, invalid url, it must be a discord attachment.")
+            await Template.send_end(ctx, out)
+            return None
+
+        # there was no url in the text of the message, is there an attachment
+        if len(ctx.message.attachments) > 0:
+            return ctx.message.attachments[0].url
+
+        out.append("Updating image failed, no attachments could be detected.")
+        await Template.send_end(ctx, out)
+        return None
+
+    @staticmethod
+    async def send_end(ctx, out):
+        if out != []:
+            await ctx.send("Template updated!```{}```".format("\n".join(out)))
+        else:
+            await ctx.send("Template not updated as no arguments were provided.")
 
     @staticmethod
     async def select_url(ctx, input_url):

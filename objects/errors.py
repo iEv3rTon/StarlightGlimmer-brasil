@@ -1,5 +1,7 @@
 from discord.ext import commands
 
+class IgnoreError(commands.CommandError):
+    pass
 
 class BadArgumentErrorWithMessage(commands.CommandError):
     def __init__(self, message):

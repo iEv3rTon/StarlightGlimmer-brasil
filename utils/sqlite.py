@@ -189,7 +189,7 @@ def _update_tables(v):
                   FROM temp_guilds;
                 DROP TABLE temp_guilds;
                 COMMIT;
-                PRAGMA FOREIGN_KEYS = ON; 
+                PRAGMA FOREIGN_KEYS = ON;
             """)
         if v < 1.7:
             c.executescript("""
@@ -491,6 +491,29 @@ def template_update(template):
               'private=?'
               'WHERE guild_id=? AND name=?', template.to_tuple()[2:] + (template.gid, template.name))
     conn.commit()
+
+def template_kwarg_update(gid, name, **kwargs):
+    for key, value in kwargs.items():
+        if key == "new_name":
+            c.execute("UPDATE templates SET name=? WHERE guild_id=? AND name=?", (value, gid, name))
+        if key == "x":
+            c.execute("UPDATE templates SET x=? WHERE guild_id=? AND name=?", (value, gid, name))
+        if key == "y":
+            c.execute("UPDATE templates SET y=? WHERE guild_id=? AND name=?", (value, gid, name))
+        if key == "url":
+            c.execute("UPDATE templates SET url=? WHERE guild_id=? AND name=?", (value, gid, name))
+        if key == "md5":
+            c.execute("UPDATE templates SET md5=? WHERE guild_id=? AND name=?", (value, gid, name))
+        if key == "w":
+            c.execute("UPDATE templates SET w=? WHERE guild_id=? AND name=?", (value, gid, name))
+        if key == "h":
+            c.execute("UPDATE templates SET h=? WHERE guild_id=? AND name=?", (value, gid, name))
+        if key == "size":
+            c.execute("UPDATE templates SET size=? WHERE guild_id=? AND name=?", (value, gid, name))
+        if key == "date_modified":
+            c.execute("UPDATE templates SET date_modified=? WHERE guild_id=? AND name=?", (value, gid, name))
+    conn.commit()
+
 
 
 # =========================
