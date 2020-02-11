@@ -9,6 +9,7 @@ import re
 import time
 from typing import List
 from prettytable import *
+import argparse
 
 import aiohttp
 import discord
@@ -19,7 +20,7 @@ from PIL import Image, ImageChops
 
 from objects import DbTemplate
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from objects.errors import FactionNotFoundError, NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, IgnoreError
+from objects.errors import FactionNotFoundError, NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, IgnoreError, TemplateHttpError, NoJpegsError, NotPngError
 import utils
 from utils import canvases, checks, colors, config, http, render, sqlite as sql
 
@@ -206,33 +207,76 @@ class Template(commands.Cog):
             for value in unknown:
                 out.append(f"Unrecognised argument: {value}")
 
-        """Image is done first since I'm using the build_template method to update stuff, 
+        """Image is done first since I'm using the build_template method to update stuff,
         and I don't want anything to have changed in orig_template before I use it"""
         if image != False:
             # Update image
             url = None
             if not isinstance(image, bool):
                 url = image
-            url = await template.select_url_update(ctx, url, out)
+            url = await Template.select_url_update(ctx, url, out)
             if url is None:
                 return # Sending the end is handled in select_url_update if it fails
 
-            t = await Template.build_template(ctx, orig_template.name, orig_template.x, orig_template.y, url, "pixelcanvas")
+            try:
+                t = await Template.build_template(ctx, orig_template.name, orig_template.x, orig_template.y, url, "pixelcanvas")
+            except TemplateHttpError:
+                out.append(f"Updating file failed: Could not access URL for template.")
+                await Template.send_end(ctx, out)
+                return
+            except NoJpegsError:
+                out.append(f"Updating file failed: Seriously? A JPEG? Gross! Please create a PNG template instead.")
+                await Template.send_end(ctx, out)
+                return
+            except NotPngError:
+                out.append(f"Updating file failed: That command requires a PNG image.")
+                await Template.send_end(ctx, out)
+                return
+            except (PilImageError, UrlError):
+                out.append(f"Updating file failed")
+                await Template.send_end(ctx, out)
+                return
+            
             if t is None:
                 out.append(f"Updating file failed")
-                await template.send_end(ctx, out)
+                await Template.send_end(ctx, out)
                 return
 
             # Could check for md5 duplicates here, maybe implement that later
             sql.template_kwarg_update(
-                orig_template.id,
+                ctx.guild.id,
+                orig_template.name,
                 url=t.url,
                 md5=t.md5,
-                w=t.w,
-                h=t.h,
+                w=t.width,
+                h=t.height,
                 size=t.size,
                 date_modified=int(time.time()))
             out.append(f"File updated.")
+
+        if x != False:
+            # Update x coord
+            try:
+                x = int(re.sub('[^0-9-]','', x))
+            except ValueError:
+                out.append("Updating x failed, value provided was not a number.")
+                await Template.send_end(ctx, out)
+                return
+
+            sql.template_kwarg_update(ctx.guild.id, orig_template.name, x=x, date_modified=int(time.time()))
+            out.append(f"X coordinate changed from {orig_template.x} to {x}.")
+
+        if y != False:
+            # Update y coord
+            try:
+                y = int(re.sub('[^0-9-]','', y))
+            except ValueError:
+                out.append("Updating y failed, value provided was not a number.")
+                await Template.send_end(ctx, out)
+                return
+
+            sql.template_kwarg_update(ctx.guild.id, orig_template.name, y=y, date_modified=int(time.time()))
+            out.append(f"Y coordinate changed from {orig_template.y} to {y}.")
 
         if new_name != False:
             # Check if new name is already in use
@@ -248,34 +292,10 @@ class Template(commands.Cog):
                 return
 
             # None with new nick, update template
-            sql.template_kwarg_update(orig_template.id, name=new_name, date_modified=int(time.time()))
+            sql.template_kwarg_update(ctx.guild.id, orig_template.name, new_name=new_name, date_modified=int(time.time()))
             out.append(f"Nickname changed from {name} to {new_name}")
 
-        if x != False:
-            # Update x coord
-            try:
-                x = int(re.sub('[^0-9-]','', x))
-            except ValueError:
-                out.append("Updating x failed, value provided was not a number.")
-                await Template.send_end(ctx, out)
-                return
-
-            sql.template_kwarg_update(orig_template.id, x=x, date_modified=int(time.time()))
-            out.append(f"X coordinate changed from {t.x} to {x}.")
-
         await Template.send_end(ctx, out)
-
-        if y != False:
-            # Update y coord
-            try:
-                y = int(re.sub('[^0-9-]','', y))
-            except ValueError:
-                out.append("Updating y failed, value provided was not a number.")
-                await template.send_end(ctx, out)
-                return
-
-            sql.template_kwarg_update(orig_template.id, y=y, date_modified=int(time.time()))
-            out.append(f"Y coordinate changed from {t.y} to {y}.")   
 
     @commands.guild_only()
     @commands.cooldown(1, 10, BucketType.guild)
@@ -745,7 +765,7 @@ class Template(commands.Cog):
                 return input_url
 
             out.append("Updating image failed, invalid url, it must be a discord attachment.")
-            await template.send_end(ctx, out)
+            await Template.send_end(ctx, out)
             return None
 
         # there was no url in the text of the message, is there an attachment
@@ -753,37 +773,8 @@ class Template(commands.Cog):
             return ctx.message.attachments[0].url
 
         out.append("Updating image failed, no attachments could be detected.")
-        await template.send_end(ctx, out)
+        await Template.send_end(ctx, out)
         return None
-
-    # downloads the image from discord
-    @staticmethod
-    async def get_template_u(ctx, url, out):
-        """Downloads and opens an image as a bytestream.
-
-        Arguments:
-        ctx - A commands.Context object.
-        url - The url of an image, string.
-        out - Update changelog, list.
-
-        Returns:
-        The bytestream of the image.
-        """
-        async with aiohttp.ClientSession() as sess:
-            async with sess.get(url) as resp:
-                if resp.status != 200:
-                    out.append("Updating image failed, {} Error loading file.".format(resp.status))
-                    await template.send_end(ctx, out)
-                    raise IgnoreError
-                if resp.content_type == "image/jpg" or resp.content_type == "image/jpeg":
-                    out.append("Updating image failed, the image must be a png, not a jpeg.")
-                    await template.send_end(ctx, out)
-                    raise IgnoreError
-                if resp.content_type != "image/png":
-                    out.append("Updating image failed, the image must be a png.")
-                    await template.send_end(ctx, out)
-                    raise IgnoreError
-                return io.BytesIO(await resp.read())
 
     @staticmethod
     async def send_end(ctx, out):
