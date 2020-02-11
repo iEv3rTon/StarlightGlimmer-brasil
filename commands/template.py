@@ -177,8 +177,8 @@ class Template(commands.Cog):
     async def template_update_pixelcanvas(self, ctx, name, *args):
         log.info(f"g!t update run in {ctx.guild.name} with name: {name} and args: {args}")
 
-        t = sql.template_get_by_name(ctx.guild.id, name)
-        if not t:
+        orig_template = sql.template_get_by_name(ctx.guild.id, name)
+        if not orig_template:
             raise TemplateNotFoundError
 
         # Argument Parsing
@@ -206,16 +206,45 @@ class Template(commands.Cog):
             for value in unknown:
                 out.append(f"Unrecognised argument: {value}")
 
+        """Image is done first since I'm using the build_template method to update stuff, 
+        and I don't want anything to have changed in orig_template before I use it"""
+        if image != False:
+            # Update image
+            url = None
+            if not isinstance(image, bool):
+                url = image
+            url = await template.select_url_update(ctx, url, out)
+            if url is None:
+                return # Sending the end is handled in select_url_update if it fails
+
+            t = await Template.build_template(ctx, orig_template.name, orig_template.x, orig_template.y, url, "pixelcanvas")
+            if t is None:
+                out.append(f"Updating file failed")
+                await template.send_end(ctx, out)
+                return
+
+            # Could check for md5 duplicates here, maybe implement that later
+            sql.template_kwarg_update(
+                orig_template.id,
+                url=t.url,
+                md5=t.md5,
+                w=t.w,
+                h=t.h,
+                size=t.size,
+                date_modified=int(time.time()))
+            out.append(f"File updated.")
+
         if new_name != False:
             # Check if new name is already in use
             dup_check = sql.template_get_by_name(ctx.guild.id, new_name)
             if dup_check != None:
                 out.append(f"Updating name failed, the name {new_name} is already in use")
-                await template.send_end(ctx, out)
+                await Template.send_end(ctx, out)
                 return
             # Check if new name is too long
             if len(new_name) > config.MAX_TEMPLATE_NAME_LENGTH:
-                await ctx.send(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
+                out.append("Updating name failed: "+ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
+                await Template.send_end(ctx, out)
                 return
 
             # None with new nick, update template
@@ -228,11 +257,13 @@ class Template(commands.Cog):
                 x = int(re.sub('[^0-9-]','', x))
             except ValueError:
                 out.append("Updating x failed, value provided was not a number.")
-                await template.send_end(ctx, out)
+                await Template.send_end(ctx, out)
                 return
 
             sql.template_kwarg_update(orig_template.id, x=x, date_modified=int(time.time()))
             out.append(f"X coordinate changed from {t.x} to {x}.")
+
+        await Template.send_end(ctx, out)
 
         if y != False:
             # Update y coord
@@ -244,48 +275,7 @@ class Template(commands.Cog):
                 return
 
             sql.template_kwarg_update(orig_template.id, y=y, date_modified=int(time.time()))
-            out.append(f"Y coordinate changed from {t.y} to {y}.")
-        
-        if image != False:
-            # Update image
-            url = None
-            if not isinstance(image, bool):
-                url = image
-            url = await template.select_url_update(ctx, url, out)
-            if url is None:
-                return
-            
-            # TODO: NEEDS ADAPTING
-            t = None
-            #attempt to download the image
-            with await template.get_template_u(ctx, url, out) as data:
-                #hash the image to test for image duplications
-                md5 = hashlib.md5(data.getvalue()).hexdigest()
-                #attempt to open the image
-                with Image.open(data).convert("RGBA") as tmp:
-                    #check if it's quantized
-                    quantized = True
-                    palette = []
-                    for color in values.colors:
-                        palette.append(color[1])
-                    for py in range(tmp.height):
-                        for px in range(tmp.width):
-                            pix = tmp.getpixel((px, py))
-                            if pix[3] == 0: # if fully transparent, skip to next iteration
-                                continue
-                            elif pix[3] != 255: # if not fully opaque, not quantized
-                                quantized = False
-                                break
-                            elif pix[:3] not in palette: # if not in palette, not quantized
-                                quantized = False
-                                break
-                    if quantized == True:
-                        sql.template_update(orig_template.id, file=url, md5=md5)
-                        out.append("File updated.")
-                    else:
-                        out.append("Updating image failed, not in canvas colours.")
-                        await template.send_end(ctx, out)
-                        return
+            out.append(f"Y coordinate changed from {t.y} to {y}.")   
 
     @commands.guild_only()
     @commands.cooldown(1, 10, BucketType.guild)
@@ -801,7 +791,6 @@ class Template(commands.Cog):
             await ctx.send("Template updated!```{}```".format("\n".join(out)))
         else:
             await ctx.send("Template not updated as no arguments were provided.")
-
 
     @staticmethod
     async def select_url(ctx, input_url):
