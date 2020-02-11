@@ -167,7 +167,7 @@ class Template(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(2, 5, BucketType.guild)
     @checks.template_adder_only()
-    @template.group(name='update', invoke_without_command=True, case_insensitive=True)
+    @template.group(name='update', aliases=['u'], invoke_without_command=True, case_insensitive=True)
     async def template_update(self, ctx):
         await ctx.invoke_default("template.update")
 
@@ -233,12 +233,12 @@ class Template(commands.Cog):
                 await Template.send_end(ctx, out)
                 return
             except (PilImageError, UrlError):
-                out.append(f"Updating file failed")
+                out.append(f"Updating file failed.")
                 await Template.send_end(ctx, out)
                 return
-            
+
             if t is None:
-                out.append(f"Updating file failed")
+                out.append(f"Updating file failed.")
                 await Template.send_end(ctx, out)
                 return
 
@@ -282,7 +282,7 @@ class Template(commands.Cog):
             # Check if new name is already in use
             dup_check = sql.template_get_by_name(ctx.guild.id, new_name)
             if dup_check != None:
-                out.append(f"Updating name failed, the name {new_name} is already in use")
+                out.append(f"Updating name failed, the name {new_name} is already in use.")
                 await Template.send_end(ctx, out)
                 return
             # Check if new name is too long
@@ -293,7 +293,7 @@ class Template(commands.Cog):
 
             # None with new nick, update template
             sql.template_kwarg_update(ctx.guild.id, orig_template.name, new_name=new_name, date_modified=int(time.time()))
-            out.append(f"Nickname changed from {name} to {new_name}")
+            out.append(f"Nickname changed from {name} to {new_name}.")
 
         await Template.send_end(ctx, out)
 
