@@ -254,6 +254,7 @@ STRINGS = {
     "brief.suggest": "Sends a suggestion to the developer.",
     "brief.template": "Manages templates.",
     "brief.template.add": "Adds a template.",
+    "brief.template.update": "Updates a template.",
     "brief.template.add.pixelcanvas": "Adds a template for Pixelcanvas.io.",
     "brief.template.add.pixelzone": "Adds a template for Pixelzone.io.",
     "brief.template.add.pxlsspace": "Adds a template for Pxls.space.",
@@ -276,13 +277,14 @@ STRINGS = {
         - Any message with coordinates in the form "@0, 0" will trigger a preview for the default canvas (see `{p}help canvas`)
         - Any message with a link to a supported canvas will trigger a preview for that canvas.
         - Any message with coordinates in the form "0, 0" with a PNG attached will trigger a diff for the default canvas.
-        - Previews take precedence over diffs""",
+        - Previews take precedence over diffs
+        - Messages which use spoiler tags will be entirely ignored""",
     "help.canvas": "Defaults to Pixelcanvas.io.",
     "help.diff":
         """Images must be in PNG format.
         Error pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `{p}help quantize`).
         You cannot zoom an image to contain more than 4 million pixels.
-        Use the `-e` flag to print out the specific coordinates of the first 50 error pixels. If there are 15 or less pixels I will post them to discord, if there are more I will send the information to hastebin and a link to it.
+        Use the `-e` flag to print out the specific coordinates of the first 50 error pixels. If there are 10 or less pixels I will post them to discord in an embed, if there are more I will send the information to hastebin and post a link to this information.
         Use the `-s` or `--snapshot` flag to get a snapshot of a template. All correct pixels will be the colour they are on your template and all other pixels will be transparent. You can use these images to track what you have finished on a template.""",
     "help.dither":
         """Images must be in PNG or JPEG format.
@@ -334,6 +336,12 @@ STRINGS = {
         A guild can have up to 25 templates at any time.
         Templates must have unique names (max 32 chars, case sensitive). If you attempt to add a new template with the same name as an existing one, it will be replaced if you have permission to remove the old one (see `{p}help remove`).
         I only store URLs to templates. If the message that originally uploaded a template is deleted, its URL will break and the template will be lost. Save backups to your computer just in case.""",
+    "help.template.update": """
+    Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.
+    (-n|--name) - Any text following this argument will be used to update the name of the template.
+    (-x) - A number after this argument will be used to update the x coordinate.
+    (-y) - A number after this argument will be used to update the y coordinate.
+    (-i|--image) This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image."""
     "help.template.check": "If you have more than 25 templates use `{p}template check (page-number)` to see additional pages. You could also use `{p}template check all` see it's help for additional options that are available.",
     "help.template.check.all": "This command can be spammy. You can also use the optional argument `-e` or `--error` at the end of your command to only send info on templates with errors",
     "help.template.info": "Use the `-r` flag to return just the raw image without extra info. You can also add a zoom factor when using this option.",
@@ -386,6 +394,7 @@ STRINGS = {
     "signature.suggest": "<suggestion>",
     "signature.template": "(subcommand)",
     "signature.template.add": "(subcommand) <name> <x> <y> (url)",
+    "signature.template.update": "<name> (-n|--name) (-x) (-y) (-i|--image)",
     "signature.template.add.pixelcanvas": "<name> <x> <y> (url)",
     "signature.template.add.pixelzone": "<name> <x> <y> (url)",
     "signature.template.add.pxlsspace": "<name> <x> <y> (url)",
@@ -493,6 +502,10 @@ STRINGS = {
                          ("all", "List all public templates for all factions"),
                          ("add pc MyTemplate 100 100", "(with an attachment) Create a template named 'MyTemplate' for Pixelcanvas.io at (100, 100)"),
                          ("-f OtherFaction", "List all public templates for a faction named 'OtherFaction'")],
+    "example.template.update": [
+        ("coolTemplate -x 67 -y 88", "Update the template 'coolTemplate' with the coordinates (67, 88)"),
+        ("funtemplate -n funnertemplate -i -x 8", "(with an attachment) Update the template 'funtemplate' with the new name 'funnertemplate' and the new x coordinate 8. The image of the template will be updated with the attached image."),
+        ("MyTemplate -i https://cdn.discordapp.com/.../template.png -y 876", "Update the template 'MyTemplate' with the image linked and the y coordinate 876.")]
     "example.template.add": [("MyTemplate 100 100", "(with an attachment) Create a template named 'MyTemplate' for the default canvas at (100, 100)"),
                              ("pc MyTemplate 100 100", "(with an attachment) Create a template named 'MyTemplate' for Pixelcanvas.io at (100, 100)"),
                              ("pc MyTemplate 100 100 https://cdn.discordapp.com/.../avatar.jpg", "Create a template named 'MyTemplate' for Pixelcanvas.io at (100, 100) using the image at the URL")],
