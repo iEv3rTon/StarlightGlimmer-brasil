@@ -336,12 +336,12 @@ STRINGS = {
         A guild can have up to 25 templates at any time.
         Templates must have unique names (max 32 chars, case sensitive). If you attempt to add a new template with the same name as an existing one, it will be replaced if you have permission to remove the old one (see `{p}help remove`).
         I only store URLs to templates. If the message that originally uploaded a template is deleted, its URL will break and the template will be lost. Save backups to your computer just in case.""",
-    "help.template.update": """
-    Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.
+    "help.template.update": 
+    """Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.
     (-n|--name) - Any text following this argument will be used to update the name of the template.
     (-x) - A number after this argument will be used to update the x coordinate.
     (-y) - A number after this argument will be used to update the y coordinate.
-    (-i|--image) This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image."""
+    (-i|--image) This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image.""",
     "help.template.check": "If you have more than 25 templates use `{p}template check (page-number)` to see additional pages. You could also use `{p}template check all` see it's help for additional options that are available.",
     "help.template.check.all": "This command can be spammy. You can also use the optional argument `-e` or `--error` at the end of your command to only send info on templates with errors",
     "help.template.info": "Use the `-r` flag to return just the raw image without extra info. You can also add a zoom factor when using this option.",
