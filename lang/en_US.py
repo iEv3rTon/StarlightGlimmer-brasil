@@ -505,7 +505,7 @@ STRINGS = {
     "example.template.update": [
         ("coolTemplate -x 67 -y 88", "Update the template 'coolTemplate' with the coordinates (67, 88)"),
         ("funtemplate -n funnertemplate -i -x 8", "(with an attachment) Update the template 'funtemplate' with the new name 'funnertemplate' and the new x coordinate 8. The image of the template will be updated with the attached image."),
-        ("MyTemplate -i https://cdn.discordapp.com/.../template.png -y 876", "Update the template 'MyTemplate' with the image linked and the y coordinate 876.")]
+        ("MyTemplate -i https://cdn.discordapp.com/.../template.png -y 876", "Update the template 'MyTemplate' with the image linked and the y coordinate 876.")],
     "example.template.add": [("MyTemplate 100 100", "(with an attachment) Create a template named 'MyTemplate' for the default canvas at (100, 100)"),
                              ("pc MyTemplate 100 100", "(with an attachment) Create a template named 'MyTemplate' for Pixelcanvas.io at (100, 100)"),
                              ("pc MyTemplate 100 100 https://cdn.discordapp.com/.../avatar.jpg", "Create a template named 'MyTemplate' for Pixelcanvas.io at (100, 100) using the image at the URL")],
