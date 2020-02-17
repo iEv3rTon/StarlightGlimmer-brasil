@@ -576,31 +576,51 @@ async def _diff(ctx, args, canvas, fetch, palette):
             await ctx.send(content=out, file=f)
 
         if list_pixels and len(err_list) > 0:
-            out = ["```xl"]
-            if err <= 15:
-                for p in err_list:
-                    x, y, current, target = p
-                    current = ctx.s("color.{}.{}".format(t.canvas, current))
-                    target = ctx.s("color.{}.{}".format(t.canvas, target))
-                    out.append("({},{}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
-                    if err == 15:
-                        break
-                out.append("```")
-            if err > 15:
+            embed = discord.Embed()
+            text = ""
+            for i, pixel in enumerate(err_list):
+                x_, y_, current, target = pixel
+                x_ += x
+                y_ += y
+                current = ctx.s("color.{}.{}".format(canvas, current))
+                target = ctx.s("color.{}.{}".format(canvas, target))
+                text += f"[({x_},{y_})](https://pixelcanvas.io/@{x_},{y_}) is {current}, should be {target}\n"
+                if i == 10:
+                    break
+            embed.add_field(
+                name="Errors",
+                value=text,
+                inline=False)
+            if len(err_list) <= 10:
+                # Less than 10 errs, send them as an embed w links to canvas
+                await ctx.send(embed=embed)
+                return
+            if len(err_list) > 10:
+                out = ["```xl"]
+                # More than 10, send them to hastebin as plain text
                 haste = []
-                for p in err_list:
-                    x, y, current, target = p
-                    current = ctx.s("color.{}.{}".format(t.canvas, current))
-                    target = ctx.s("color.{}.{}".format(t.canvas, target))
-                    haste.append("({},{}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
-                    if err == 50:
+                for i, pixel in enumerate(err_list):
+                    x_, y_, current, target = pixel
+                    current = ctx.s("color.{}.{}".format(canvas, current))
+                    target = ctx.s("color.{}.{}".format(canvas, target))
+                    haste.append("({},{}) is {}, should be {}".format(x_ + x, y_ + y, current, target))
+                    if i == 50:
                         haste.append("...")
                         break
-                """And here send the haste list to hastebin formatted correctly"""
-                r = requests.post('https://hastebin.com/documents', data = '\n'.join(haste))
-                """Capture the returned code and make out hastbin.com/<code>"""
-                out = str(r.content)
-            await ctx.send('\n'.join(out))
+                #And here send the haste list to hastebin formatted correctly
+                try:
+                    r = requests.post('https://hastebin.com/documents', data = '\n'.join(haste), timeout=10)
+                except requests.exceptions.Timeout:
+                    # Timed out, send them as an embed w links to canvas instead
+                    await ctx.send(content="**Hastebin returned an error.**", embed=embed)
+                    return
+                if r.status_code == 200:
+                    #Capture the returned code and make hastebin.com/<code>
+                    out = "Errors: https://hastebin.com/" + str(r.content)[10:20]
+                    await ctx.send(out)
+                    return
+                # Code other than 200, send them as an embed w links to canvas instead
+                await ctx.send(content="**Hastebin returned an error.**", embed=embed)
 
 async def _preview(ctx, args, fetch):
     """Sends a preview of the image provided.
