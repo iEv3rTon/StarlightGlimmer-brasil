@@ -530,7 +530,6 @@ class Checker:
 
         def on_close(ws):
             asyncio.ensure_future(self.msg.edit(content="Message timed out."))
-            asyncio.ensure_future(self.ctx.send(content="Message timed out."))
 
         def on_open(ws):
             pass
