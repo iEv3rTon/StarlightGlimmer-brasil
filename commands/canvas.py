@@ -6,8 +6,14 @@ import requests
 import aiohttp
 from PIL import Image
 import math
-
+import threading
 import datetime
+import uuid
+import asyncio
+import argparse
+import time
+import websocket
+from struct import unpack_from
 
 import discord
 from discord.ext import commands
@@ -19,7 +25,6 @@ import utils
 from utils import colors, http, render, sqlite as sql
 
 log = logging.getLogger(__name__)
-
 
 class Canvas(commands.Cog):
     def __init__(self, bot):
@@ -35,43 +40,34 @@ class Canvas(commands.Cog):
         invoke_without_command=True,
         aliases=["d"],
         case_insensitive=True)
-    async def diff(self, ctx, *args):
-        if len(args) < 1:
-            return
-        list_pixels = False
-        create_snapshot = False
-        iter_args = iter(args)
-        a = next(iter_args, None)
-        if a == "-e":
-            list_pixels = True
-            a = next(iter_args, None)
-        if a == "-s" or a == "--snapshot":
-            create_snapshot = True
-            a = next(iter_args, None)
-        if a == "-f":
-            fac = next(iter_args, None)
-            if fac is None:
-                await ctx.send(ctx.s("error.missing_arg_faction"))
-                return
-            f = sql.guild_get_by_faction_name_or_alias(fac)
+    async def diff(self, ctx, name, *args):
+        log.info(f"g!diff run in {ctx.guild.name} with name: {name} args: {args}")
+
+        # Argument Parsing
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-e", "--errors", action='store_true')
+        parser.add_argument("-s", "--snapshot", action='store_true')
+        parser.add_argument("-f", "--faction", default=None)
+        parser.add_argument("-z", "--zoom", default=1)
+        a = parser.parse_known_args(args)
+        a = vars(a[0])
+
+        try:
+            list_pixels = a["errors"]
+            create_snapshot = a["snapshot"]
+            faction = a["faction"]
+            zoom = int(a["zoom"])
+        except ValueError:
+            zoom = 1
+
+        if faction:
+            f = sql.guild_get_by_faction_name_or_alias(faction)
             if not f:
                 await ctx.send(ctx.s("error.faction_not_found"))
                 return
-            name = next(iter_args, None)
-            zoom = next(iter_args, 1)
             t = sql.template_get_by_name(f.id, name)
         else:
-            name = a
-            zoom = next(iter_args, 1)
             t = sql.template_get_by_name(ctx.guild.id, name)
-
-        try:
-            if type(zoom) is not int:
-                if zoom.startswith("#"):
-                    zoom = zoom[1:]
-                zoom = int(zoom)
-        except ValueError:
-            zoom = 1
 
         if t:
             async with ctx.typing():
@@ -107,65 +103,30 @@ class Canvas(commands.Cog):
                     await ctx.send(content=out, file=f)
 
                 if list_pixels and len(err_list) > 0:
-                    embed = discord.Embed()
-                    text = ""
                     for i, pixel in enumerate(err_list):
                         x, y, current, target = pixel
+                        # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
                         x += t.x
                         y += t.y
-                        current = ctx.s("color.{}.{}".format(t.canvas, current))
-                        target = ctx.s("color.{}.{}".format(t.canvas, target))
-                        text += f"[({x},{y})](https://pixelcanvas.io/@{x},{y}) is {current}, should be {target}\n"
-                        if i == 10:
-                            break
-                    embed.add_field(
-                        name="Errors",
-                        value=text,
-                        inline=False)
-                    if len(err_list) <= 10:
-                        # Less than 10 errs, send them as an embed w links to canvas
-                        await ctx.send(embed=embed)
-                        return
-                    if len(err_list) > 10:
-                        out = ["```xl"]
-                        # More than 10, send them to hastebin as plain text
-                        haste = []
-                        for i, pixel in enumerate(err_list):
-                            x, y, current, target = pixel
-                            current = ctx.s("color.{}.{}".format(t.canvas, current))
-                            target = ctx.s("color.{}.{}".format(t.canvas, target))
-                            haste.append("({},{}) is {}, should be {}".format(x + t.x, y + t.y, current, target))
-                            if i == 50:
-                                haste.append("...")
-                                break
-                        #And here send the haste list to hastebin formatted correctly
-                        try:
-                            r = requests.post('https://hastebin.com/documents', data = '\n'.join(haste), timeout=10)
-                        except requests.exceptions.Timeout:
-                            # Timed out, send them as an embed w links to canvas instead
-                            await ctx.send(content="**Hastebin returned an error.**", embed=embed)
-                            return
-                        if r.status_code == 200:
-                            #Capture the returned code and make out hastbin.com/<code>
-                            out = "Errors: https://hastebin.com/" + str(r.content)[10:20]
-                            await ctx.send(out)
-                            return
-                        # Code other than 200, send them as an embed w links to canvas instead
-                        await ctx.send(content="**Hastebin returned an error.**", embed=embed)
-                return
-        await ctx.invoke_default("diff")
+                        err_list[i] = Pixel(current, target, x, y)
+
+                    checker = Checker(self.bot, ctx, t.canvas, err_list)
+                    checker.connect_websocket()
+        else:
+            # No template found, try coords + image matching
+            await ctx.invoke_default("diff")
 
     @diff.command(name="pixelcanvas", aliases=["pc"])
-    async def diff_pixelcanvas(self, ctx, *args):
-        await _diff(ctx, args, "pixelcanvas", render.fetch_pixelcanvas, colors.pixelcanvas)
+    async def diff_pixelcanvas(self, ctx, x, y, *args):
+        await _diff(self, ctx, x, y, args, "pixelcanvas", render.fetch_pixelcanvas, colors.pixelcanvas)
 
     @diff.command(name="pixelzone", aliases=["pz"])
-    async def diff_pixelzone(self, ctx, *args):
-        await _diff(ctx, args, "pixelzone", render.fetch_pixelzone, colors.pixelzone)
+    async def diff_pixelzone(self, ctx, x, y, *args):
+        await _diff(self, ctx, x, y, args, "pixelzone", render.fetch_pixelzone, colors.pixelzone)
 
     @diff.command(name="pxlsspace", aliases=["ps"])
-    async def diff_pxlsspace(self, ctx, *args):
-        await _diff(ctx, args, "pxlsspace", render.fetch_pxlsspace, colors.pxlsspace)
+    async def diff_pxlsspace(self, ctx, x, y, *args):
+        await _diff(self, ctx, x, y, args, "pxlsspace", render.fetch_pxlsspace, colors.pxlsspace)
 
     # =======================
     #        PREVIEW
@@ -508,8 +469,122 @@ class Canvas(commands.Cog):
             ct = await http.fetch_online_pxlsspace()
             await msg.edit(content=ctx.s("canvas.online").format(ct, "Pxls.space"))
 
+class Pixel:
+    def __init__(self, current, target, x, y):
+        self.current = current
+        self.target = target
+        self.x = x
+        self.y = y
 
-async def _diff(ctx, args, canvas, fetch, palette):
+class Checker:
+    URL = 'https://pixelcanvas.io/'
+    TEMPLATE_PATH = ''
+    HEADER_USER_AGENT = {
+        'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3'
+    }
+    HEADERS = {
+        'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'Host': 'pixelcanvas.io',
+        'Origin': URL,
+        'Referer': URL
+    }
+
+    def __init__(self, bot, ctx, canvas, pixels):
+        self.bot = bot
+        self.ctx = ctx
+        self.fingerprint = uuid.uuid4().hex
+        self._5_mins_time = time.time() + 60*5
+        self.canvas = canvas
+        self.pixels = pixels
+        self.sending = False
+        self.msg = None
+
+        asyncio.ensure_future(send_err_embed(self))
+
+    def get(self, route: str, stream: bool = False):
+        return requests.get(Checker.URL + route, stream=stream, headers=Checker.HEADER_USER_AGENT)
+
+    def connect_websocket(self):
+        def on_message(ws, message):
+            asyncio.set_event_loop(self.bot.loop)
+            if self._5_mins_time < time.time():
+                ws.close()
+            if unpack_from('B', message, 0)[0] == 193:
+                x = unpack_from('!h', message, 1)[0]
+                y = unpack_from('!h', message, 3)[0]
+                a = unpack_from('!H', message, 5)[0]
+                number = (65520 & a) >> 4
+                x = int(x * 64 + ((number % 64 + 64) % 64))
+                y = int(y * 64 + math.floor(number / 64))
+                color = 15 & a
+
+                print(f"x:{x} y:{y} color:{color}")
+                asyncio.ensure_future(check_pixels(self, x, y, color, ws))
+
+        def on_error(ws, exception):
+            logger.exception(exception)
+            asyncio.ensure_future(self.msg.edit(content="Sorry! There was an error with the websocket."))
+
+        def on_close(ws):
+            asyncio.ensure_future(self.msg.edit(content="Message timed out."))
+            asyncio.ensure_future(self.ctx.send(content="Message timed out."))
+
+        def on_open(ws):
+            pass
+
+        url = "wss://ws.pixelcanvas.io:8443"
+        ws = websocket.WebSocketApp(
+            url + '/?fingerprint=' + self.fingerprint, on_message=on_message,
+            on_open=on_open, on_close=on_close, on_error=on_error)
+
+        def worker(ws):
+            asyncio.set_event_loop(self.bot.loop)
+            ws.run_forever()
+
+        thread = threading.Thread(target=worker, args=(ws,))
+        thread.setDaemon(True)
+        thread.start()
+
+async def check_pixels(self, x, y, color, ws):
+    for p in self.pixels:
+        if p.x == x and p.y == y:
+            p.current = color
+            check = await send_err_embed(self)
+            if check == True:
+                ws.close()
+
+async def send_err_embed(self):
+    if self.sending:
+        return
+    self.sending = True
+
+    embed = discord.Embed()
+    out = []
+    for i, p in enumerate(self.pixels):
+        if p.current != p.target:
+            current = self.ctx.s("color.{}.{}".format(self.canvas, p.current))
+            target = self.ctx.s("color.{}.{}".format(self.canvas, p.target))
+            out.append(f"[({p.x},{p.y})](https://pixelcanvas.io/@{p.x},{p.y}) is {current}, should be {target}")
+            if len(out) == 10:
+                out.append("...")
+                break
+    if out == []:
+        out = "All fixed!"
+    else:
+        out = "\n".join(out)
+    embed.add_field(name="Errors", value=out)
+
+    if self.msg:
+        await self.msg.edit(embed=embed)
+    else:
+        self.msg = await self.ctx.send(embed=embed)
+    # Release send lock
+    self.sending = False
+
+async def _diff(self, ctx, x, y, args, canvas, fetch, palette):
     """Sends a diff on the image provided.
 
     Arguments:
@@ -521,19 +596,6 @@ async def _diff(ctx, args, canvas, fetch, palette):
     """
     async with ctx.typing():
         att = await utils.verify_attachment(ctx)
-        list_pixels = False
-        create_snapshot = False
-        iter_args = iter(args)
-        a = next(iter_args, None)
-        if a == "-e":
-            list_pixels = True
-            a = next(iter_args, None)
-        if a == "-s" or a == "--snapshot":
-            create_snapshot = True
-            a = next(iter_args, None)
-
-        x = a
-        y = next(iter_args, None)
 
         try:
             #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
@@ -543,12 +605,18 @@ async def _diff(ctx, args, canvas, fetch, palette):
             await ctx.send(ctx.s("canvas.invalid_input"))
             return
 
-        zoom = next(iter_args, 1)
+        # Argument Parsing
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-e", "--errors", action='store_true')
+        parser.add_argument("-s", "--snapshot", action='store_true')
+        parser.add_argument("-z", "--zoom", default=1)
+        a = parser.parse_known_args(args)
+        a = vars(a[0])
+
         try:
-            if type(zoom) is not int:
-                if zoom.startswith("#"):
-                    zoom = zoom[1:]
-                zoom = int(zoom)
+            list_pixels = a["errors"]
+            create_snapshot = a["snapshot"]
+            zoom = int(a["zoom"])
         except ValueError:
             zoom = 1
 
@@ -576,51 +644,15 @@ async def _diff(ctx, args, canvas, fetch, palette):
             await ctx.send(content=out, file=f)
 
         if list_pixels and len(err_list) > 0:
-            embed = discord.Embed()
-            text = ""
             for i, pixel in enumerate(err_list):
                 x_, y_, current, target = pixel
+                # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
                 x_ += x
                 y_ += y
-                current = ctx.s("color.{}.{}".format(canvas, current))
-                target = ctx.s("color.{}.{}".format(canvas, target))
-                text += f"[({x_},{y_})](https://pixelcanvas.io/@{x_},{y_}) is {current}, should be {target}\n"
-                if i == 10:
-                    break
-            embed.add_field(
-                name="Errors",
-                value=text,
-                inline=False)
-            if len(err_list) <= 10:
-                # Less than 10 errs, send them as an embed w links to canvas
-                await ctx.send(embed=embed)
-                return
-            if len(err_list) > 10:
-                out = ["```xl"]
-                # More than 10, send them to hastebin as plain text
-                haste = []
-                for i, pixel in enumerate(err_list):
-                    x_, y_, current, target = pixel
-                    current = ctx.s("color.{}.{}".format(canvas, current))
-                    target = ctx.s("color.{}.{}".format(canvas, target))
-                    haste.append("({},{}) is {}, should be {}".format(x_ + x, y_ + y, current, target))
-                    if i == 50:
-                        haste.append("...")
-                        break
-                #And here send the haste list to hastebin formatted correctly
-                try:
-                    r = requests.post('https://hastebin.com/documents', data = '\n'.join(haste), timeout=10)
-                except requests.exceptions.Timeout:
-                    # Timed out, send them as an embed w links to canvas instead
-                    await ctx.send(content="**Hastebin returned an error.**", embed=embed)
-                    return
-                if r.status_code == 200:
-                    #Capture the returned code and make hastebin.com/<code>
-                    out = "Errors: https://hastebin.com/" + str(r.content)[10:20]
-                    await ctx.send(out)
-                    return
-                # Code other than 200, send them as an embed w links to canvas instead
-                await ctx.send(content="**Hastebin returned an error.**", embed=embed)
+                err_list[i] = Pixel(current, target, x_, y_)
+
+            checker = Checker(self.bot, ctx, canvas, err_list)
+            checker.connect_websocket()
 
 async def _preview(ctx, args, fetch):
     """Sends a preview of the image provided.

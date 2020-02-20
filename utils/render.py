@@ -88,7 +88,7 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
     Returns:
     diff_img - The rendered image, a PIL Image object.
     tot - The total number of pixels in this image, integer. (don't know if it counts transparent px's or not)
-    err - The total number of errors, integer. 
+    err - The total number of errors, integer.
     bad - The total number of off-palette pixels, integer.
     error_list - A list of errors, each error being a tuple like (pixel, is_colour, should_be_colour).
     """
@@ -119,10 +119,10 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
         tot = np.array(mask).sum()
         err = np.array(error_mask).sum()
         bad = np.array(bad_mask).sum()
-        top50 = np.argwhere(np.array(error_mask))[:50].tolist()
+        errors = np.argwhere(np.array(error_mask)).tolist()
 
         error_list = []
-        for p in top50:
+        for p in errors:
             p.reverse()  # NumPy is backwards
             try:
                 t_color = palette.index(template.getpixel(tuple(p)))
@@ -152,7 +152,7 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
 
 async def preview(x, y, zoom, fetch):
     """Get a preview image from coordinates.
-    
+
     Arguments:
     x - The x coord, integer.
     y - The y coord, integer.
@@ -182,7 +182,7 @@ async def preview(x, y, zoom, fetch):
 
 async def preview_template(t, zoom, fetch):
     """Get a preview image from a template.
-    
+
     Arguments:
     t - A template object.
     zoom - The factor to zoom by, integer.

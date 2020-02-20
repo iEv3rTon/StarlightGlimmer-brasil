@@ -183,7 +183,7 @@ class Template(commands.Cog):
             raise TemplateNotFoundError
 
         # Argument Parsing
-        parser = argparse.ArgumentParser(description="Parses update args")
+        parser = argparse.ArgumentParser()
         parser.add_argument("-n", "--newName", default=False)
         parser.add_argument("-x", default=False)
         parser.add_argument("-y", default=False)
