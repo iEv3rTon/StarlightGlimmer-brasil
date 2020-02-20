@@ -284,8 +284,14 @@ STRINGS = {
         """Images must be in PNG format.
         Error pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `{p}help quantize`).
         You cannot zoom an image to contain more than 4 million pixels.
-        Use the `-e` flag to print out the specific coordinates of the first 50 error pixels. If there are 10 or less pixels I will post them to discord in an embed, if there are more I will send the information to hastebin and post a link to this information.
-        Use the `-s` or `--snapshot` flag to get a snapshot of a template. All correct pixels will be the colour they are on your template and all other pixels will be transparent. You can use these images to track what you have finished on a template.""",
+
+        The following optional arguments are available:
+        `-e` or `--errors` - Sends the specific coordinates of 10 error pixels. I then monitor these pixels for 5 minutes and remove any from the list that are fixed, replacing them with other damage if there are more than 10 errors.
+        `-s` or `--snapshot` - Sends a snapshot of a template. All correct pixels will be the colour they are on your template and all other pixels will be transparent. You can use these images to track what you have finished on a template.
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
+        `-z` or `--zoom` - Zooms in the diff by the factor you provide.
+
+        All of these arguments are non-positional, you can use them in any order *as long* as they are after the template name.""",
     "help.dither":
         """Images must be in PNG or JPEG format.
         The image will be converted to the palette you select using the dithering algorithm specified.
@@ -336,7 +342,7 @@ STRINGS = {
         A guild can have up to 25 templates at any time.
         Templates must have unique names (max 32 chars, case sensitive). If you attempt to add a new template with the same name as an existing one, it will be replaced if you have permission to remove the old one (see `{p}help remove`).
         I only store URLs to templates. If the message that originally uploaded a template is deleted, its URL will break and the template will be lost. Save backups to your computer just in case.""",
-    "help.template.update": 
+    "help.template.update":
     """Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.
     (-n|--name) - Any text following this argument will be used to update the name of the template.
     (-x) - A number after this argument will be used to update the x coordinate.
@@ -353,10 +359,10 @@ STRINGS = {
     "signature.alertchannel.set": "<channel>",
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
-    "signature.diff": "(subcommand) (-e|-s|--snapshot) (-f) <coordinates> (zoom)",
-    "signature.diff.pixelcanvas": "(-e) <coordinates> (zoom)",
-    "signature.diff.pixelzone": "(-e) <coordinates> (zoom)",
-    "signature.diff.pxlsspace": "(-e) <coordinates> (zoom)",
+    "signature.diff": "<template_name> (--errors) (--snapshot) (--faction) (--zoom)",
+    "signature.diff.pixelcanvas": "<coordinates> (--errors) (--snapshot) (--zoom)",
+    "signature.diff.pixelzone": "<coordinates> (--errors) (--snapshot) (--zoom)",
+    "signature.diff.pxlsspace": "<coordinates> (--errors) (--snapshot) (--zoom)",
     "signature.dither": "[-b|-y|-fs] (threshold) <order>",
     "signature.ditherchart": "(subcommand)",
     "signature.faction": "(subcommand)",
@@ -411,21 +417,18 @@ STRINGS = {
                          ("\"Cool Faction\" cf", "Assembles your guild into a faction named 'Cool Faction' with alias 'cf'")],
     "example.canvas": [("", "Show the currently set default canvas"),
                        ("pc", "Set the default canvas to Pixelcanvas.io")],
-    "example.diff": [("pc 100 100", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100)"),
-                     ("520 -94 7", "(with an attachment) Check an image against the default canvas at (520, -94) and magnify the result 7 times"),
-                     ("-e -256 345", "(with an attachment) Check an image against the default canvas at (-256, 345) and print a short list of specific error pixels"),
+    "example.diff": [("520 -94 -z 7", "(with an attachment) Check an image against the default canvas at (520, -94) and magnify the result 7 times"),
+                     ("-256 345 -e", "(with an attachment) Check an image against the default canvas at (-256, 345) and print a short list of specific error pixels"),
                      ("\"My Template\"", "Check a template named 'My Template'"),
-                     ("niceTemplate -s", "Generate a snapshot of all the finished pixels of a template named 'niceTemplate'"),
-                     ("-f CoolFaction CoolTemplate", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction'"),
-                     ("-e -f CoolFaction CoolTemplate", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction' and print a short list of specific error pixels")],
+                     ("CoolTemplate -f CoolFaction -e", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction' and print a short list of specific error pixels")],
     "example.dither": [("-y 4", "(with an attachment) Dither an image using yliluoma dithering and an order of 4"),
                        ("--bayer 512 8", "(with an attachment) Dither an image using bayer dithering, a threshold of 512/4 and an order of 8")],
     "example.diff.pixelcanvas": [("100 100", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100)"),
-                                 ("100 100 7", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100) and magnify the result 7 times")],
+                                 ("100 100 -z 7", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100) and magnify the result 7 times")],
     "example.diff.pixelzone": [("100 100", "(with an attachment) Check an image against Pixelzone.io at (100, 100)"),
-                               ("100 100 7", "(with an attachment) Check an image against Pixelzone.io at (100, 100) and magnify the result 7 times")],
+                               ("100 100 -z 7", "(with an attachment) Check an image against Pixelzone.io at (100, 100) and magnify the result 7 times")],
     "example.diff.pxlsspace": [("100 100", "(with an attachment) Check an image against Pxls.space at (100, 100)"),
-                               ("100 100 7", "(with an attachment) Check an image against Pxls.space at (100, 100) and magnify the result 7 times")],
+                               ("100 100 -z 7", "(with an attachment) Check an image against Pxls.space at (100, 100) and magnify the result 7 times")],
     "example.ditherchart": [("pc", "Get the ditherchart for Pixelcanvas.io")],
     "example.faction": [("name", "Print your faction's current name"),
                         ("desc set Hello World!", "Sets your faction's description to 'Hello World!'"),
