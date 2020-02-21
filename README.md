@@ -38,7 +38,7 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Features for other
 - [Animotes](https://github.com/ev1l0rd/animotes) support, just because
 - Full language localization
 
-For a more in-depth walkthrough of Glimmer's core functions, see [the wiki page](https://github.com/DiamondIceNS/StarlightGlimmer/wiki).
+For a more in-depth walkthrough of Glimmer's core functions, see [the wiki page](https://github.com/BrickGrass/StarlightGlimmer/wiki).
 
 #### Languages:
 - English (US)
