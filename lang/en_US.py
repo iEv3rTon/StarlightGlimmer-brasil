@@ -63,6 +63,9 @@ STRINGS = {
     "canvas.diff": "{0}/{1} | {2} errors | {3} complete",
     "canvas.diff_bad_color": "{0}/{1} | {2} errors | {bad} bad color | {3} complete",
     "canvas.diff_error_list": "({}, {}) is {}, should be {}",
+    "canvas.diff_timeout": "Message timed out.",
+    "canvas.diff_fixed": "All fixed!",
+    "canvas.diff_error_title": "Errors",
     "canvas.invalid_input": "Invalid input: does not match any template name or supported coordinates format.",
     "canvas.large_template": "(Processing large template, this might take a few seconds...)",
     "canvas.online": "There are {0} players online on {1}.",
@@ -70,6 +73,13 @@ STRINGS = {
     "canvas.quantize": "Fixed {0} pixels.",
     "canvas.repeat_not_found": "Could not find a valid command to repeat, do I have the **Read Message History** permission?",
     "canvas.err.preview_no_args": "Invalid input: No template or coordinates provided to preview.",
+    "canvas.dither": "`Image dithered in {0:.2f} seconds with {1} dithering. {2}`",
+    "canvas.dither_invalid": "Invalid input: Please specify what kind of dither to use.",
+    "canvas.dither_invalid_to": "Invalid threshold or order value.",
+    "canvas.dither_notpngorjpg": "Only pngs or jpgs can be dithered.",
+    "canvas.dither_toolarge": "Image is too big, under {0},{0} only please.",
+    "canvas.dither_order_and_threshold_option": "Threshold: {0}/4 Order: {1}",
+    "canvas.dither_order_option": "Order: {0}",
 
     # Configuration command messages
     "configuration.alert_channel_cleared": "Alert channel has been cleared.",
