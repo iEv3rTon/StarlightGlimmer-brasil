@@ -27,6 +27,7 @@ STRINGS = {
     "bot.usage": "Usage",
     "bot.visibility": "Visibility",
     "bot.yes": "Yes",
+    "bot.timeout": "Menu timed out.",
 
     # Error messages
     "error.account_deleted": "[[Account deleted]]",
@@ -84,6 +85,8 @@ STRINGS = {
     # Configuration command messages
     "configuration.alert_channel_cleared": "Alert channel has been cleared.",
     "configuration.alert_channel_set": "Alert channel has been set to {0}.",
+    "configuration.alert_channel_current": "Alert channel is currently set to {0}.",
+    "configuration.alert_channel_none": "No alert channel has been set.",
     "configuration.autoscan_disabled": "Autoscan has been disabled.",
     "configuration.autoscan_enabled": "Autoscan has been enabled.",
     "configuration.canvas_check_1": "This guild's default canvas is **{0}**.",

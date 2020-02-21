@@ -90,7 +90,7 @@ class Template(commands.Cog):
                         await message.edit(embed=embed)
         except asyncio.TimeoutError:
             pass
-        await message.edit(content="**Menu timed out.**", embed=embed)
+        await message.edit(content=ctx.s("bot.timeout"), embed=embed)
 
     @commands.guild_only()
     @commands.cooldown(2, 5, BucketType.guild)
