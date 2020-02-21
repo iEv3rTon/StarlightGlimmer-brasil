@@ -3,23 +3,27 @@
 # Starlight Glimmer
 A template utility bot based on [Alastair](Make-Alastair-Great-Again) and [Pinkie Pie](https://pastebin.com/Tg1p5AnW).
 
-Currently supports [Pixelcanvas.io](https://pixelcanvas.io/), [Pixelzone.io](https://pixelzone.io/), and [Pxls.space](https://pxls.space/).
+Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Features for other pixels sites are still somewhat functional, but I will not be maintaining them.
 
-**Invite:** `https://discordapp.com/oauth2/authorize?&client_id=405480380930588682&scope=bot&permissions=109569`
+**Invite:** `https://discordapp.com/oauth2/authorize?client_id=589606792926068736&permissions=35840&scope=bot`
 
 #### Requires:
 - [Python](https://www.python.org/downloads/release/python-365/) v3.6
-- [Discord.py](https://github.com/Rapptz/discord.py/) v1.2.3
+- [Discord.py](https://github.com/Rapptz/discord.py/) v1.3.1
 - [Pillow](https://pillow.readthedocs.io/en/latest/installation.html) v5.1.0
-- [aiohttp](https://aiohttp.readthedocs.io/en/stable/) v3.2.0
+- [aiohttp](https://aiohttp.readthedocs.io/en/stable/) v3.5.4
 - [numpy](https://www.scipy.org/scipylib/download.html) v1.14.4
 - [websockets](https://pypi.org/project/websockets/) v4.0.1
+- [websocket-client](https://pypi.org/project/websocket_client/)
+- [prettytable](https://pypi.org/project/PrettyTable/) v0.7.2
+- [hitherdither](https://www.github.com/hbldh/hitherdither)
 
 #### Installation:
 1. Install Python 3.6
 2. Run `pip install -r requirements.txt` in the main directory
 3. Put your bot token and other config info in `config/config.json.example`
 3. Rename `config.json.example` to `config.json`
+4. Make a folder named data
 4. Run `python glimmer.py`
 
 #### Features:
@@ -44,6 +48,6 @@ For a more in-depth walkthrough of Glimmer's core functions, see [the wiki page]
 If you happen to know a language that is not listed and would be willing to translate, please translate the strings in `lang/en_US.py` and submit a pull request.
 
 #### Help:
-If you need assistance with the bot, have a problem, or would like to recommend a feature to me directly, you can contact me [on my support server](https://discord.gg/UtyJx2x). You can also DM me if you see me around -- I am `Fawfulcopter#3432` on Discord.
+If you need assistance with the bot, have a problem, or would like to recommend a feature to me directly, you can contact me on discord, I am BrickGrass#8455.
 
 [avatar]: avatar.jpg
