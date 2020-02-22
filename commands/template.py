@@ -184,9 +184,9 @@ class Template(commands.Cog):
 
         # Argument Parsing
         parser = argparse.ArgumentParser()
-        parser.add_argument("-n", "--newName", default=False)
-        parser.add_argument("-x", default=False)
-        parser.add_argument("-y", default=False)
+        parser.add_argument("-n", "--newName", nargs="?", default=False)
+        parser.add_argument("-x", nargs="?", default=False)
+        parser.add_argument("-y", nargs="?", default=False)
         # if -i not present, False
         # if no value after -i, True
         # if value after -i, capture
