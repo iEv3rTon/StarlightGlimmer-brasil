@@ -290,6 +290,11 @@ class Template(commands.Cog):
                 out.append("Updating name failed: "+ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
                 await Template.send_end(ctx, out)
                 return
+            # Check if new name begins with a '-'
+            if new_name[0] == "-":
+                out.append("Updating name failed: Names cannot begin with hyphens.")
+                await Template.send_end(ctx, out)
+                return
 
             # None with new nick, update template
             sql.template_kwarg_update(ctx.guild.id, orig_template.name, new_name=new_name, date_modified=int(time.time()))
@@ -558,6 +563,9 @@ class Template(commands.Cog):
         """
         if len(name) > config.MAX_TEMPLATE_NAME_LENGTH:
             await ctx.send(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
+            return
+        if name[0] == "-":
+            await ctx.send("Template names cannot begin with hyphens.")
             return
         if sql.template_count_by_guild_id(ctx.guild.id) >= config.MAX_TEMPLATES_PER_GUILD:
             await ctx.send(ctx.s("template.err.max_templates"))

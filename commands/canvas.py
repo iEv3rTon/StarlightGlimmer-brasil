@@ -43,6 +43,10 @@ class Canvas(commands.Cog):
     async def diff(self, ctx, name, *args):
         log.info(f"g!diff run in {ctx.guild.name} with name: {name} args: {args}")
 
+        if re.match("-\D+", name) != None:
+            await ctx.send("Optional arguments must be at the end of the command.")
+            return
+
         # Argument Parsing
         parser = argparse.ArgumentParser()
         parser.add_argument("-e", "--errors", action='store_true')
