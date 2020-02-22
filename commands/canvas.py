@@ -4,7 +4,7 @@ import math
 import re
 import requests
 import aiohttp
-from PIL import Image
+from PIL import Image, ImageChops
 import math
 import threading
 import datetime
@@ -14,15 +14,20 @@ import argparse
 import time
 import websocket
 from struct import unpack_from
+from typing import List
+import itertools
+import numpy as np
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import BucketType
 
+from objects import DbTemplate
 from objects.bot_objects import GlimContext
-from objects.errors import FactionNotFoundError, IdempotentActionError
+from objects.chunks import BigChunk, ChunkPz, PxlsBoard
+from objects.errors import FactionNotFoundError, IdempotentActionError, NoTemplatesError
 import utils
-from utils import colors, http, render, sqlite as sql
+from utils import colors, http, canvases, render, sqlite as sql
 
 log = logging.getLogger(__name__)
 
@@ -333,6 +338,82 @@ class Canvas(commands.Cog):
             await _dither(ctx, url, colors.pixelcanvas, "floyd-steinberg", order)
             return
         await ctx.send(ctx.s("canvas.dither_invalid"))
+
+    # =======================
+    #          CHECK
+    # =======================
+
+    @commands.guild_only()
+    @commands.cooldown(1, 10, BucketType.guild)
+    @commands.command(name='check', aliases=['c'])
+    async def check(self, ctx, *args):
+
+        # Argument Parsing
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-e", "--onlyErrors", action='store_true')
+        parser.add_argument("-a", "--all", action='store_true')
+        parser.add_argument("-p", "--page", default=1)
+        a = parser.parse_known_args(args)
+        a = vars(a[0])
+
+        try:
+            only_errors = a["onlyErrors"]
+            show_all = a["all"]
+            page = int(a["page"])
+        except ValueError:
+            page = 1
+
+        templates = sql.template_get_all_by_guild_id(ctx.guild.id)
+
+        if len(templates) < 1:
+            ctx.command.parent.reset_cooldown(ctx)
+            raise NoTemplatesError(False)
+
+        msg = None
+        templates = sorted(templates, key=lambda tx: tx.name)
+        templates = sorted(templates, key=lambda tx: tx.canvas)
+
+        if show_all:
+            # Calc info + send temp msg
+            for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
+                ct = list(canvas_ts)
+                msg = await check_canvas(ctx, ct, canvas, msg=msg)
+
+            # Delete temp msg and send final report
+            await msg.delete()
+
+            if only_errors:
+                ts = []
+                for template in templates:
+                    if template.errors != 0:
+                        ts.append(template)
+
+                # Find number of pages given there are 25 templates per page.
+                pages = int(math.ceil(len(ts) / 25))
+                await build_template_report(ctx, ts, None, pages)
+            else:
+                # Find number of pages given there are 25 templates per page.
+                pages = int(math.ceil(len(templates) / 25))
+                await build_template_report(ctx, templates, None, pages)
+        else:
+            # Find number of pages given there are 25 templates per page.
+            pages = int(math.ceil(len(templates) / 25))
+            # Make sure page is in the range (1 <= page <= pages).
+            page = min(max(page, 0), pages)
+
+            # Slice so templates only contains the page we want
+            start = (page-1)*25
+            end = page*25
+            templates = templates[start:end]
+
+            # Calc info + send temp msg
+            for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
+                ct = list(canvas_ts)
+                msg = await check_canvas(ctx, ct, canvas, msg=msg)
+
+            # Delete temp msg and send final report
+            await msg.delete()
+            await build_template_report(ctx, templates, page, pages)
 
     # =======================
     #         GRIDIFY
@@ -865,3 +946,108 @@ async def _dither(ctx, url, palette, type, options):
             raise UrlError
         except IOError:
             raise PilImageError
+
+async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
+    """Builds and sends a template check embed on the set of templates provided.
+
+    Arguments:
+    ctx - commands.Context object.
+    templates - A list of template objects.
+    page - An integer specifying the page that the user is on, or nothing.
+    pages - The total number of pages for the current set of templates, integer.
+    """
+    if page != None: # Sending one page
+        embed = discord.Embed(
+            title=ctx.s("canvas.template_report_header"),
+            description=f"Page {page} of {pages}")
+        embed.set_footer(text=f"Do {ctx.gprefix}t check <page_number> to see other pages")
+
+        for x, template in enumerate(templates):
+            embed.add_field(
+                name=template.name,
+                value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
+                    e=ctx.s("bot.errors"),
+                    e_val=template.errors,
+                    t_val=template.size,
+                    p=ctx.s("bot.percent"),
+                    p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
+                    x=template.x,
+                    y=template.y),
+                inline=False)
+        await ctx.send(embed=embed)
+    else: # Sending *all* pages
+        for page in range(pages):
+            page += 1
+            # Slice so templates only contains the page we want
+            start = (page-1)*25
+            end = page*25
+            templates_copy = templates[start:end]
+
+            embed = discord.Embed(
+                title=ctx.s("canvas.template_report_header"),
+                description=f"Page {page} of {pages}")
+
+            for x, template in enumerate(templates_copy):
+                embed.add_field(
+                    name=template.name,
+                    value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
+                        e=ctx.s("bot.errors"),
+                        e_val=template.errors,
+                        t_val=template.size,
+                        p=ctx.s("bot.percent"),
+                        p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
+                        x=template.x,
+                        y=template.y),
+                    inline=False)
+            await ctx.send(embed=embed)
+
+async def check_canvas(ctx, templates, canvas, msg=None):
+    """Update the current total errors for a list of templates.
+
+    Arguments:
+    ctx - commands.Context object.
+    templates - A list of template objects.
+    canvas - The canvas that the above templates are on, string.
+    msg - A discord.Message object, or nothing. This object is used to continually edit the same message.
+
+    Returns:
+    A discord.Message object.
+    """
+    chunk_classes = {
+        'pixelcanvas': BigChunk,
+        'pixelzone': ChunkPz,
+        'pxlsspace': PxlsBoard
+    }
+
+    # Find all chunks that have templates on them
+    chunks = set()
+    for t in templates:
+        empty_bcs, shape = chunk_classes[canvas].get_intersecting(t.x, t.y, t.width, t.height)
+        chunks.update(empty_bcs)
+
+    if msg is not None:
+        await msg.edit(content=ctx.s("canvas.fetching_data").format(canvases.pretty_print[canvas]))
+    else:
+        msg = await ctx.send(ctx.s("canvas.fetching_data").format(canvases.pretty_print[canvas]))
+    await http.fetch_chunks(chunks) # Fetch all chunks
+
+    await msg.edit(content=ctx.s("canvas.calculating"))
+    example_chunk = next(iter(chunks))
+    for t in templates:
+        empty_bcs, shape = example_chunk.get_intersecting(t.x, t.y, t.width, t.height)
+        tmp = Image.new("RGBA", (example_chunk.width * shape[0], example_chunk.height * shape[1]))
+        for i, ch in enumerate(empty_bcs):
+            ch = next((x for x in chunks if x == ch))
+            if ch.is_in_bounds():
+                tmp.paste(ch.image, ((i % shape[0]) * ch.width, (i // shape[0]) * ch.height))
+
+        x, y = t.x - empty_bcs[0].p_x, t.y - empty_bcs[0].p_y
+        tmp = tmp.crop((x, y, x + t.width, y + t.height))
+        template = Image.open(await http.get_template(t.url, t.name)).convert('RGBA')
+        alpha = Image.new('RGBA', template.size, (255, 255, 255, 0))
+        template = Image.composite(template, alpha, template)
+        tmp = Image.composite(tmp, alpha, template)
+        tmp = ImageChops.difference(tmp.convert('RGB'), template.convert('RGB'))
+        t.errors = np.array(tmp).any(axis=-1).sum()
+
+    return msg

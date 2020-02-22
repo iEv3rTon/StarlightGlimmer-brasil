@@ -81,6 +81,9 @@ STRINGS = {
     "canvas.dither_toolarge": "Image is too big, under {0},{0} only please.",
     "canvas.dither_order_and_threshold_option": "Threshold: {0}/4 Order: {1}",
     "canvas.dither_order_option": "Order: {0}",
+    "canvas.template_report_header": "Template Report",
+    "canvas.fetching_data": "Fetching data from {}...",
+    "canvas.calculating": "Calculating...",
 
     # Configuration command messages
     "configuration.alert_channel_cleared": "Alert channel has been cleared.",
@@ -162,7 +165,6 @@ STRINGS = {
 
     # Template command messages
     "template.added": "Template '{0}' added!",
-    "template.calculating": "Calculating...",
     "template.duplicate_list_open": "The following templates already match this image:",
     "template.duplicate_list_close": "Create a new template anyway?",
     "template.err.max_templates": "This guild already has the maximum number of templates. Please remove a template before adding another.",
@@ -174,7 +176,6 @@ STRINGS = {
     "template.err.no_image": "An image is required to add a template.",
     "template.err.invalid_coords": "Coordinates must be numbers!",
     "template.err.template_gen_error": "There was an error building the template.",
-    "template.fetching_data": "Fetching data from {}...",
     "template.link_to_canvas": "Link to canvas",
     "template.list_all_footer_1": "Use '{0}template all <page>' to see that page",
     "template.list_all_footer_2": "Use '{0}template info -f <faction> <name>' to see more info on a template",
@@ -184,7 +185,6 @@ STRINGS = {
     "template.name_exists_ask_replace": "A template with the name '{0}' already exists for {1} at ({2}, {3}). Replace it?",
     "template.not_quantized": "This image contains colors that are not part of this canvas's palette. Would you like to quantize it?",
     "template.remove": "Successfully removed '{0}'.",
-    "template.template_report_header": "Template Report",
     "template.updated": "Template '{0}' updated!",
     "template.menuclose": "Menu exited!",
 
@@ -199,6 +199,7 @@ STRINGS = {
     "brief.canvas.pixelzone": "Sets the default canvas to Pixelzone.io.",
     "brief.canvas.pxlsspace": "Sets the default canvas to Pxls.space.",
     "brief.changelog": "Gets a link to my releases page.",
+    "brief.check": "Check the completion status of all templates.",
     "brief.diff": "Checks completion status of a template on a canvas.",
     "brief.diff.pixelcanvas": "Creates a diff using Pixelcanvas.io.",
     "brief.diff.pixelzone": "Creates a diff using Pixelzone.io.",
@@ -272,11 +273,6 @@ STRINGS = {
     "brief.template.add.pixelzone": "Adds a template for Pixelzone.io.",
     "brief.template.add.pxlsspace": "Adds a template for Pxls.space.",
     "brief.template.all": "List all templates for all factions.",
-    "brief.template.check": "Check the completion status of all templates, paginated.",
-    "brief.template.check.all": "Check the completion status of all templates, sends the whole report at once.",
-    "brief.template.check.pixelcanvas": "Check the completion status of all Pixelcanvas.io templates.",
-    "brief.template.check.pixelzone": "Check the completion status of all Pixelzone.io templates.",
-    "brief.template.check.pxlsspace": "Check the completion status of all Pxls.space templates.",
     "brief.template.info": "Displays info about a template.",
     "brief.template.remove": "Removes a template.",
     "brief.unregister": "Opt-out of animated emoji replacement.",
@@ -293,6 +289,11 @@ STRINGS = {
         - Previews take precedence over diffs
         - Messages which use spoiler tags will be entirely ignored""",
     "help.canvas": "Defaults to Pixelcanvas.io.",
+    "help.check":
+        """The following optional arguments are available:
+        `-p` or `--page` - Use with a number to request a specific page, defaults to 1.
+        `-a` or `--all` - This argument sends every page available at once. Be warned, this can be spammy.
+        `-e` or `--onlyErrors` - This argument only works if '--all' is also being used. It filters the results and only shows templates with errors.""",
     "help.diff":
         """Images must be in PNG format.
         Error pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `{p}help quantize`).
@@ -361,8 +362,6 @@ STRINGS = {
     (-x) - A number after this argument will be used to update the x coordinate.
     (-y) - A number after this argument will be used to update the y coordinate.
     (-i|--image) This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image.""",
-    "help.template.check": "If you have more than 25 templates use `{p}template check (page-number)` to see additional pages. You could also use `{p}template check all` see it's help for additional options that are available.",
-    "help.template.check.all": "This command can be spammy. You can also use the optional argument `-e` or `--error` at the end of your command to only send info on templates with errors",
     "help.template.info": "Use the `-r` flag to return just the raw image without extra info. You can also add a zoom factor when using this option.",
     "help.template.remove": "This command can only be used if the template being removed was added by you, unless you are a Template Admin, Bot Admin, or have the Administrator permission (see 'role').",
     "help.unregister": "You only need to unregister once for this to apply to all guilds.",
@@ -372,6 +371,7 @@ STRINGS = {
     "signature.alertchannel.set": "<channel>",
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
+    "signature.check": "(-p|--page) (-a|--all) (-e|--onlyErrors)",
     "signature.diff": "<template_name> (--errors) (--snapshot) (--faction) (--zoom)",
     "signature.diff.pixelcanvas": "<coordinates> (--errors) (--snapshot) (--zoom)",
     "signature.diff.pixelzone": "<coordinates> (--errors) (--snapshot) (--zoom)",
@@ -417,8 +417,6 @@ STRINGS = {
     "signature.template.add.pixelcanvas": "<name> <x> <y> (url)",
     "signature.template.add.pixelzone": "<name> <x> <y> (url)",
     "signature.template.add.pxlsspace": "<name> <x> <y> (url)",
-    "signature.template.check": "(subcommand) (page number)",
-    "signature.template.check.all": "(-e|--error)",
     "signature.template.info": "(-r) (-f faction) <template> (zoom)",
     "signature.template.remove": "<template>",
 
@@ -430,6 +428,9 @@ STRINGS = {
                          ("\"Cool Faction\" cf", "Assembles your guild into a faction named 'Cool Faction' with alias 'cf'")],
     "example.canvas": [("", "Show the currently set default canvas"),
                        ("pc", "Set the default canvas to Pixelcanvas.io")],
+    "example.check": [("", "Check the completion status of the first 25 of this guild's templates"),
+                      ("-p 2", "Check the completion status of the second 25 of this guild's templates"),
+                      ("-a -e", "Check the completion status of all of this guild's templates and only show those that have errors")],
     "example.diff": [("520 -94 -z 7", "(with an attachment) Check an image against the default canvas at (520, -94) and magnify the result 7 times"),
                      ("-256 345 -e", "(with an attachment) Check an image against the default canvas at (-256, 345) and print a short list of specific error pixels"),
                      ("\"My Template\"", "Check a template named 'My Template'"),
@@ -531,8 +532,6 @@ STRINGS = {
                                        ("MyTemplate 100 100 https://cdn.discordapp.com/.../avatar.jpg", "Create a template named 'MyTemplate' for Pixelzone.io at (100, 100) using the image at the URL")],
     "example.template.add.pxlsspace": [("MyTemplate 100 100", "(with an attachment) Create a template named 'MyTemplate' for Pxls.space at (100, 100)"),
                                        ("MyTemplate 100 100 https://cdn.discordapp.com/.../avatar.jpg", "Create a template named 'MyTemplate' for Pxls.space at (100, 100) using the image at the URL")],
-    "example.template.check": [("", "Check completion status of all this guild's templates"),
-                               ("pc", "Check completion status of all this guild's Pixelcanvas.io templates")],
     "example.template.info": [("MyTemplate", "Get info on a template named 'MyTemplate'"),
                               ("-f CoolFaction CoolTemplate", "Get info on a template named 'CoolTemplate' belonging to a faction named 'CoolFaction'"),
                               ("-r RawTemplate 5", "Get just the image for template named 'RawTemplate' magnified 5 times"),
