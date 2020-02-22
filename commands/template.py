@@ -184,13 +184,13 @@ class Template(commands.Cog):
 
         # Argument Parsing
         parser = argparse.ArgumentParser()
-        parser.add_argument("-n", "--newName", nargs="?", default=False)
-        parser.add_argument("-x", nargs="?", default=False)
-        parser.add_argument("-y", nargs="?", default=False)
+        parser.add_argument("-n", "--newName", nargs="?", default=None)
+        parser.add_argument("-x", nargs="?", default=None)
+        parser.add_argument("-y", nargs="?", default=None)
         # if -i not present, False
         # if no value after -i, True
         # if value after -i, capture
-        parser.add_argument("-i", "--image", nargs="?", const=True, default=False)
+        parser.add_argument("-i", "--image", nargs="?", const=True, default=None)
         args = parser.parse_known_args(args)
         unknown = args[1]
         args = vars(args[0])
@@ -209,7 +209,7 @@ class Template(commands.Cog):
 
         """Image is done first since I'm using the build_template method to update stuff,
         and I don't want anything to have changed in orig_template before I use it"""
-        if image != False:
+        if image:
             # Update image
             url = None
             if not isinstance(image, bool):
@@ -254,7 +254,7 @@ class Template(commands.Cog):
                 date_modified=int(time.time()))
             out.append(f"File updated.")
 
-        if x != False:
+        if x:
             # Update x coord
             try:
                 x = int(re.sub('[^0-9-]','', x))
@@ -266,7 +266,7 @@ class Template(commands.Cog):
             sql.template_kwarg_update(ctx.guild.id, orig_template.name, x=x, date_modified=int(time.time()))
             out.append(f"X coordinate changed from {orig_template.x} to {x}.")
 
-        if y != False:
+        if y:
             # Update y coord
             try:
                 y = int(re.sub('[^0-9-]','', y))
@@ -278,7 +278,7 @@ class Template(commands.Cog):
             sql.template_kwarg_update(ctx.guild.id, orig_template.name, y=y, date_modified=int(time.time()))
             out.append(f"Y coordinate changed from {orig_template.y} to {y}.")
 
-        if new_name != False:
+        if new_name:
             # Check if new name is already in use
             dup_check = sql.template_get_by_name(ctx.guild.id, new_name)
             if dup_check != None:
