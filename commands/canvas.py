@@ -689,6 +689,9 @@ async def _diff(self, ctx, x, y, args, canvas, fetch, palette):
             await ctx.send(ctx.s("canvas.invalid_input"))
             return
 
+        if x == "" or y == "":
+            await ctx.send(ctx.s("canvas.invalid_input"))
+
         # Argument Parsing
         parser = argparse.ArgumentParser()
         parser.add_argument("-e", "--errors", action='store_true')
