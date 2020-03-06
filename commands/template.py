@@ -415,13 +415,10 @@ class Template(commands.Cog):
             await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
             return
 
-        print(f"{filter} ")
-
         if filter != ():
             for i, s in enumerate(snapshots):
                 if s[0].name not in filter:
                     snapshots[i] = None
-                    # print(snapshots)
 
         snapshots = [s for s in snapshots if s is not None]
 
