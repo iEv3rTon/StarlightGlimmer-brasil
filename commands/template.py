@@ -405,7 +405,7 @@ class Template(commands.Cog):
     @commands.cooldown(2, 5, BucketType.guild)
     @checks.template_adder_only()
     @template.group(name='snapshot', aliases=['s'], invoke_without_command=True, case_insensitive=True)
-    async def template_snapshot(self, ctx):
+    async def template_snapshot(self, ctx, *filter):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             await ctx.send(ctx.s("template.err.not_owner"))
             return
@@ -414,6 +414,11 @@ class Template(commands.Cog):
         if snapshots == []:
             await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
             return
+
+        if filter:
+            for b, t in snapshots:
+                if b.name not in filter:
+                    snapshots.remove([b,t])
 
         not_updated = []
 

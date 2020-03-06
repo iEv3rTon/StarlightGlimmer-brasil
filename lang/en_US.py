@@ -368,7 +368,9 @@ STRINGS = {
     (-i|--image) This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image.""",
     "help.template.info": "Use the `-r` flag to return just the raw image without extra info. You can also add a zoom factor when using this option.",
     "help.template.remove": "This command can only be used if the template being removed was added by you, unless you are a Template Admin, Bot Admin, or have the Administrator permission (see 'role').",
-    "help.template.snapshot": "Attempts to update all currently registered snapshot templates. If a snapshot has errors, it will not be updated. This command can only be used by Template Admins and those with Admin perms.",
+    "help.template.snapshot": """
+        Attempts to update all currently registered snapshot templates. If a snapshot has errors, it will not be updated.
+        This command can only be used by Template Admins and those with Admin perms. If you wish to only attempt to update specific templates you can specify them by listing their base template names.""",
     "help.template.snapshot.add": "Base is what you want the template to look like, snapshot is what it looks like currently.",
     "help.unregister": "You only need to unregister once for this to apply to all guilds.",
 
@@ -425,7 +427,7 @@ STRINGS = {
     "signature.template.add.pxlsspace": "<name> <x> <y> (url)",
     "signature.template.info": "(-r) (-f faction) <template> (zoom)",
     "signature.template.remove": "<template>",
-    "signature.template.snapshot": "(subcommand)",
+    "signature.template.snapshot": "(subcommand) (template_filtering)",
     "signature.template.snapshot.add": "<base_template_name> <snapshot_template_name>",
     "signature.template.snapshot.remove": "<base_template_name> <snapshot_template_name>",
 
@@ -546,6 +548,8 @@ STRINGS = {
                               ("-r RawTemplate 5", "Get just the image for template named 'RawTemplate' magnified 5 times"),
                               ("-r -f CoolFaction CoolRawTemplate 4", "Get just the image for a template named 'CoolRawTemplate' belonging to a faction named 'CoolFaction' magnified 4 times")],
     "example.template.remove": [("MyTemplate", "Remove a template named 'MyTemplate'")],
+    "example.template.snapshot": [("", "Try to update all snapshots in this guild."),
+                                  ("cb mb", "Only try to update the snapshots 'cb' and 'mb'.")],
 
     # Canvas colors
     "color.unknown": "Unknown",
