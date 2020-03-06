@@ -416,9 +416,9 @@ class Template(commands.Cog):
             return
 
         if filter != []:
-            for b, t in snapshots:
-                if b.name not in filter:
-                    snapshots.remove([b,t])
+            for s in snapshots:
+                if s[0].name not in filter:
+                    snapshots.remove(s)
                     print(snapshots)
 
         not_updated = []
