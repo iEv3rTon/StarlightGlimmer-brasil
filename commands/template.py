@@ -435,10 +435,20 @@ class Template(commands.Cog):
             diff_img, tot, err, bad, err_list \
                 = await render.diff(target.x, target.y, data, 1, fetchers[target.canvas], colors.by_name[target.canvas], False)
             if err != 0:
-                not_updated.append([base, "err"])
-                continue
+                if not await utils.yes_no(ctx, "There are no errors on the snapshot, do you want to update it?"):
+                    not_updated.append([base, "skip"])
+                    continue
+            else:
+                with io.BytesIO() as bio:
+                    diff_img.save(bio, format="PNG")
+                    bio.seek(0)
+                    f = discord.File(bio, "diff.png")
+                    msg = await ctx.send(file=f)
+                if not await utils.yes_no(ctx, "There are errors on the snapshot, do you want to update it? You will loose track of progress if you do this."):
+                    not_updated.append([base, "err"])
+                    continue
 
-            await ctx.send(f"No errors found on {target.name}, generating snapshot from {base.name}...")
+            await ctx.send(f"Generating snapshot from {base.name}...")
             data = await http.get_template(base.url, base.name)
             fetchers = {
                 'pixelcanvas': render.fetch_pixelcanvas,
