@@ -434,7 +434,7 @@ class Template(commands.Cog):
             }
             diff_img, tot, err, bad, err_list \
                 = await render.diff(target.x, target.y, data, 1, fetchers[target.canvas], colors.by_name[target.canvas], False)
-            if err != 0:
+            if err == 0:
                 if not await utils.yes_no(ctx, "There are no errors on the snapshot, do you want to update it?"):
                     not_updated.append([base, "skip"])
                     continue
