@@ -418,6 +418,7 @@ class Template(commands.Cog):
         not_updated = []
 
         for base, target in snapshots:
+            await ctx.send(f"Checking {target.name} for errors...")
             data = await http.get_template(target.url, target.name)
             fetchers = {
                 'pixelcanvas': render.fetch_pixelcanvas,
@@ -430,6 +431,7 @@ class Template(commands.Cog):
                 not_updated.append([base, "err"])
                 continue
 
+            await ctx.send(f"No errors found on {target.name}, generating snapshot from {base.name}...")
             data = await http.get_template(base.url, base.name)
             fetchers = {
                 'pixelcanvas': render.fetch_pixelcanvas,
