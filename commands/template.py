@@ -417,7 +417,7 @@ class Template(commands.Cog):
 
         print(f"{filter} ")
 
-        if filter != []:
+        if filter != ():
             for i, s in enumerate(snapshots):
                 if s[0].name not in filter:
                     snapshots[i] = None
