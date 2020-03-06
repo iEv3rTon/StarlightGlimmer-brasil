@@ -506,7 +506,7 @@ class Template(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(2, 5, BucketType.guild)
     @checks.template_adder_only()
-    @template_snapshot.command(name='remove', aliases=['rm'])
+    @template_snapshot.command(name='remove', aliases=['r'])
     async def template_snapshot_remove(self, ctx, base_template, snapshot_template):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             await ctx.send(ctx.s("template.err.not_owner"))
