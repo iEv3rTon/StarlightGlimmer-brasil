@@ -81,6 +81,14 @@ def _create_tables():
         );
     """)
     c.execute("""
+        CREATE TABLE IF NOT EXISTS snapshots(
+            guild_id INTEGER NOT NULL,
+            base_template_name TEXT NOT NULL,
+            target_template_name TEXT NOT NULL,
+            FOREIGN KEY(guild_id) REFERENCES guilds(id)
+        );
+    """)
+    c.execute("""
       CREATE TABLE IF NOT EXISTS version(
         id      INTEGER
           PRIMARY KEY,
@@ -212,7 +220,6 @@ def _update_tables(v):
                 UPDATE guilds SET canvas='pixelcanvas' WHERE canvas='pixelplanet';
                 COMMIT;
             """)
-
 
 # ================================
 #      Animotes Users queries
@@ -362,7 +369,7 @@ def guild_get_prefix_by_id(gid) -> Optional[str]:
 
 
 # Decided to make 1==True and 2==False here, cause 0 was converting to NULL and then
-# defaulting to 0 lmao
+# defaulting to 1 lmao
 def guild_is_autoscan(gid) -> bool:
     c.execute("SELECT autoscan FROM guilds WHERE id=?", (gid,))
     fetched = c.fetchone()
@@ -514,7 +521,42 @@ def template_kwarg_update(gid, name, **kwargs):
             c.execute("UPDATE templates SET date_modified=? WHERE guild_id=? AND name=?", (value, gid, name))
     conn.commit()
 
+# ================================
+#       Snapshot queries
+# ================================
 
+def snapshot_add(gid, base_name, target_name):
+    c.execute(
+        'INSERT INTO snapshots(guild_id, base_template_name, target_template_name) VALUES(?,?,?)',
+        (gid, base_name, target_name))
+    conn.commit()
+
+def snapshot_delete(gid, base_name, target_name):
+    c.execute(
+        'DELETE FROM snapshots WHERE guild_id=? AND base_template_name=? AND target_template_name=?',
+        (gid, base_name, target_name))
+    conn.commit()
+
+def snapshot_get_by_names(gid, base_name, target_name):
+    c.execute(
+        'SELECT * FROM snapshots WHERE guild_id=? AND base_template_name=? AND target_template_name=?',
+        (gid, base_name, target_name))
+    s = c.fetchone()
+    return s
+
+def snapshots_get_all_by_guild(gid):
+    c.execute('SELECT base_template_name, target_template_name FROM snapshots WHERE guild_id=?', (gid,))
+    snapshots = c.fetchall()
+    for i, s in enumerate(snapshots):
+        base = template_get_by_name(gid, s[0])
+        target = template_get_by_name(gid, s[1])
+        snapshots[i] = [base, target]
+        if base == None or target == None:
+            c.execute(
+                'DELETE FROM snapshots WHERE guild_id=? AND base_template_name=? AND target_template_name=?',
+                (gid, s[0], s[1]))
+            conn.commit()
+    return [s for s in snapshots if s[0] != None and s[1] != None]
 
 # =========================
 #      Version queries

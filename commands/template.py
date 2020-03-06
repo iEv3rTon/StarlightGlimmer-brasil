@@ -401,6 +401,119 @@ class Template(commands.Cog):
         sql.template_delete(t.gid, t.name)
         await ctx.send(ctx.s("template.remove").format(name))
 
+    @commands.guild_only()
+    @commands.cooldown(2, 5, BucketType.guild)
+    @checks.template_adder_only()
+    @template.group(name='snapshot', aliases=['s'], invoke_without_command=True, case_insensitive=True)
+    async def template_snapshot(self, ctx):
+        if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
+            await ctx.send(ctx.s("template.err.not_owner"))
+            return
+
+        snapshots = sql.snapshots_get_all_by_guild(ctx.guild.id)
+        if snapshots == []:
+            await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
+            return
+
+        not_updated = []
+
+        for base, target in snapshots:
+            data = await http.get_template(target.url, target.name)
+            fetchers = {
+                'pixelcanvas': render.fetch_pixelcanvas,
+                'pixelzone': render.fetch_pixelzone,
+                'pxlsspace': render.fetch_pxlsspace
+            }
+            diff_img, tot, err, bad, err_list \
+                = await render.diff(target.x, target.y, data, 1, fetchers[target.canvas], colors.by_name[target.canvas], False)
+            if err != 0:
+                not_updated.append([base, "err"])
+                continue
+
+            data = await http.get_template(base.url, base.name)
+            fetchers = {
+                'pixelcanvas': render.fetch_pixelcanvas,
+                'pixelzone': render.fetch_pixelzone,
+                'pxlsspace': render.fetch_pxlsspace
+            }
+            diff_img, tot, err, bad, err_list \
+                = await render.diff(base.x, base.y, data, 1, fetchers[base.canvas], colors.by_name[base.canvas], True)
+
+            if bad == 0:
+                with io.BytesIO() as bio:
+                    diff_img.save(bio, format="PNG")
+                    bio.seek(0)
+                    f = discord.File(bio, "diff.png")
+                    msg = await ctx.send(file=f)
+
+                url = msg.attachments[0].url
+                await Template.add_template(ctx, base.canvas, target.name, str(base.x), str(base.y), url)
+            else:
+                not_updated.append(base, "bad")
+                continue
+
+        if not_updated != []:
+            out = []
+            for t, reason in not_updated:
+                if reason == "err":
+                    out.append(f"The snapshot of {t.name} was not updated, as there were errors on the current snapshot.")
+                if reason == "bad":
+                    out.append(f"The snapshot of {t.name} was not updated, as there were unquantised pixels detected.")
+
+            await ctx.send("```{}```".format("\n".join(out)))
+
+    @commands.guild_only()
+    @commands.cooldown(2, 5, BucketType.guild)
+    @checks.template_adder_only()
+    @template_snapshot.command(name='add', aliases=['a'])
+    async def template_snapshot_add(self, ctx, base_template, snapshot_template):
+        if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
+            await ctx.send(ctx.s("template.err.not_owner"))
+            return
+
+        base = sql.template_get_by_name(ctx.guild.id, base_template)
+        target = sql.template_get_by_name(ctx.guild.id, snapshot_template)
+
+        if base == None:
+            await ctx.send("The base template does not exist.")
+            return
+        if target == None:
+            await ctx.send("The snapshot template does not exist.")
+            return
+
+        sql.snapshot_add(ctx.guild.id, base_template, snapshot_template)
+        await ctx.send("Snapshot added!")
+
+    @commands.guild_only()
+    @commands.cooldown(2, 5, BucketType.guild)
+    @checks.template_adder_only()
+    @template_snapshot.command(name='remove', aliases=['rm'])
+    async def template_snapshot_remove(self, ctx, base_template, snapshot_template):
+        if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
+            await ctx.send(ctx.s("template.err.not_owner"))
+            return
+
+        s = sql.snapshot_get_by_names(ctx.guild.id, base_template, snapshot_template)
+        if s is None:
+            await ctx.send("That snapshot does not exist.")
+            return
+
+        sql.snapshot_delete(ctx.guild.id, base_template, snapshot_template)
+        await ctx.send("Snapshot removed!")
+
+    @commands.guild_only()
+    @commands.cooldown(2, 5, BucketType.guild)
+    @checks.template_adder_only()
+    @template_snapshot.command(name='list', aliases=['l'])
+    async def template_snapshot_list(self, ctx):
+        snapshots = sql.snapshots_get_all_by_guild(ctx.guild.id)
+        if snapshots == []:
+            await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
+            return
+
+        out = [f"Base Template Name:{base.name} Snapshot Template Name:{target.name}" for base, target in snapshots]
+        await ctx.send("Snapshots:```{}```".format("\n".join(out)))
+
     @staticmethod
     async def add_template(ctx, canvas, name, x, y, url):
         """Adds a template to the database.

@@ -606,7 +606,6 @@ class Checker:
                 y = int(y * 64 + math.floor(number / 64))
                 color = 15 & a
 
-                print(f"x:{x} y:{y} color:{color}")
                 asyncio.ensure_future(check_pixels(self, x, y, color, ws))
 
         def on_error(ws, exception):
@@ -688,9 +687,6 @@ async def _diff(self, ctx, x, y, args, canvas, fetch, palette):
         except ValueError:
             await ctx.send(ctx.s("canvas.invalid_input"))
             return
-
-        if x == "" or y == "":
-            await ctx.send(ctx.s("canvas.invalid_input"))
 
         # Argument Parsing
         parser = argparse.ArgumentParser()
