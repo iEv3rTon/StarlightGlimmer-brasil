@@ -2,6 +2,7 @@ import asyncio
 import logging
 import re
 import time
+import argparse
 
 import discord
 from discord.ext.commands.view import StringView
@@ -137,3 +138,12 @@ async def yes_no(ctx, question):
     finally:
         sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
     return resp_msg.content == "1"
+
+class GlimmerArgumentParser(argparse.ArgumentParser):
+
+    def __init__(self, ctx):
+        argparse.ArgumentParser.__init__(self, add_help=False)
+        self.ctx = ctx
+
+    def error(self, message):
+        asyncio.ensure_future(self.ctx.send(f"Error: {message}"))

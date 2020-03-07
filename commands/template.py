@@ -22,7 +22,7 @@ from objects import DbTemplate
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
 from objects.errors import FactionNotFoundError, NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, IgnoreError, TemplateHttpError, NoJpegsError, NotPngError
 import utils
-from utils import canvases, checks, colors, config, http, render, sqlite as sql
+from utils import canvases, checks, colors, config, http, render, GlimmerArgumentParser, sqlite as sql
 
 log = logging.getLogger(__name__)
 
@@ -183,7 +183,7 @@ class Template(commands.Cog):
             raise TemplateNotFoundError
 
         # Argument Parsing
-        parser = argparse.ArgumentParser()
+        parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-n", "--newName", nargs="?", default=None)
         parser.add_argument("-x", nargs="?", default=None)
         parser.add_argument("-y", nargs="?", default=None)
@@ -192,8 +192,11 @@ class Template(commands.Cog):
         # if value after -i, capture
         parser.add_argument("-i", "--image", nargs="?", const=True, default=None)
         args = parser.parse_known_args(args)
-        unknown = args[1]
-        args = vars(args[0])
+        try:
+            unknown = args[1]
+            args = vars(args[0])
+        except TypeError:
+            return
 
         new_name = args["newName"]
         x = args["x"]

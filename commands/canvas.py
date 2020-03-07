@@ -10,13 +10,13 @@ import threading
 import datetime
 import uuid
 import asyncio
-import argparse
 import time
 import websocket
 from struct import unpack_from
 from typing import List
 import itertools
 import numpy as np
+import asyncio
 
 import discord
 from discord.ext import commands
@@ -27,7 +27,7 @@ from objects.bot_objects import GlimContext
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
 from objects.errors import FactionNotFoundError, IdempotentActionError, NoTemplatesError
 import utils
-from utils import colors, http, canvases, render, sqlite as sql
+from utils import colors, http, canvases, render, GlimmerArgumentParser, sqlite as sql
 
 log = logging.getLogger(__name__)
 
@@ -53,13 +53,16 @@ class Canvas(commands.Cog):
             return
 
         # Argument Parsing
-        parser = argparse.ArgumentParser()
+        parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--errors", action='store_true')
         parser.add_argument("-s", "--snapshot", action='store_true')
         parser.add_argument("-f", "--faction", default=None)
         parser.add_argument("-z", "--zoom", default=1)
         a = parser.parse_known_args(args)
-        a = vars(a[0])
+        try:
+            a = vars(a[0])
+        except TypeError:
+            return
 
         try:
             list_pixels = a["errors"]
