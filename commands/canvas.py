@@ -352,7 +352,7 @@ class Canvas(commands.Cog):
     async def check(self, ctx, *args):
 
         # Argument Parsing
-        parser = GlimmerArgumentParser()
+        parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--onlyErrors", action='store_true')
         parser.add_argument("-a", "--all", action='store_true')
         parser.add_argument("-p", "--page", default=1)
