@@ -70,29 +70,36 @@ class Template(commands.Cog):
         def is_valid(reaction, user):
             return reaction.message.id == message.id and (reaction.emoji == '◀' or reaction.emoji == '▶') and user.id != 589606792926068736
 
-        async def wait_for(self, ctx, type, message, embed, pages, page_index):
-            _5_minutes_in_future = (datetime.datetime.today() + datetime.timedelta(minutes=5.0))
-            try:
-                while _5_minutes_in_future > datetime.datetime.today():
-                    reaction, _user = await self.bot.wait_for(type, timeout=300.0, check=is_valid)
-                    if reaction.emoji == '◀':
-                        if page_index != 0:
-                            #not on first page, scroll left
-                            page_index -= 1
-                            embed = Template.build_table(ctx, page_index, pages, templates)
-                            await message.edit(embed=embed)
-                    elif reaction.emoji == '▶':
-                        if page_index != pages-1:
-                            #not on last page, scroll right
-                            page_index += 1
-                            embed = Template.build_table(ctx, page_index, pages, templates)
-                            await message.edit(embed=embed)
-            except asyncio.TimeoutError:
-                pass
-            await message.edit(content=ctx.s("bot.timeout"), embed=embed)
+        _5_minutes_in_future = (datetime.datetime.today() + datetime.timedelta(minutes=5.0))
+        try:
+            while _5_minutes_in_future > datetime.datetime.today():
+                add_future = asyncio.ensure_future(self.bot.wait_for("reaction_add", timeout=300.0, check=is_valid))
+                remove_future = asyncio.ensure_future(self.bot.wait_for("reaction_remove", timeout=300.0, check=is_valid))
+                reaction, _user = None, None
+                while True:
+                    if remove_future.done() == True:
+                        reaction, _user = remove_future.result()
+                        break
+                    if add_future.done() == True:
+                        reaction, _user = add_future.result()
+                        break
+                    await asyncio.sleep(0.1)
 
-        asyncio.ensure_future(wait_for(self, ctx, "reaction_add", message, embed, pages, page_index))
-        asyncio.ensure_future(wait_for(self, ctx, "reaction_remove", message, embed, pages, page_index))
+                if reaction.emoji == '◀':
+                    if page_index != 0:
+                        #not on first page, scroll left
+                        page_index -= 1
+                        embed = Template.build_table(ctx, page_index, pages, templates)
+                        await message.edit(embed=embed)
+                elif reaction.emoji == '▶':
+                    if page_index != pages-1:
+                        #not on last page, scroll right
+                        page_index += 1
+                        embed = Template.build_table(ctx, page_index, pages, templates)
+                        await message.edit(embed=embed)
+        except asyncio.TimeoutError:
+            pass
+        await message.edit(content=ctx.s("bot.timeout"), embed=embed)
 
     @commands.guild_only()
     @commands.cooldown(2, 5, BucketType.guild)
