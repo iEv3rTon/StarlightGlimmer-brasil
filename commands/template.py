@@ -91,13 +91,8 @@ class Template(commands.Cog):
                 pass
             await message.edit(content=ctx.s("bot.timeout"), embed=embed)
 
-        task1 = asyncio.create_task(
-            wait_for(self, ctx, "reaction_add", message, embed, pages, page_index))
-        task2 = asyncio.create_task(
-            wait_for(self, ctx, "reaction_remove", message, embed, pages, page_index))
-
-        await task1
-        await task2
+        asyncio.ensure_future(wait_for(self, ctx, "reaction_add", message, embed, pages, page_index))
+        asyncio.ensure_future(wait_for(self, ctx, "reaction_remove", message, embed, pages, page_index))
 
     @commands.guild_only()
     @commands.cooldown(2, 5, BucketType.guild)
