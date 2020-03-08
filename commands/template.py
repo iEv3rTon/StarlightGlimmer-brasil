@@ -91,9 +91,8 @@ class Template(commands.Cog):
                 pass
             await message.edit(content=ctx.s("bot.timeout"), embed=embed)
 
-        loop = asyncio.get_event_loop()
-        loop.call_soon(wait_for, self, ctx, "reaction_add", message, embed, pages, page_index)
-        loop.call_soon(wait_for, self, ctx, "reaction_remove", message, embed, pages, page_index)
+        asyncio.run(wait_for(self, ctx, "reaction_add", message, embed, pages, page_index))
+        asyncio.run(wait_for(self, ctx, "reaction_remove", message, embed, pages, page_index))
 
     @commands.guild_only()
     @commands.cooldown(2, 5, BucketType.guild)
