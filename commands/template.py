@@ -26,6 +26,17 @@ from utils import canvases, checks, colors, config, http, render, GlimmerArgumen
 
 log = logging.getLogger(__name__)
 
+class FactionAction(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        if nargs is not None:
+            raise ValueError("nargs not allowed")
+        super(FactionAction, self).__init__(option_strings, dest, **kwargs)
+    def __call__(self, parser, namespace, values, option_string=None):
+        faction = sql.guild_get_by_faction_name_or_alias(values)
+        if faction == None:
+            raise FactionNotFoundError
+        setattr(namespace, self.dest, faction.id)
+
 class Template(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -34,23 +45,18 @@ class Template(commands.Cog):
     @commands.cooldown(2, 5, BucketType.guild)
     @commands.group(name='template', invoke_without_command=True, aliases=['t'], case_insensitive=True)
     async def template(self, ctx, *args):
-        gid = ctx.guild.id
-        iter_args = iter(args)
-        page = next(iter_args, 1)
-        if page == "-f":
-            fac = next(iter_args, None)
-            if fac is None:
-                await ctx.send(ctx.s("error.missing_arg_faction"))
-                return
-            faction = sql.guild_get_by_faction_name_or_alias(fac)
-            if not faction:
-                raise FactionNotFoundError
-            gid = faction.id
-            page = next(iter_args, 1)
+        # Argument Parsing
+        parser = GlimmerArgumentParser(ctx)
+        parser.add_argument("-p", "--page", type=int, default=1)
+        parser.add_argument("-f", "--faction", default=ctx.guild.id, action=FactionAction)
+        args = parser.parse_args(args)
         try:
-            page = int(page)
-        except ValueError:
-            page = 1
+            args = vars(args)
+        except TypeError:
+            return
+
+        page = args["page"]
+        gid = args["faction"]
 
         templates = sql.template_get_all_by_guild_id(gid)
         if len(templates) < 1:
