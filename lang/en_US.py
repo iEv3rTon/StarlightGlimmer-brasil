@@ -335,14 +335,28 @@ STRINGS = {
     "help.faction.desc.set": "Max 240 characters.",
     "help.faction.emblem.set": "URLs must be Discord URLs.",
     "help.faction.color.set": "Color must be a valid hexidecimal number. Default 0xCF6EE4.",
-    "help.gridify": "You cannot zoom an image to contain more than 4 million pixels.",
+    "help.gridify":
+        """You cannot zoom an image to contain more than 4 million pixels.
+
+        The following optional arguments are available:
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
+        `-c` or `--color` - Uses the hexadecimal color value you provide for the grid lines of the final image.
+        `-z` or `--zoom` - Zooms in the image by the factor you provide.""",
     "help.prefix": "Max length is 5 characters. You really shouldn't need more than 2.",
     "help.preview":
         """Maximum zoom is 16. Minimum zoom is -8. You cannot zoom an image to contain more than 4 million pixels.
-        Use the '-t' flag to create a default size preview centered on a template.""",
+
+        The following optional arguments are available:
+        `-t` or `--templateRegion` - Creates a default size preview centered on a template.
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
+        `-z` or `--zoom` - Zooms in the preview by the factor you provide.""",
     "help.quantize":
         """This should primarily be used if `{p}diff` is telling you your image has 'bad color' in it.
-        Using this command to create templates from raw images is not suggested, use the {p}dither command instead.""",
+        Using this command to create templates from raw images is not suggested, use the {p}dither command instead.
+
+        The following optional arguments are available:
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
+        `-z` or `--zoom` - Zooms in the image by the factor you provide.""",
     "help.register":
         """Opting into this feature means that whenever you type :animated_emoji_name: I will delete
         your message and replace it with the emoji specified, as long as that emoji is in a server
@@ -354,7 +368,12 @@ STRINGS = {
     "help.role.botadmin": "If a user has a role with this privilege bound to it, that user can use any of my commands with no restrictions. They will have the same permissions as guild Administrators.",
     "help.role.templateadder": "If this privilege is bound to a role, all regular members will lose the ability to modify templates unless they have that role.",
     "help.role.templateadmin": "If a user has a role with this privilege bound to it, that user can add and remove any template using the 'templates' command, regardless of ownership.",
-    "help.template": "You can scroll through the pages of the templates listed using the reactions underneath, this times out and stops responding after 5 minutes.",
+    "help.template":
+        """You can scroll through the pages of the templates listed using the reactions underneath, this times out and stops responding after 5 minutes.
+
+        The following optional arguments are available:
+        `-p` or `--page` - Opens on the page number you provide, if it is a valid page.
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.""",
     "help.template.add":
         """Image must be in PNG format. If the image is not quantized to the target canvas's palette, I will offer to quantize it for you.
         A guild can have up to 25 templates at any time.
@@ -362,11 +381,17 @@ STRINGS = {
         I only store URLs to templates. If the message that originally uploaded a template is deleted, its URL will break and the template will be lost. Save backups to your computer just in case.""",
     "help.template.update":
     """Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.
-    (-n|--name) - Any text following this argument will be used to update the name of the template.
-    (-x) - A number after this argument will be used to update the x coordinate.
-    (-y) - A number after this argument will be used to update the y coordinate.
-    (-i|--image) This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image.""",
-    "help.template.info": "Use the `-r` flag to return just the raw image without extra info. You can also add a zoom factor when using this option.",
+
+    The following optional arguments are available:
+    `-n` or `--name` - Any text following this argument will be used to update the name of the template.
+    `-x` - A number after this argument will be used to update the x coordinate.
+    `-y` - A number after this argument will be used to update the y coordinate.
+    `-i` or `--image` - This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image.""",
+    "help.template.info":
+        """The following optional arguments are available:
+        `-r` or `--raw` - Returns just the template image without extra info.
+        `-z` or `--zoom` - Zooms in the image by the factor you provide. Only works when `-r` is enabled.
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.""",
     "help.template.remove": "This command can only be used if the template being removed was added by you, unless you are a Template Admin, Bot Admin, or have the Administrator permission (see 'role').",
     "help.template.snapshot": """
         Attempts to update all currently registered snapshot templates. If a snapshot has errors, it will not be updated.
@@ -380,10 +405,10 @@ STRINGS = {
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
     "signature.check": "(-p|--page) (-a|--all) (-e|--onlyErrors)",
-    "signature.diff": "<template_name> (--errors) (--snapshot) (--faction) (--zoom)",
-    "signature.diff.pixelcanvas": "<coordinates> (--errors) (--snapshot) (--zoom)",
-    "signature.diff.pixelzone": "<coordinates> (--errors) (--snapshot) (--zoom)",
-    "signature.diff.pxlsspace": "<coordinates> (--errors) (--snapshot) (--zoom)",
+    "signature.diff": "<template_name> (-e|--errors) (-s|--snapshot) (-f|--faction) (-z|--zoom)",
+    "signature.diff.pixelcanvas": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
+    "signature.diff.pixelzone": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
+    "signature.diff.pxlsspace": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
     "signature.dither": "[-b|-y|-fs] (threshold) <order>",
     "signature.ditherchart": "(subcommand)",
     "signature.faction": "(subcommand)",
@@ -398,19 +423,19 @@ STRINGS = {
     "signature.faction.color": "(subcommand)",
     "signature.faction.color.set": "<color>",
     "signature.factioninfo": "(faction)",
-    "signature.gridify": ["(-f) (-c) (size)", "(f) (c) <template> (size)"],
+    "signature.gridify": ["(-f|--faction) (-c|--color) (-z|--zoom)", "<template> (-f|--faction) (-c|--color) (-z|--zoom)"],
     "signature.info": "<faction>",
     "signature.language": "(code)",
     "signature.online": "(subcommand)",
     "signature.prefix": "<prefix>",
-    "signature.preview": ["(subcommand) <coordinates> (zoom)", "(-t) (-f faction) <template> (zoom)"],
-    "signature.preview.pixelcanvas": "<coordinates> (zoom)",
-    "signature.preview.pixelzone": "<coordinates> (zoom)",
-    "signature.preview.pxlsspace": "<coordinates> (zoom)",
-    "signature.quantize": "(subcommand)",
-    "signature.quantize.pixelcanvas": ["", "<template>"],
-    "signature.quantize.pixelzone": ["", "<template>"],
-    "signature.quantize.pxlsspace": ["", "<template>"],
+    "signature.preview": ["(subcommand) <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)", "<template_name> (-t|--templateRegion) (-f|--faction) (-z|--zoom)"],
+    "signature.preview.pixelcanvas": "<coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)",
+    "signature.preview.pixelzone": "<coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)",
+    "signature.preview.pxlsspace": "<coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)",
+    "signature.quantize": "(subcommand) (-f|--faction) (-z|--zoom)",
+    "signature.quantize.pixelcanvas": ["(-f|--faction) (-z|--zoom)", "<template> (-f|--faction) (-z|--zoom)"],
+    "signature.quantize.pixelzone": ["(-f|--faction) (-z|--zoom)", "<template> (-f|--faction) (-z|--zoom)"],
+    "signature.quantize.pxlsspace": ["(-f|--faction) (-z|--zoom)", "<template> (-f|--faction) (-z|--zoom)"],
     "signature.role": "(role)",
     "signature.role.botadmin": "(subcommand)",
     "signature.role.botadmin.set": "<role>",
@@ -419,13 +444,13 @@ STRINGS = {
     "signature.role.templateadmin": "(subcommand)",
     "signature.role.templateadmin.set": "<role>",
     "signature.suggest": "<suggestion>",
-    "signature.template": "(subcommand)",
+    "signature.template": "(subcommand) (-p|--page) (-f|--faction)",
     "signature.template.add": "(subcommand) <name> <x> <y> (url)",
     "signature.template.update": "<name> (-n|--name) (-x) (-y) (-i|--image)",
     "signature.template.add.pixelcanvas": "<name> <x> <y> (url)",
     "signature.template.add.pixelzone": "<name> <x> <y> (url)",
     "signature.template.add.pxlsspace": "<name> <x> <y> (url)",
-    "signature.template.info": "(-r) (-f faction) <template> (zoom)",
+    "signature.template.info": "<template> (-r|--raw) (-f|--faction) (-z|--zoom)",
     "signature.template.remove": "<template>",
     "signature.template.snapshot": "(subcommand) (template_filtering)",
     "signature.template.snapshot.add": "<base_template_name> <snapshot_template_name>",
@@ -479,28 +504,28 @@ STRINGS = {
                              ("set \"My Cool New Faction\"", "Sets your faction's name to 'My Cool New Faction'")],
     "example.factioninfo": [("\"That Faction\"", "Gets info about a faction named 'That Faction'"),
                             ("abc", "Gets info about a faction with the alias 'abc'")],
-    "example.gridify": [("#8", "(with an attachment) Gridify an image magnified 8 times"),
-                        ("MyTemplate #16", "Gridify a template named 'MyTemplate' magnified 16 times"),
-                        ("-c 080808 MyTemplate #10", "Gridify a template named 'MyTemplate' magnified 10 times using hex 0x080808 as the grid color")],
+    "example.gridify": [("-z 8", "(with an attachment) Gridify an image magnified 8 times"),
+                        ("MyTemplate -z 16", "Gridify a template named 'MyTemplate' magnified 16 times"),
+                        ("MyTemplate -z 10 -c 080808", "Gridify a template named 'MyTemplate' magnified 10 times using hex 0x080808 as the grid color")],
     "example.language": [("", "View my current language and available language options"),
                          ("en-us", "Set my language to English (US)")],
     "example.online": ["pc", "Gets the number of players currently online on Pixelcanvas.io"],
     "example.prefix": [("", "View my current prefix"),
                        ("#", "Set my command prefix to '#'")],
     "example.preview": [("pc 900 900", "Preview Pixelcanvas.io centered on (900, 900)"),
-                        ("900 900 7", "Preview the default canvas centered on (900, 900) magnified 7 times"),
-                        ("900 900 -7", "Preview the default canvas centered on (900, 900) zoomed out 7 times"),
+                        ("900 900 -z 7", "Preview the default canvas centered on (900, 900) magnified 7 times"),
+                        ("900 900 -z -7", "Preview the default canvas centered on (900, 900) zoomed out 7 times"),
                         ("\"My Template\"", "Preview a template named 'My Template'"),
-                        ("-t -f \"That Faction\" \"Their Cool Template\" -2", "Create a default-size preview centered on a template named 'Their Cool Template' belonging to the faction 'That Faction', zoomed out 2 times")],
+                        ("\"Their Cool Template\" -t -f \"That Faction\" -z -2", "Create a default-size preview centered on a template named 'Their Cool Template' belonging to the faction 'That Faction', zoomed out 2 times")],
     "example.preview.pixelcanvas": [("900 900", "Preview Pixelcanvas.io centered on (900, 900)"),
-                                    ("900 900 7", "Preview Pixelcanvas.io centered on (900, 900) magnified 7 times"),
-                                    ("900 900 -7", "Preview Pixelcanvas.io centered on (900, 900) zoomed out 7 times")],
+                                    ("900 900 -z 7", "Preview Pixelcanvas.io centered on (900, 900) magnified 7 times"),
+                                    ("900 900 -z -7", "Preview Pixelcanvas.io centered on (900, 900) zoomed out 7 times")],
     "example.preview.pixelzone": [("900 900", "Preview Pixelzone.io centered on (900, 900)"),
-                                  ("900 900 7", "Preview Pixelzone.io centered on (900, 900) magnified 7 times"),
-                                  ("900 900 -7", "Preview Pixelzone.io centered on (900, 900) zoomed out 7 times")],
+                                  ("900 900 -z 7", "Preview Pixelzone.io centered on (900, 900) magnified 7 times"),
+                                  ("900 900 -z -7", "Preview Pixelzone.io centered on (900, 900) zoomed out 7 times")],
     "example.preview.pxlsspace": [("900 900", "Preview Pxls.space centered on (900, 900)"),
-                                  ("900 900 7", "Preview Pxls.space centered on (900, 900) magnified 7 times"),
-                                  ("900 900 -7", "Preview Pxls.space centered on (900, 900) zoomed out 7 times")],
+                                  ("900 900 -z 7", "Preview Pxls.space centered on (900, 900) magnified 7 times"),
+                                  ("900 900 -z -7", "Preview Pxls.space centered on (900, 900) zoomed out 7 times")],
     "example.quantize": [("", "(with an attachment) Quantize an attachment to the palette of the default canvas"),
                          ("pc", "(with an attachment) Quantize an attachment to the palette of Pixelcanvas.io"),
                          ("pc MyTemplate", "Quantize a template named 'MyTemplate' to the palette of Pixelcanvas.io")],
@@ -544,9 +569,9 @@ STRINGS = {
     "example.template.add.pxlsspace": [("MyTemplate 100 100", "(with an attachment) Create a template named 'MyTemplate' for Pxls.space at (100, 100)"),
                                        ("MyTemplate 100 100 https://cdn.discordapp.com/.../avatar.jpg", "Create a template named 'MyTemplate' for Pxls.space at (100, 100) using the image at the URL")],
     "example.template.info": [("MyTemplate", "Get info on a template named 'MyTemplate'"),
-                              ("-f CoolFaction CoolTemplate", "Get info on a template named 'CoolTemplate' belonging to a faction named 'CoolFaction'"),
-                              ("-r RawTemplate 5", "Get just the image for template named 'RawTemplate' magnified 5 times"),
-                              ("-r -f CoolFaction CoolRawTemplate 4", "Get just the image for a template named 'CoolRawTemplate' belonging to a faction named 'CoolFaction' magnified 4 times")],
+                              ("CoolTemplate -f CoolFaction", "Get info on a template named 'CoolTemplate' belonging to a faction named 'CoolFaction'"),
+                              ("RawTemplate -r -z 5", "Get just the image for template named 'RawTemplate' magnified 5 times"),
+                              ("CoolRawTemplate -r -f CoolFaction -z 4", "Get just the image for a template named 'CoolRawTemplate' belonging to a faction named 'CoolFaction' magnified 4 times")],
     "example.template.remove": [("MyTemplate", "Remove a template named 'MyTemplate'")],
     "example.template.snapshot": [("", "Try to update all snapshots in this guild."),
                                   ("cb mb", "Only try to update the snapshots 'cb' and 'mb'.")],
