@@ -172,7 +172,7 @@ class Canvas(commands.Cog):
             args = args[1:]
 
         if re.match("-{0,1}\d+", name) != None: # Skip to coords + image parsing
-            await ctx.invoke_default("diff")
+            await ctx.invoke_default("preview")
             return
 
         # Argument Parsing
