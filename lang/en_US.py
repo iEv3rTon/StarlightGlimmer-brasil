@@ -405,7 +405,7 @@ STRINGS = {
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
     "signature.check": "(-p|--page) (-a|--all) (-e|--onlyErrors)",
-    "signature.diff": "<template_name> (-e|--errors) (-s|--snapshot) (-f|--faction) (-z|--zoom) (-oc|--onlyColors) (-ec|--excludeColors)",
+    "signature.diff": "<template_name> (-e) (-s) (-f) (-z) (-oc) (-ec)",
     "signature.diff.pixelcanvas": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
     "signature.diff.pixelzone": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
     "signature.diff.pxlsspace": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
