@@ -308,8 +308,8 @@ STRINGS = {
         `-s` or `--snapshot` - Sends a snapshot of a template. All correct pixels will be the colour they are on your template and all other pixels will be transparent. You can use these images to track what you have finished on a template.
         `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
         `-z` or `--zoom` - Zooms in the diff by the factor you provide.
-
-        All of these arguments are non-positional, you can use them in any order *as long* as they are after the template name.""",
+        `-oc` or `--onlyColors` - Filters the results of the `-e` argument. Only pixels damaged to the colors you list here will be shown. Colors are represented using numbers from 0-length-of-palette.
+        `-ec` or `--excludeColors` - Filters the results of the `-e` argument. Pixels damaged to the colors you list here will not be shown. Colors are represented using numbers from 0-length-of-palette.""",
     "help.dither":
         """Images must be in PNG or JPEG format.
         The image will be converted to the palette you select using the dithering algorithm specified.
@@ -405,7 +405,7 @@ STRINGS = {
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
     "signature.check": "(-p|--page) (-a|--all) (-e|--onlyErrors)",
-    "signature.diff": "<template_name> (-e|--errors) (-s|--snapshot) (-f|--faction) (-z|--zoom)",
+    "signature.diff": "<template_name> (-e|--errors) (-s|--snapshot) (-f|--faction) (-z|--zoom) (-oc|--onlyColors) (-ec|--excludeColors)",
     "signature.diff.pixelcanvas": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
     "signature.diff.pixelzone": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
     "signature.diff.pxlsspace": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
