@@ -308,8 +308,9 @@ STRINGS = {
         `-s` or `--snapshot` - Sends a snapshot of a template. All correct pixels will be the colour they are on your template and all other pixels will be transparent. You can use these images to track what you have finished on a template.
         `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
         `-z` or `--zoom` - Zooms in the diff by the factor you provide.
-        `-oc` or `--onlyColors` - Filters the results of the `-e` argument. Only pixels damaged to the colors you list here will be shown. Colors are represented using numbers from 0-length-of-palette.
-        `-ec` or `--excludeColors` - Filters the results of the `-e` argument. Pixels damaged to the colors you list here will not be shown. Colors are represented using numbers from 0-length-of-palette.""",
+        The following args filter `-e`. Colors are represented by a number from 0-palleteLength.
+        `-oc` or `--onlyColors` - Only pixels damaged to the colors you list here will be shown.
+        `-ec` or `--excludeColors` - Pixels damaged to the colors you list here will not be shown.""",
     "help.dither":
         """Images must be in PNG or JPEG format.
         The image will be converted to the palette you select using the dithering algorithm specified.
@@ -469,7 +470,6 @@ STRINGS = {
                       ("-a -e", "Check the completion status of all of this guild's templates and only show those that have errors")],
     "example.diff": [("520 -94 -z 7", "(with an attachment) Check an image against the default canvas at (520, -94) and magnify the result 7 times"),
                      ("-256 345 -e", "(with an attachment) Check an image against the default canvas at (-256, 345) and print a short list of specific error pixels"),
-                     ("\"My Template\"", "Check a template named 'My Template'"),
                      ("CoolTemplate -f CoolFaction -e", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction' and print a short list of specific error pixels")],
     "example.dither": [("-y 4", "(with an attachment) Dither an image using yliluoma dithering and an order of 4"),
                        ("--bayer 512 8", "(with an attachment) Dither an image using bayer dithering, a threshold of 512/4 and an order of 8")],
