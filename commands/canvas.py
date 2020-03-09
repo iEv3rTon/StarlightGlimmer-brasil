@@ -27,7 +27,7 @@ from objects.bot_objects import GlimContext
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
 from objects.errors import FactionNotFoundError, IdempotentActionError, NoTemplatesError
 import utils
-from utils import colors, http, canvases, render, GlimmerArgumentParser, sqlite as sql
+from utils import colors, http, canvases, render, GlimmerArgumentParser, FactionAction, sqlite as sql
 
 log = logging.getLogger(__name__)
 
@@ -45,39 +45,44 @@ class Canvas(commands.Cog):
         invoke_without_command=True,
         aliases=["d"],
         case_insensitive=True)
-    async def diff(self, ctx, name, *args):
-        log.info(f"g!diff run in {ctx.guild.name} with name: {name} args: {args}")
+    async def diff(self, ctx, *args):
+        log.info(f"g!diff run in {ctx.guild.name} with args: {args}")
+
+        # Order Parsing
+        try:
+            name = args[0]
+        except TypeError:
+            await ctx.send("Error: no arguments were provided.")
+            return
 
         if re.match("-\D+", name) != None:
-            await ctx.send("Optional arguments must be at the end of the command.")
+            name = args[-1]
+            args = args[:-1]
+        else:
+            args = args[1:]
+
+        if re.match("-{0,1}\d+", name) != None: # Skip to coords + image parsing
+            await ctx.invoke_default("diff")
             return
 
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--errors", action='store_true')
         parser.add_argument("-s", "--snapshot", action='store_true')
-        parser.add_argument("-f", "--faction", default=None)
-        parser.add_argument("-z", "--zoom", default=1)
-        a = parser.parse_known_args(args)
+        parser.add_argument("-f", "--faction", default=None, action=FactionAction)
+        parser.add_argument("-z", "--zoom", type=int, default=1)
         try:
-            a = vars(a[0])
+            a = vars(parser.parse_args(args))
         except TypeError:
             return
 
-        try:
-            list_pixels = a["errors"]
-            create_snapshot = a["snapshot"]
-            faction = a["faction"]
-            zoom = int(a["zoom"])
-        except ValueError:
-            zoom = 1
+        list_pixels = a["errors"]
+        create_snapshot = a["snapshot"]
+        faction = a["faction"]
+        zoom = a["zoom"]
 
         if faction:
-            f = sql.guild_get_by_faction_name_or_alias(faction)
-            if not f:
-                await ctx.send(ctx.s("error.faction_not_found"))
-                return
-            t = sql.template_get_by_name(f.id, name)
+            t = sql.template_get_by_name(faction.id, name)
         else:
             t = sql.template_get_by_name(ctx.guild.id, name)
 
@@ -129,16 +134,16 @@ class Canvas(commands.Cog):
             await ctx.invoke_default("diff")
 
     @diff.command(name="pixelcanvas", aliases=["pc"])
-    async def diff_pixelcanvas(self, ctx, x, y, *args):
-        await _diff(self, ctx, x, y, args, "pixelcanvas", render.fetch_pixelcanvas, colors.pixelcanvas)
+    async def diff_pixelcanvas(self, ctx, *args):
+        await _diff(self, ctx, args, "pixelcanvas", render.fetch_pixelcanvas, colors.pixelcanvas)
 
     @diff.command(name="pixelzone", aliases=["pz"])
-    async def diff_pixelzone(self, ctx, x, y, *args):
-        await _diff(self, ctx, x, y, args, "pixelzone", render.fetch_pixelzone, colors.pixelzone)
+    async def diff_pixelzone(self, ctx, *args):
+        await _diff(self, ctx, args, "pixelzone", render.fetch_pixelzone, colors.pixelzone)
 
     @diff.command(name="pxlsspace", aliases=["ps"])
-    async def diff_pxlsspace(self, ctx, x, y, *args):
-        await _diff(self, ctx, x, y, args, "pxlsspace", render.fetch_pxlsspace, colors.pxlsspace)
+    async def diff_pxlsspace(self, ctx, *args):
+        await _diff(self, ctx, args, "pxlsspace", render.fetch_pxlsspace, colors.pxlsspace)
 
     # =======================
     #        PREVIEW
@@ -151,39 +156,43 @@ class Canvas(commands.Cog):
         aliases=["p"],
         case_insensitive=True)
     async def preview(self, ctx, *args):
-        if len(args) < 1:
-            await ctx.send(ctx.s("canvas.err.preview_no_args"))
-            return
-        preview_template_region = False
-        iter_args = iter(args)
-        a = next(iter_args, None)
-        if a == "-t":
-            preview_template_region = True
-            a = next(iter_args, None)
-        if a == "-f":
-            fac = next(iter_args, None)
-            if fac is None:
-                await ctx.send(ctx.s("error.missing_arg_faction"))
-                return
-            f = sql.guild_get_by_faction_name_or_alias(fac)
-            if not f:
-                await ctx.send(ctx.s("error.faction_not_found"))
-                return
-            name = next(iter_args, None)
-            zoom = next(iter_args, 1)
-            t = sql.template_get_by_name(f.id, name)
-        else:
-            name = a
-            zoom = next(iter_args, 1)
-            t = sql.template_get_by_name(ctx.guild.id, name)
+        log.info(f"g!preview run in {ctx.guild.name} with args: {args}")
 
+        # Order Parsing
         try:
-            if type(zoom) is not int:
-                if zoom.startswith("#"):
-                    zoom = zoom[1:]
-                zoom = int(zoom)
-        except ValueError:
-            zoom = 1
+            name = args[0]
+        except TypeError:
+            await ctx.send("Error: no arguments were provided.")
+            return
+
+        if re.match("-\D+", name) != None:
+            name = args[-1]
+            args = args[:-1]
+        else:
+            args = args[1:]
+
+        if re.match("-{0,1}\d+", name) != None: # Skip to coords + image parsing
+            await ctx.invoke_default("diff")
+            return
+
+        # Argument Parsing
+        parser = GlimmerArgumentParser(ctx)
+        parser.add_argument("-t", "--templateRegion", action='store_true')
+        parser.add_argument("-f", "--faction", default=None, action=FactionAction)
+        parser.add_argument("-z", "--zoom", type=int, default=1)
+        try:
+            a = vars(parser.parse_args(args))
+        except TypeError:
+            return
+
+        preview_template_region = a["templateRegion"]
+        faction = a["faction"]
+        zoom = a["zoom"]
+
+        if faction:
+            t = sql.template_get_by_name(faction.id, name)
+        else:
+            t = sql.template_get_by_name(ctx.guild.id, name)
 
         if t:
             async with ctx.typing():
@@ -355,19 +364,15 @@ class Canvas(commands.Cog):
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--onlyErrors", action='store_true')
         parser.add_argument("-a", "--all", action='store_true')
-        parser.add_argument("-p", "--page", default=1)
+        parser.add_argument("-p", "--page", type=int, default=1)
         try:
-            a = parser.parse_known_args(args)
+            a = vars(parser.parse_args(args))
         except TypeError:
             return
-        a = vars(a[0])
 
-        try:
-            only_errors = a["onlyErrors"]
-            show_all = a["all"]
-            page = int(a["page"])
-        except ValueError:
-            page = 1
+        only_errors = a["onlyErrors"]
+        show_all = a["all"]
+        page = a["page"]
 
         templates = sql.template_get_all_by_guild_id(ctx.guild.id)
 
@@ -428,42 +433,40 @@ class Canvas(commands.Cog):
     @commands.cooldown(2, 5, BucketType.guild)
     @commands.command(name="gridify", aliases=["g"])
     async def gridify(self, ctx, *args):
-        faction = None
-        color = 0x808080
-        iter_args = iter(args)
-        name = next(iter_args, None)
-        if name == "-f":
-            fac = next(iter_args, None)
-            if fac is None:
-                await ctx.send(ctx.s("error.missing_arg_faction"))
-                return
-            faction = sql.guild_get_by_faction_name_or_alias(fac)
-            if not faction:
-                await ctx.send(ctx.s("error.faction_not_found"))
-                return
-            name = next(iter_args, None)
-        if name == "-c":
-            try:
-                color = abs(int(next(iter_args, None), 16) % 0xFFFFFF)
-                name = next(iter_args, None)
-            except ValueError:
-                await ctx.send(ctx.s("error.invalid_color"))
-                return
+        log.info(f"g!gridify run in {ctx.guild.name} with args: {args}")
 
-        def parse_zoom(z):
-            try:
-                if type(z) is int:
-                    return z
-                if type(z) is str:
-                    if z.startswith("#"):
-                        z = z[1:]
-                    return int(z)
-                if z is None:
-                    return 8
-            except ValueError:
-                return 8
+        # Order Parsing
+        try:
+            name = args[0]
+        except TypeError:
+            await ctx.send("Error: no arguments were provided.")
+            return
 
-        t = sql.template_get_by_name(faction.id, name) if faction else sql.template_get_by_name(ctx.guild.id, name)
+        if re.match("-\D+", name) != None:
+            name = args[-1]
+            a = args[:-1]
+        else:
+            a = args[1:]
+
+        # Argument Parsing
+        parser = GlimmerArgumentParser(ctx)
+        parser.add_argument("-f", "--faction", default=None, action=FactionAction)
+        parser.add_argument("-c", "--color", default=0x808080, action=ColorAction)
+        parser.add_argument("-z", "--zoom", type=int, default=1)
+        try:
+            a = vars(parser.parse_args(a))
+        except TypeError:
+            return
+
+        faction = a["faction"]
+        color = a["color"]
+        zoom = a["zoom"]
+
+        if faction:
+            t = sql.template_get_by_name(faction.id, name)
+        else:
+            t = sql.template_get_by_name(ctx.guild.id, name)
+
         if t:
             log.info("(T:{} | GID:{})".format(t.name, t.gid))
             data = await http.get_template(t.url, t.name)
@@ -475,6 +478,14 @@ class Canvas(commands.Cog):
             data = io.BytesIO()
             await att.save(data)
             max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
+
+            try:
+                a = vars(parser.parse_args(args))
+            except TypeError:
+                return
+            color = a["color"]
+            zoom = a["zoom"]
+
             zoom = max(1, min(parse_zoom(name), max_zoom))
             template = await render.gridify(data, color, zoom)
 
@@ -673,7 +684,7 @@ async def send_err_embed(self):
     # Release send lock
     self.sending = False
 
-async def _diff(self, ctx, x, y, args, canvas, fetch, palette):
+async def _diff(self, ctx, args, canvas, fetch, palette):
     """Sends a diff on the image provided.
 
     Arguments:
@@ -686,6 +697,20 @@ async def _diff(self, ctx, x, y, args, canvas, fetch, palette):
     async with ctx.typing():
         att = await utils.verify_attachment(ctx)
 
+        # Order Parsing
+        try:
+            x, y = args[0], args[1]
+        except TypeError:
+            await ctx.send("Error: no arguments were provided.")
+            return
+
+        if re.match("-\D+", x) != None:
+            x, y = args[-2], args[-1]
+            args = args[:-2]
+        else:
+            args = args[2:]
+
+        # X and Y Cleanup
         try:
             #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
             x = int(re.sub('[^0-9-]','', x))
@@ -695,19 +720,18 @@ async def _diff(self, ctx, x, y, args, canvas, fetch, palette):
             return
 
         # Argument Parsing
-        parser = argparse.ArgumentParser()
+        parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--errors", action='store_true')
         parser.add_argument("-s", "--snapshot", action='store_true')
-        parser.add_argument("-z", "--zoom", default=1)
-        a = parser.parse_known_args(args)
-        a = vars(a[0])
-
+        parser.add_argument("-z", "--zoom", type=int, default=1)
         try:
-            list_pixels = a["errors"]
-            create_snapshot = a["snapshot"]
-            zoom = int(a["zoom"])
-        except ValueError:
-            zoom = 1
+            a = vars(parser.parse_args(args))
+        except TypeError:
+            return
+
+        list_pixels = a["errors"]
+        create_snapshot = a["snapshot"]
+        zoom = a["zoom"]
 
         data = io.BytesIO()
         await att.save(data)
@@ -752,11 +776,20 @@ async def _preview(ctx, args, fetch):
     fetch - The current state of all pixels that the template/specified area covers, PIL Image object.
     """
     async with ctx.typing():
-        iter_args = iter(args)
-        a = next(iter_args, None)
-        x = a
-        y = next(iter_args, None)
+        # Order Parsing
+        try:
+            x, y = args[0], args[1]
+        except TypeError:
+            await ctx.send("Error: no arguments were provided.")
+            return
 
+        if re.match("-\D+", x) != None:
+            x, y = args[-2], args[-1]
+            args = args[:-2]
+        else:
+            args = args[2:]
+
+        # X and Y Cleanup
         try:
             #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
             x = int(re.sub('[^0-9-]','', x))
@@ -765,14 +798,15 @@ async def _preview(ctx, args, fetch):
             await ctx.send(ctx.s("canvas.invalid_input"))
             return
 
-        zoom = next(iter_args, 1)
+        # Argument Parsing
+        parser = GlimmerArgumentParser(ctx)
+        parser.add_argument("-z", "--zoom", type=int, default=1)
         try:
-            if type(zoom) is not int:
-                if zoom.startswith("#"):
-                    zoom = zoom[1:]
-                zoom = int(zoom)
-        except ValueError:
-            zoom = 1
+            a = vars(parser.parse_args(args))
+        except TypeError:
+            return
+
+        zoom = a["zoom"]
         zoom = max(min(zoom, 16), -8)
 
         preview_img = await render.preview(x, y, zoom, fetch)
@@ -796,20 +830,22 @@ async def _quantize(ctx, args, canvas, palette):
     Returns:
     The discord.Message object returned when ctx.send() is called to send the quantised image.
     """
-    gid = ctx.guild.id
-    iter_args = iter(args)
-    name = next(iter_args, None)
-    if name == "-f":
-        fac = next(iter_args, None)
-        if fac is None:
-            await ctx.send(ctx.s("error.missing_arg_faction"))
-            return
-        faction = sql.guild_get_by_faction_name_or_alias(fac)
-        if not faction:
-            raise FactionNotFoundError
-        gid = faction.id
-        name = next(iter_args, None)
-    t = sql.template_get_by_name(gid, name)
+    # Argument Parsing
+    parser = GlimmerArgumentParser(ctx)
+    parser.add_argument("-f", "--faction", default=None, action=FactionAction)
+    parser.add_argument("-z", "--zoom", type=int, default=1)
+    try:
+        args = vars(parser.parse_args(args))
+    except TypeError:
+        return
+
+    faction = args["faction"]
+    zoom = args["zoom"]
+
+    if faction:
+        t = sql.template_get_by_name(faction.id, name)
+    else:
+        t = sql.template_get_by_name(ctx.guild.id, name)
 
     data = None
     if t:

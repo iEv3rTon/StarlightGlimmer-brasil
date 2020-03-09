@@ -160,7 +160,6 @@ async def on_command_preprocess(ctx):
                   .format(invocation_type, ctx.author, ctx.command.qualified_name, ctx.guild))
     log.info(ctx.message.content)
 
-
 @bot.event
 async def on_command_error(ctx, error):
     # Command errors
@@ -221,6 +220,8 @@ async def on_command_error(ctx, error):
         await ctx.send(ctx.s("error.http_canvas").format(canvases.pretty_print[error.canvas]))
     elif isinstance(error, HttpGeneralError):
         await ctx.send(ctx.s("error.http"))
+    elif isinstance(error, ColorError):
+        await ctx.send(ctx.s("error.invalid_color"))
 
     # Uncaught error
     else:
@@ -231,7 +232,6 @@ async def on_command_error(ctx, error):
         log.error("An error occurred executing '{}': {}\n{}"
                   .format(name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
         await ctx.send(ctx.s("error.unknown"))
-
 
 @bot.event
 async def on_message(message):

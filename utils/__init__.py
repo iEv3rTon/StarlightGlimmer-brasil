@@ -8,7 +8,7 @@ import discord
 from discord.ext.commands.view import StringView
 from discord.utils import get as dget
 
-from objects.errors import NoAttachmentError, NoJpegsError, NotPngError
+from objects.errors import NoAttachmentError, NoJpegsError, NotPngError, FactionNotFoundError, ColorError
 from utils import config, sqlite as sql
 
 log = logging.getLogger(__name__)
@@ -147,3 +147,18 @@ class GlimmerArgumentParser(argparse.ArgumentParser):
 
     def error(self, message):
         asyncio.ensure_future(self.ctx.send(f"Error: {message}"))
+
+class FactionAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        faction = sql.guild_get_by_faction_name_or_alias(values)
+        if faction == None:
+            raise FactionNotFoundError
+        setattr(namespace, self.dest, faction)
+
+class ColorAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        try:
+            color = abs(int(values, 16) % 0xFFFFFF)
+            setattr(namespace, self.dest, color)
+        except ValueError:
+            raise ColorError

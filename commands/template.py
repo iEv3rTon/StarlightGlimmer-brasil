@@ -22,20 +22,9 @@ from objects import DbTemplate
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
 from objects.errors import FactionNotFoundError, NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, IgnoreError, TemplateHttpError, NoJpegsError, NotPngError
 import utils
-from utils import canvases, checks, colors, config, http, render, GlimmerArgumentParser, sqlite as sql
+from utils import canvases, checks, colors, config, http, render, GlimmerArgumentParser, FactionAction, sqlite as sql
 
 log = logging.getLogger(__name__)
-
-class FactionAction(argparse.Action):
-    def __init__(self, option_strings, dest, nargs=None, **kwargs):
-        if nargs is not None:
-            raise ValueError("nargs not allowed")
-        super(FactionAction, self).__init__(option_strings, dest, **kwargs)
-    def __call__(self, parser, namespace, values, option_string=None):
-        faction = sql.guild_get_by_faction_name_or_alias(values)
-        if faction == None:
-            raise FactionNotFoundError
-        setattr(namespace, self.dest, faction.id)
 
 class Template(commands.Cog):
     def __init__(self, bot):
@@ -48,15 +37,18 @@ class Template(commands.Cog):
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-p", "--page", type=int, default=1)
-        parser.add_argument("-f", "--faction", default=ctx.guild.id, action=FactionAction)
-        args = parser.parse_args(args)
+        parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         try:
-            args = vars(args)
+            args = vars(parser.parse_args(args))
         except TypeError:
             return
 
         page = args["page"]
-        gid = args["faction"]
+        faction = args["faction"]
+
+        gid = ctx.guild.id
+        if faction != None:
+            gid = faction.id
 
         templates = sql.template_get_all_by_guild_id(gid)
         if len(templates) < 1:
@@ -190,8 +182,20 @@ class Template(commands.Cog):
     @commands.cooldown(2, 5, BucketType.guild)
     @checks.template_adder_only()
     @template_update.command(name="pixelcanvas", aliases=['pc'])
-    async def template_update_pixelcanvas(self, ctx, name, *args):
-        log.info(f"g!t update run in {ctx.guild.name} with name: {name} and args: {args}")
+    async def template_update_pixelcanvas(self, ctx, *args):
+        log.info(f"g!t update run in {ctx.guild.name} with args: {args}")
+
+        try:
+            name = args[0]
+        except TypeError:
+            await ctx.send("Template not updated as no arguments were provided.")
+            return
+
+        if re.match("-\D+", name) != None:
+            name = args[-1]
+            args = args[:-1]
+        else:
+            args = args[1:]
 
         orig_template = sql.template_get_by_name(ctx.guild.id, name)
         if not orig_template:
@@ -206,10 +210,8 @@ class Template(commands.Cog):
         # if no value after -i, True
         # if value after -i, capture
         parser.add_argument("-i", "--image", nargs="?", const=True, default=None)
-        args = parser.parse_known_args(args)
         try:
-            unknown = args[1]
-            args = vars(args[0])
+            args = vars(parser.parse_args(args))
         except TypeError:
             return
 
@@ -219,11 +221,6 @@ class Template(commands.Cog):
         image = args["image"]
 
         out = []
-
-        # Any unrecognised arguments are reported
-        if unknown != []:
-            for value in unknown:
-                out.append(f"Unrecognised argument: {value}")
 
         """Image is done first since I'm using the build_template method to update stuff,
         and I don't want anything to have changed in orig_template before I use it"""
@@ -324,31 +321,42 @@ class Template(commands.Cog):
     @commands.cooldown(2, 5, BucketType.guild)
     @template.command(name='info', aliases=['i'])
     async def template_info(self, ctx, *args):
-        gid = ctx.guild.id
-        iter_args = iter(args)
-        name = next(iter_args, 1)
-        image_only = False
-        if name == "-r":
-            image_only = True
-            name = next(iter_args, 1)
-        if name == "-f":
-            fac = next(iter_args, None)
-            if fac is None:
-                await ctx.send(ctx.s("error.missing_arg_faction"))
-                return
-            faction = sql.guild_get_by_faction_name_or_alias(fac)
-            if not faction:
-                raise FactionNotFoundError
-            gid = faction.id
-            name = next(iter_args, 1)
+        # Order Parsing
+        try:
+            name = args[0]
+        except TypeError:
+            await ctx.send("Error: no arguments were provided.")
+            return
+
+        if re.match("-\D+", name) != None:
+            name = args[-1]
+            args = args[:-1]
         else:
-            faction = sql.guild_get_by_id(gid)
+            args = args[1:]
+
+        # Argument Parsing
+        parser = GlimmerArgumentParser(ctx)
+        parser.add_argument("-r", "--raw", action="store_true")
+        parser.add_argument("-f", "--faction", default=None, action=FactionAction)
+        parser.add_argument("-z", "--zoom", default=1)
+        try:
+            args = vars(parser.parse_args(args))
+        except TypeError:
+            return
+
+        image_only = args["raw"]
+        f = args["faction"]
+        try:
+            gid, faction = f.id, f
+        except AttributeError:
+            gid, faction = ctx.guild.id, sql.guild_get_by_id(ctx.guild.id)
+        zoom = args["zoom"]
+
         t = sql.template_get_by_name(gid, name)
         if not t:
             raise TemplateNotFoundError
 
         if image_only:
-            zoom = next(iter_args, 1)
             try:
                 if type(zoom) is not int:
                     if zoom.startswith("#"):

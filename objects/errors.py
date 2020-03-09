@@ -65,3 +65,6 @@ class TemplateNotFoundError(commands.CommandError):
 
 class UrlError(commands.CommandError):
     pass
+
+class ColorError(commands.CommandError):
+    pass
