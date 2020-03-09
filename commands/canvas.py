@@ -71,6 +71,9 @@ class Canvas(commands.Cog):
         parser.add_argument("-s", "--snapshot", action='store_true')
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         parser.add_argument("-z", "--zoom", type=int, default=1)
+        colorFilters = parser.add_mutually_exclusive_group()
+        colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
+        colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
         try:
             a = vars(parser.parse_args(args))
         except TypeError:
@@ -80,6 +83,8 @@ class Canvas(commands.Cog):
         create_snapshot = a["snapshot"]
         faction = a["faction"]
         zoom = a["zoom"]
+        exclude_colors = a["excludeColors"]
+        only_colors = a["onlyColors"]
 
         if faction:
             t = sql.template_get_by_name(faction.id, name)
@@ -120,14 +125,21 @@ class Canvas(commands.Cog):
                     await ctx.send(content=out, file=f)
 
                 if list_pixels and len(err_list) > 0:
-                    for i, pixel in enumerate(err_list):
-                        x, y, current, target = pixel
+                    error_list = []
+                    for x, y, current, target in err_list:
+                        if exclude_colors:
+                            if current in exclude_colors:
+                                continue
+                        elif only_colors:
+                            if not current in only_colors:
+                                continue
+
                         # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
                         x += t.x
                         y += t.y
-                        err_list[i] = Pixel(current, target, x, y)
+                        error_list.append(Pixel(current, target, x, y))
 
-                    checker = Checker(self.bot, ctx, t.canvas, err_list)
+                    checker = Checker(self.bot, ctx, t.canvas, error_list)
                     checker.connect_websocket()
         else:
             # No template found, try coords + image matching
