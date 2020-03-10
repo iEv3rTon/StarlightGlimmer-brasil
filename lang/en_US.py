@@ -304,12 +304,13 @@ STRINGS = {
 
         The following optional arguments are available:
         `-e` or `--errors` - Sends the specific coordinates of 10 error pixels. I then monitor these pixels for 5 minutes and remove any from the list that are fixed, replacing them with other damage if there are more than 10 errors.
-        `-s` or `--snapshot` - Sends a snapshot of a template. All correct pixels will be the colour they are on your template and all other pixels will be transparent. You can use these images to track what you have finished on a template.
+        `-s` or `--snapshot` - Sends a snapshot of a template. All correct pixels will be the colour they are on your template and all other pixels will be transparent.
         `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
         `-z` or `--zoom` - Zooms in the diff by the factor you provide.
         The following args filter `-e`. Colors are represented by a number from 0-palleteLength.
-        `-oc` or `--onlyColors` - Only pixels damaged to the colors you list here will be shown.
-        `-ec` or `--excludeColors` - Pixels damaged to the colors you list here will not be shown.""",
+        `-t` or `--excludeTarget` - If not used, pixels are filtered based on what color they are damaged to, if used, they are filtered based on what they should be.
+        `-oc` or `--onlyColors` - Only target pixels of the colors you list here will be shown.
+        `-ec` or `--excludeColors` - Pixels target pixels of the colors you list here will not be shown.""",
     "help.dither":
         """Images must be in PNG or JPEG format.
         The image will be converted to the palette you select using the dithering algorithm specified.
@@ -405,7 +406,7 @@ STRINGS = {
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
     "signature.check": "(-e|--onlyErrors) (-f|--faction)",
-    "signature.diff": "<template_name> (-e) (-s) (-f) (-z) (-oc) (-ec)",
+    "signature.diff": "<template_name> (-e) (-s) (-f) (-z) (-t) (-oc) (-ec)",
     "signature.diff.pixelcanvas": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
     "signature.diff.pixelzone": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
     "signature.diff.pxlsspace": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
@@ -469,7 +470,7 @@ STRINGS = {
                       ("-f factionName", "Check the completion status of all of the templates of 'factionName'")],
     "example.diff": [("520 -94 -z 7", "(with an attachment) Check an image against the default canvas at (520, -94) and magnify the result 7 times"),
                      ("-256 345 -e", "(with an attachment) Check an image against the default canvas at (-256, 345) and print a short list of specific error pixels"),
-                     ("CoolTemplate -f CoolFaction -e", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction' and print a short list of specific error pixels")],
+                     ("CoolTemplate -f CoolFaction", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction'")],
     "example.dither": [("-y 4", "(with an attachment) Dither an image using yliluoma dithering and an order of 4"),
                        ("--bayer 512 8", "(with an attachment) Dither an image using bayer dithering, a threshold of 512/4 and an order of 8")],
     "example.diff.pixelcanvas": [("100 100", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100)"),

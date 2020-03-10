@@ -71,6 +71,7 @@ class Canvas(commands.Cog):
         parser.add_argument("-s", "--snapshot", action='store_true')
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         parser.add_argument("-z", "--zoom", type=int, default=1)
+        parser.add_argument("-t", "excludeTarget", action='store_true')
         colorFilters = parser.add_mutually_exclusive_group()
         colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
         colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
@@ -83,6 +84,7 @@ class Canvas(commands.Cog):
         create_snapshot = a["snapshot"]
         faction = a["faction"]
         zoom = a["zoom"]
+        exclude_target = a["excludeTarget"]
         exclude_colors = a["excludeColors"]
         only_colors = a["onlyColors"]
 
@@ -127,11 +129,13 @@ class Canvas(commands.Cog):
                 if list_pixels and len(err_list) > 0:
                     error_list = []
                     for x, y, current, target in err_list:
+                        # Color Filtering
+                        c = current if not excludeTarget else target
                         if exclude_colors:
-                            if current in exclude_colors:
+                            if c in exclude_colors:
                                 continue
                         elif only_colors:
-                            if not current in only_colors:
+                            if not c in only_colors:
                                 continue
 
                         # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
