@@ -380,6 +380,7 @@ class Canvas(commands.Cog):
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--onlyErrors", action='store_true')
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
+        parser.add_argument("-s", "--sort", defaults="name_az", choices=["name_az","name_za","damage_az","damage_za"])
         try:
             a = vars(parser.parse_args(args))
         except TypeError:
@@ -387,6 +388,7 @@ class Canvas(commands.Cog):
 
         only_errors = a["onlyErrors"]
         faction = a["faction"]
+        sort = a["sort"]
 
         if faction:
             templates = sql.template_get_all_by_guild_id(faction.id)
@@ -398,8 +400,6 @@ class Canvas(commands.Cog):
             raise NoTemplatesError(False)
 
         msg = None
-        templates = sorted(templates, key=lambda tx: tx.name)
-        templates = sorted(templates, key=lambda tx: tx.canvas)
 
         # Calc info + send temp msg
         for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
@@ -409,19 +409,18 @@ class Canvas(commands.Cog):
         # Delete temp msg and send final report
         await msg.delete()
 
-        if only_errors:
-            ts = []
-            for template in templates:
-                if template.errors != 0:
-                    ts.append(template)
+        ts = [t for t in templates if t.errors != 0] if only_errors else templates
 
-            # Find number of pages given there are 25 templates per page.
-            pages = int(math.ceil(len(ts) / 25))
-            await build_template_report(ctx, ts, None, pages)
-        else:
-            # Find number of pages given there are 25 templates per page.
-            pages = int(math.ceil(len(templates) / 25))
-            await build_template_report(ctx, templates, None, pages)
+        if sort == "name_az" or sort == "name_za":
+            ts = sorted(ts, key=lambda t: t.name, reverse=(sort == "name_za"))
+        elif sort == "damage_az" or sort == "damage_za":
+            ts = sorted(ts, key=lambda t: t.errors, reverse=(sort == "damage_za"))
+
+        ts = sorted(ts, key=lambda t: t.canvas)
+
+        # Find number of pages given there are 25 templates per page.
+        pages = int(math.ceil(len(ts) / 25))
+        await build_template_report(ctx, ts, None, pages)
 
     # =======================
     #         GRIDIFY

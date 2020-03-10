@@ -296,7 +296,9 @@ STRINGS = {
     "help.check":
         """The following optional arguments are available:
         `-e` or `--onlyErrors` - This argument filters the results and only shows templates with errors.
-        `-f` or `--faction` - Searches for the faction name provided and tries to check it's templates.""",
+        `-f` or `--faction` - Searches for the faction name provided and tries to check it's templates.
+        `-s` or `--sort` - Select how the results are sorted, default is by template name, a-z.
+            options: 'name_az', 'name_za', 'damage_az', 'damage_za'""",
     "help.diff":
         """Images must be in PNG format.
         Error pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `{p}help quantize`).
@@ -405,7 +407,7 @@ STRINGS = {
     "signature.alertchannel.set": "<channel>",
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
-    "signature.check": "(-e|--onlyErrors) (-f|--faction)",
+    "signature.check": "(-e|--onlyErrors) (-f|--faction) (-s|--sort)",
     "signature.diff": "<template_name> (-e) (-s) (-f) (-z) (-t) (-oc) (-ec)",
     "signature.diff.pixelcanvas": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
     "signature.diff.pixelzone": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
@@ -467,7 +469,8 @@ STRINGS = {
                        ("pc", "Set the default canvas to Pixelcanvas.io")],
     "example.check": [("", "Check the completion status of all of this guild's templates"),
                       ("-e", "Check the completion status of all of this guild's templates and only show those that have errors"),
-                      ("-f factionName", "Check the completion status of all of the templates of 'factionName'")],
+                      ("-f factionName", "Check the completion status of all of the templates of 'factionName'"),
+                      ("-s damage_za", "Check the completion status of all templates and sort the results by number of errors in decending order")],
     "example.dither": [("-y 4", "(with an attachment) Dither an image using yliluoma dithering and an order of 4"),
                        ("--bayer 512 8", "(with an attachment) Dither an image using bayer dithering, a threshold of 512/4 and an order of 8")],
     "example.diff.pixelcanvas": [("100 100", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100)"),
