@@ -71,7 +71,7 @@ class Canvas(commands.Cog):
         parser.add_argument("-s", "--snapshot", action='store_true')
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         parser.add_argument("-z", "--zoom", type=int, default=1)
-        parser.add_argument("-t", "excludeTarget", action='store_true')
+        parser.add_argument("-t", "--excludeTarget", action='store_true')
         colorFilters = parser.add_mutually_exclusive_group()
         colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
         colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
