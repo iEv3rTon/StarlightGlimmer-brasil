@@ -380,7 +380,7 @@ class Canvas(commands.Cog):
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--onlyErrors", action='store_true')
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
-        parser.add_argument("-s", "--sort", defaults="name_az", choices=["name_az","name_za","errors_az","errors_za","percent_az","percent_za"])
+        parser.add_argument("-s", "--sort", default="name_az", choices=["name_az","name_za","errors_az","errors_za","percent_az","percent_za"])
         try:
             a = vars(parser.parse_args(args))
         except TypeError:
