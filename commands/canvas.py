@@ -380,7 +380,7 @@ class Canvas(commands.Cog):
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--onlyErrors", action='store_true')
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
-        parser.add_argument("-s", "--sort", default="name_az", choices=["name_az","name_za","damage_az","damage_za"])
+        parser.add_argument("-s", "--sort", defaults="name_az", choices=["name_az","name_za","errors_az","errors_za","percent_az","percent_za"])
         try:
             a = vars(parser.parse_args(args))
         except TypeError:
@@ -413,8 +413,10 @@ class Canvas(commands.Cog):
 
         if sort == "name_az" or sort == "name_za":
             ts = sorted(ts, key=lambda t: t.name, reverse=(sort == "name_za"))
-        elif sort == "damage_az" or sort == "damage_za":
-            ts = sorted(ts, key=lambda t: t.errors, reverse=(sort == "damage_za"))
+        elif sort == "errors_az" or sort == "errors_za":
+            ts = sorted(ts, key=lambda t: t.errors, reverse=(sort == "errors_za"))
+        elif sort == "percent_az" or sort == "percent_za":
+            ts = sorted(ts, key=lambda t: (t.size - t.errors) / t.size, reverse=(sort == "percent_za"))
 
         ts = sorted(ts, key=lambda t: t.canvas)
 
