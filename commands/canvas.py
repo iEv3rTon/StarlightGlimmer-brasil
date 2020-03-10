@@ -375,16 +375,12 @@ class Canvas(commands.Cog):
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--onlyErrors", action='store_true')
-        parser.add_argument("-a", "--all", action='store_true')
-        parser.add_argument("-p", "--page", type=int, default=1)
         try:
             a = vars(parser.parse_args(args))
         except TypeError:
             return
 
         only_errors = a["onlyErrors"]
-        show_all = a["all"]
-        page = a["page"]
 
         templates = sql.template_get_all_by_guild_id(ctx.guild.id)
 
@@ -396,47 +392,27 @@ class Canvas(commands.Cog):
         templates = sorted(templates, key=lambda tx: tx.name)
         templates = sorted(templates, key=lambda tx: tx.canvas)
 
-        if show_all:
-            # Calc info + send temp msg
-            for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
-                ct = list(canvas_ts)
-                msg = await check_canvas(ctx, ct, canvas, msg=msg)
+        # Calc info + send temp msg
+        for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
+            ct = list(canvas_ts)
+            msg = await check_canvas(ctx, ct, canvas, msg=msg)
 
-            # Delete temp msg and send final report
-            await msg.delete()
+        # Delete temp msg and send final report
+        await msg.delete()
 
-            if only_errors:
-                ts = []
-                for template in templates:
-                    if template.errors != 0:
-                        ts.append(template)
+        if only_errors:
+            ts = []
+            for template in templates:
+                if template.errors != 0:
+                    ts.append(template)
 
-                # Find number of pages given there are 25 templates per page.
-                pages = int(math.ceil(len(ts) / 25))
-                await build_template_report(ctx, ts, None, pages)
-            else:
-                # Find number of pages given there are 25 templates per page.
-                pages = int(math.ceil(len(templates) / 25))
-                await build_template_report(ctx, templates, None, pages)
+            # Find number of pages given there are 25 templates per page.
+            pages = int(math.ceil(len(ts) / 25))
+            await build_template_report(ctx, ts, None, pages)
         else:
             # Find number of pages given there are 25 templates per page.
             pages = int(math.ceil(len(templates) / 25))
-            # Make sure page is in the range (1 <= page <= pages).
-            page = min(max(page, 0), pages)
-
-            # Slice so templates only contains the page we want
-            start = (page-1)*25
-            end = page*25
-            templates = templates[start:end]
-
-            # Calc info + send temp msg
-            for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
-                ct = list(canvas_ts)
-                msg = await check_canvas(ctx, ct, canvas, msg=msg)
-
-            # Delete temp msg and send final report
-            await msg.delete()
-            await build_template_report(ctx, templates, page, pages)
+            await build_template_report(ctx, templates, None, pages)
 
     # =======================
     #         GRIDIFY
