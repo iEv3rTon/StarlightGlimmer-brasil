@@ -375,14 +375,19 @@ class Canvas(commands.Cog):
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--onlyErrors", action='store_true')
+        parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         try:
             a = vars(parser.parse_args(args))
         except TypeError:
             return
 
         only_errors = a["onlyErrors"]
+        faction = a["faction"]
 
-        templates = sql.template_get_all_by_guild_id(ctx.guild.id)
+        if faction:
+            templates = sql.template_get_all_by_guild_id(faction.id)
+        else:
+            templates = sql.template_get_all_by_guild_id(ctx.guild.id)
 
         if len(templates) < 1:
             ctx.command.parent.reset_cooldown(ctx)
