@@ -130,7 +130,7 @@ class Canvas(commands.Cog):
                     error_list = []
                     for x, y, current, target in err_list:
                         # Color Filtering
-                        c = current if not excludeTarget else target
+                        c = current if not exclude_target else target
                         if exclude_colors:
                             if c in exclude_colors:
                                 continue
