@@ -295,7 +295,8 @@ STRINGS = {
     "help.canvas": "Defaults to Pixelcanvas.io.",
     "help.check":
         """The following optional arguments are available:
-        `-e` or `--onlyErrors` - This argument filters the results and only shows templates with errors.""",
+        `-e` or `--onlyErrors` - This argument filters the results and only shows templates with errors.
+        `-f` or `--faction` - Searches for the faction name provided and tries to check it's templates.""",
     "help.diff":
         """Images must be in PNG format.
         Error pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `{p}help quantize`).
@@ -403,7 +404,7 @@ STRINGS = {
     "signature.alertchannel.set": "<channel>",
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
-    "signature.check": "(-e|--onlyErrors)",
+    "signature.check": "(-e|--onlyErrors) (-f|--faction)",
     "signature.diff": "<template_name> (-e) (-s) (-f) (-z) (-oc) (-ec)",
     "signature.diff.pixelcanvas": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
     "signature.diff.pixelzone": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
