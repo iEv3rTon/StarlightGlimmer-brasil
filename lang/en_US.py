@@ -295,9 +295,7 @@ STRINGS = {
     "help.canvas": "Defaults to Pixelcanvas.io.",
     "help.check":
         """The following optional arguments are available:
-        `-p` or `--page` - Use with a number to request a specific page, defaults to 1.
-        `-a` or `--all` - This argument sends every page available at once. Be warned, this can be spammy.
-        `-e` or `--onlyErrors` - This argument only works if '--all' is also being used. It filters the results and only shows templates with errors.""",
+        `-e` or `--onlyErrors` - This argument filters the results and only shows templates with errors.""",
     "help.diff":
         """Images must be in PNG format.
         Error pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `{p}help quantize`).
@@ -405,7 +403,7 @@ STRINGS = {
     "signature.alertchannel.set": "<channel>",
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
-    "signature.check": "(-p|--page) (-a|--all) (-e|--onlyErrors)",
+    "signature.check": "(-e|--onlyErrors)",
     "signature.diff": "<template_name> (-e) (-s) (-f) (-z) (-oc) (-ec)",
     "signature.diff.pixelcanvas": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
     "signature.diff.pixelzone": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
@@ -465,9 +463,8 @@ STRINGS = {
                          ("\"Cool Faction\" cf", "Assembles your guild into a faction named 'Cool Faction' with alias 'cf'")],
     "example.canvas": [("", "Show the currently set default canvas"),
                        ("pc", "Set the default canvas to Pixelcanvas.io")],
-    "example.check": [("", "Check the completion status of the first 25 of this guild's templates"),
-                      ("-p 2", "Check the completion status of the second 25 of this guild's templates"),
-                      ("-a -e", "Check the completion status of all of this guild's templates and only show those that have errors")],
+    "example.check": [("", "Check the completion status of all of this guild's templates"),
+                      ("-e", "Check the completion status of all of this guild's templates and only show those that have errors")],
     "example.diff": [("520 -94 -z 7", "(with an attachment) Check an image against the default canvas at (520, -94) and magnify the result 7 times"),
                      ("-256 345 -e", "(with an attachment) Check an image against the default canvas at (-256, 345) and print a short list of specific error pixels"),
                      ("CoolTemplate -f CoolFaction -e", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction' and print a short list of specific error pixels")],
