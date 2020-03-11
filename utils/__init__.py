@@ -26,23 +26,37 @@ async def autoscan(ctx):
     m_pz = re.search('pixelzone\.io/\?p=(-?\d+),(-?\d+)(?:,(\d+))?(?:(?: |#| #)(-?\d+))?', ctx.message.content)
     m_ps = re.search('pxls\.space/#x=(\d+)&y=(\d+)(?:&scale=(\d+))?(?:(?: |#| #)(-?\d+))?', ctx.message.content)
     m_pre_def = re.search('@(-?\d+)(?: |,|, )(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
-    m_dif_def = re.search('(?:(-l) )?(-?\d+)(?: |,|, )(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
+    m_dif_def = re.search('(-?\d+)(?: |,|, )(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
     if m_pc:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name='pixelcanvas')
-        view = ' '.join(m_pc.groups(default='1'))
+        try:
+            view = "{0[0]} {0[1]} -z {0[2]}".format(m_pc.groups())
+        except KeyError:
+            view = "{0[0]} {0[1]}".format(m_pc.groups())
     elif m_pz:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name='pixelzone')
-        view = '{} {} {}'.format(m_pz.group(1), m_pz.group(2), m_pz.group(4) or m_pz.group(3) or '1')
+        try:
+            view = "{0[0]} {0[1]} -z {0[2]}".format(m_pz.groups())
+        except KeyError:
+            view = "{0[0]} {0[1]}".format(m_pz.groups())
     elif m_ps:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name='pxlsspace')
-        view = '{} {} {}'.format(m_ps.group(1), m_ps.group(2), m_ps.group(4) or m_ps.group(3) or '1')
+        try:
+            view = "{0[0]} {0[1]} -z {0[2]}".format(m_ps.groups())
+        except KeyError:
+            view = "{0[0]} {0[1]}".format(m_ps.groups())
     elif m_pre_def:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name=canvas)
-        view = ' '.join(m_pre_def.groups(default='1'))
+        try:
+            view = "{0[0]} {0[1]} -z {0[2]}".format(m_pre_def.groups())
+        except KeyError:
+            view = "{0[0]} {0[1]}".format(m_pre_def.groups())
     elif m_dif_def and len(ctx.message.attachments) > 0 and ctx.message.attachments[0].filename[-4:].lower() == ".png":
         cmd = dget(dget(ctx.bot.commands, name='diff').commands, name=canvas)
-        view = '{} {} {} {}'.format(m_dif_def.group(1) or "", m_dif_def.group(2), m_dif_def.group(3),
-                                    m_dif_def.group(4) or 1)
+        try:
+            view = '{0[0]} {0[1]} -z {0[2]}'.format(m_dif_def.groups())
+        except KeyError:
+            view = '{0[0]} {0[1]}'.format(m_dif_def.groups())
 
     if cmd:
         ctx.command = cmd
