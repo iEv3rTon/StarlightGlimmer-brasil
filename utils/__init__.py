@@ -29,34 +29,24 @@ async def autoscan(ctx):
     m_dif_def = re.search('(-?\d+)(?: |,|, )(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
     if m_pc:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name='pixelcanvas')
-        try:
-            view = "{0[0]} {0[1]} -z {0[2]}".format(m_pc.groups())
-        except KeyError:
-            view = "{0[0]} {0[1]}".format(m_pc.groups())
+        g = m_pc.groups()
+        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
     elif m_pz:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name='pixelzone')
-        try:
-            view = "{0[0]} {0[1]} -z {0[2]}".format(m_pz.groups())
-        except KeyError:
-            view = "{0[0]} {0[1]}".format(m_pz.groups())
+        g = m_pz.groups()
+        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
     elif m_ps:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name='pxlsspace')
-        try:
-            view = "{0[0]} {0[1]} -z {0[2]}".format(m_ps.groups())
-        except KeyError:
-            view = "{0[0]} {0[1]}".format(m_ps.groups())
+        g = m_ps.groups()
+        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
     elif m_pre_def:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name=canvas)
-        try:
-            view = "{0[0]} {0[1]} -z {0[2]}".format(m_pre_def.groups())
-        except KeyError:
-            view = "{0[0]} {0[1]}".format(m_pre_def.groups())
+        g = m_pre_def.groups()
+        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
     elif m_dif_def and len(ctx.message.attachments) > 0 and ctx.message.attachments[0].filename[-4:].lower() == ".png":
         cmd = dget(dget(ctx.bot.commands, name='diff').commands, name=canvas)
-        try:
-            view = '{0[0]} {0[1]} -z {0[2]}'.format(m_dif_def.groups())
-        except KeyError:
-            view = '{0[0]} {0[1]}'.format(m_dif_def.groups())
+        g = m_dif_def.groups()
+        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
 
     if cmd:
         ctx.command = cmd
