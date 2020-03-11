@@ -441,11 +441,13 @@ class Canvas(commands.Cog):
 
         # Pre-Parsing
         if len(args) < 1:
+            name = ""
             a = args
         elif args[0][0] != "-":
             name = args[0]
             a = args[1:]
         else:
+            name = ""
             a = args
 
         try:
