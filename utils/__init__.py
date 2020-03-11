@@ -13,7 +13,6 @@ from utils import config, sqlite as sql
 
 log = logging.getLogger(__name__)
 
-
 async def autoscan(ctx):
     if ctx.guild and not sql.guild_is_autoscan(ctx.guild.id):
         return
@@ -21,7 +20,7 @@ async def autoscan(ctx):
     canvas = sql.guild_get_canvas_by_id(ctx.guild.id) if ctx.guild else "pixelcanvas"
 
     cmd = None
-    view = ""
+    g = None
     m_pc = re.search('pixelcanvas\.io/@(-?\d+),(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
     m_pz = re.search('pixelzone\.io/\?p=(-?\d+),(-?\d+)(?:,(\d+))?(?:(?: |#| #)(-?\d+))?', ctx.message.content)
     m_ps = re.search('pxls\.space/#x=(\d+)&y=(\d+)(?:&scale=(\d+))?(?:(?: |#| #)(-?\d+))?', ctx.message.content)
@@ -50,7 +49,6 @@ async def autoscan(ctx):
         ctx.is_autoscan = True
         await ctx.bot.invoke(ctx)
         return True
-
 
 async def channel_log(bot, msg):
     if config.LOGGING_CHANNEL_ID:
