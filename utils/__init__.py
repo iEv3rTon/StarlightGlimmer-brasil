@@ -30,25 +30,21 @@ async def autoscan(ctx):
     if m_pc:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name='pixelcanvas')
         g = m_pc.groups()
-        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
     elif m_pz:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name='pixelzone')
         g = m_pz.groups()
-        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
     elif m_ps:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name='pxlsspace')
         g = m_ps.groups()
-        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
     elif m_pre_def:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name=canvas)
         g = m_pre_def.groups()
-        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
     elif m_dif_def and len(ctx.message.attachments) > 0 and ctx.message.attachments[0].filename[-4:].lower() == ".png":
         cmd = dget(dget(ctx.bot.commands, name='diff').commands, name=canvas)
         g = m_dif_def.groups()
-        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
 
     if cmd:
+        view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
         ctx.command = cmd
         ctx.view = StringView(view)
         ctx.is_autoscan = True
