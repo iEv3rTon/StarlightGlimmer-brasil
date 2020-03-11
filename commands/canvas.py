@@ -433,22 +433,21 @@ class Canvas(commands.Cog):
     async def gridify(self, ctx, *args):
         log.info(f"g!gridify run in {ctx.guild.name} with args: {args}")
 
-        # Order Parsing
-        try:
-            name = args[0]
-        except TypeError:
-            pass
-
-        try:
-            a = args[1:]
-        except:
-            a = []
-
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         parser.add_argument("-c", "--color", default=0x808080, action=ColorAction)
         parser.add_argument("-z", "--zoom", type=int, default=1)
+
+        # Pre-Parsing
+        if len(args) < 1:
+            a = args
+        elif args[0][0] != "-":
+            name = args[0]
+            a = args[1:]
+        else:
+            a = args
+
         try:
             a = vars(parser.parse_args(a))
         except TypeError:
@@ -467,21 +466,13 @@ class Canvas(commands.Cog):
             log.info("(T:{} | GID:{})".format(t.name, t.gid))
             data = await http.get_template(t.url, t.name)
             max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
-            zoom = max(1, min(zoom), max_zoom))
+            zoom = max(1, min(zoom, max_zoom))
             template = await render.gridify(data, color, zoom)
         else:
             att = await utils.verify_attachment(ctx)
             data = io.BytesIO()
             await att.save(data)
             max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
-
-            try:
-                a = vars(parser.parse_args(args))
-            except TypeError:
-                return
-            color = a["color"]
-            zoom = a["zoom"]
-
             zoom = max(1, min(zoom, max_zoom))
             template = await render.gridify(data, color, zoom)
 
