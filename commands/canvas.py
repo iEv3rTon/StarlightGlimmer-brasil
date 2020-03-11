@@ -27,7 +27,7 @@ from objects.bot_objects import GlimContext
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
 from objects.errors import FactionNotFoundError, IdempotentActionError, NoTemplatesError
 import utils
-from utils import colors, http, canvases, render, GlimmerArgumentParser, FactionAction, sqlite as sql
+from utils import colors, http, canvases, render, GlimmerArgumentParser, FactionAction, ColorAction, sqlite as sql
 
 log = logging.getLogger(__name__)
 
