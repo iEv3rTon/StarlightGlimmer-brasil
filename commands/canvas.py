@@ -437,14 +437,12 @@ class Canvas(commands.Cog):
         try:
             name = args[0]
         except TypeError:
-            await ctx.send("Error: no arguments were provided.")
-            return
+            pass
 
-        if re.match("-\D+", name) != None:
-            name = args[-1]
-            a = args[:-1]
-        else:
+        try:
             a = args[1:]
+        except:
+            a = []
 
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
@@ -469,7 +467,7 @@ class Canvas(commands.Cog):
             log.info("(T:{} | GID:{})".format(t.name, t.gid))
             data = await http.get_template(t.url, t.name)
             max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
-            zoom = max(1, min(parse_zoom(next(iter_args, 1)), max_zoom))
+            zoom = max(1, min(zoom), max_zoom))
             template = await render.gridify(data, color, zoom)
         else:
             att = await utils.verify_attachment(ctx)
@@ -484,7 +482,7 @@ class Canvas(commands.Cog):
             color = a["color"]
             zoom = a["zoom"]
 
-            zoom = max(1, min(parse_zoom(name), max_zoom))
+            zoom = max(1, min(zoom, max_zoom))
             template = await render.gridify(data, color, zoom)
 
         with io.BytesIO() as bio:
