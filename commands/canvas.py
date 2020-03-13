@@ -147,7 +147,7 @@ class Canvas(commands.Cog):
                     checker.connect_websocket()
         else:
             # No template found
-            await ctx.send("error.template_not_found")
+            await ctx.send(ctx.s("error.template_not_found"))
 
     @diff.command(name="pixelcanvas", aliases=["pc"])
     async def diff_pixelcanvas(self, ctx, *args):
