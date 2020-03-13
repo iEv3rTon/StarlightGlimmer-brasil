@@ -1,26 +1,25 @@
 import asyncio
+import aiohttp
+import argparse
 import datetime
+import discord
+from discord.ext import commands
+from discord.ext.commands import BucketType
 import hashlib
 import io
 import itertools
 import logging
 import math
+import numpy as np
+from prettytable import *
+from PIL import Image, ImageChops
 import re
 import time
 from typing import List
-from prettytable import *
-import argparse
-
-import aiohttp
-import discord
-import numpy as np
-from discord.ext import commands
-from discord.ext.commands import BucketType
-from PIL import Image, ImageChops
 
 from objects import DbTemplate
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from objects.errors import FactionNotFoundError, NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, IgnoreError, TemplateHttpError, NoJpegsError, NotPngError
+from objects.errors import NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, IgnoreError, TemplateHttpError, NoJpegsError, NotPngError
 import utils
 from utils import canvases, checks, colors, config, http, render, GlimmerArgumentParser, FactionAction, sqlite as sql
 
