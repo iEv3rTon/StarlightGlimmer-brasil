@@ -232,9 +232,10 @@ class Canvas(commands.Cog):
                     bio.seek(0)
                     f = discord.File(bio, "preview.png")
                     await ctx.send(file=f)
-
                 return
-        await ctx.invoke_default("preview")
+
+        # No template found
+        await ctx.send(ctx.s("error.template_not_found"))
 
     @preview.command(name="pixelcanvas", aliases=["pc"])
     async def preview_pixelcanvas(self, ctx, *args):
