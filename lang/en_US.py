@@ -155,9 +155,9 @@ STRINGS = {
     "faction.set_name": "Faction renamed to `{}`.",
 
     # General command messages
-    "general.err.cannot_get_changelog": "There was an error fetching the changelog. Visit https://github.com/DiamondIceNS/StarlightGlimmer/releases to see all releases.",
+    "general.err.cannot_get_changelog": "There was an error fetching the changelog. Visit https://github.com/BrickGrass/StarlightGlimmer/releases to see all releases.",
     "general.help_command_list_header": "Command List",
-    "general.help_more_info": "Use `{}help <command>` to view more info about a specific command.",
+    "general.help_more_info": "Use `{}help <command>` to view more info about a specific command. For more in depth documentation, go to https://github.com/BrickGrass/StarlightGlimmer/wiki",
     "general.help_subcommand": "# Use '{}help {} (subcommand)' to view more info about a subcommand",
     "general.ping": "Pinging...",
     "general.pong": "Pong! | **{0}ms**",
@@ -510,7 +510,7 @@ STRINGS = {
                         ("MyTemplate -z 10 -c 080808", "Gridify a template named 'MyTemplate' magnified 10 times using hex 0x080808 as the grid color")],
     "example.language": [("", "View my current language and available language options"),
                          ("en-us", "Set my language to English (US)")],
-    "example.online": ["pc", "Gets the number of players currently online on Pixelcanvas.io"],
+    "example.online": [("pc", "Gets the number of players currently online on Pixelcanvas.io")],
     "example.prefix": [("", "View my current prefix"),
                        ("#", "Set my command prefix to '#'")],
     "example.preview": [("pc 900 900", "Preview Pixelcanvas.io centered on (900, 900)"),

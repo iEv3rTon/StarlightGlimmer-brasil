@@ -34,7 +34,7 @@ class General(commands.Cog):
 
     @commands.command()
     async def github(self, ctx):
-        await ctx.send("https://github.com/DiamondIceNS/StarlightGlimmer")
+        await ctx.send("https://github.com/BrickGrass/StarlightGlimmer")
 
     @commands.command()
     async def invite(self, ctx):
