@@ -5,6 +5,7 @@ from utils import sqlite as sql
 class IgnoreError(commands.CommandError):
     pass
 
+
 class BadArgumentErrorWithMessage(commands.CommandError):
     def __init__(self, message):
         self.message = message
@@ -66,8 +67,10 @@ class TemplateNotFoundError(commands.CommandError):
         templates = sql.template_get_all_by_guild_id(gid)
         self.matches = [t.name for t in templates if fuzz.partial_ratio(t.name, template_name) >= 70]
 
+
 class UrlError(commands.CommandError):
     pass
+
 
 class ColorError(commands.CommandError):
     pass

@@ -1,33 +1,29 @@
-import logging
-import io
-import math
-import re
-import requests
+import asyncio
 import aiohttp
-from PIL import Image, ImageChops
-import math
-import threading
 import datetime
-import uuid
-import asyncio
-import time
-import websocket
-from struct import unpack_from
-from typing import List
-import itertools
-import numpy as np
-import asyncio
-
 import discord
 from discord.ext import commands
 from discord.ext.commands import BucketType
+import io
+import itertools
+import logging
+import math
+import numpy as np
+from PIL import Image, ImageChops
+import re
+import requests
+from struct import unpack_from
+import threading
+import time
+from typing import List
+import uuid
+import websocket
 
 from objects import DbTemplate
 from objects.bot_objects import GlimContext
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from objects.errors import FactionNotFoundError, IdempotentActionError, NoTemplatesError, TemplateNotFoundError
-import utils
-from utils import colors, http, canvases, render, GlimmerArgumentParser, FactionAction, ColorAction, sqlite as sql
+from objects.errors import IdempotentActionError, NoTemplatesError, TemplateNotFoundError
+from utils import autoscan, colors, http, canvases, render, GlimmerArgumentParser, FactionAction, ColorAction, verify_attachment, sqlite as sql
 
 log = logging.getLogger(__name__)
 
@@ -469,7 +465,7 @@ class Canvas(commands.Cog):
             else:
                 raise TemplateNotFoundError(gid, name)
         else:
-            att = await utils.verify_attachment(ctx)
+            att = await verify_attachment(ctx)
             data = io.BytesIO()
             await att.save(data)
             max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
@@ -522,7 +518,7 @@ class Canvas(commands.Cog):
                 await new_ctx.reinvoke()
                 return
 
-            if await utils.autoscan(new_ctx):
+            if await autoscan(new_ctx):
                 return
         await ctx.send(ctx.s("canvas.repeat_not_found"))
 
@@ -682,7 +678,7 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
     palette - The palette in use on this canvas, a list of rgb tuples.
     """
     async with ctx.typing():
-        att = await utils.verify_attachment(ctx)
+        att = await verify_attachment(ctx)
 
         # Order Parsing
         try:
@@ -868,7 +864,7 @@ async def _quantize(ctx, args, canvas, palette):
         else:
             raise TemplateNotFoundError(gid, name)
     else:
-        att = await utils.verify_attachment(ctx)
+        att = await verify_attachment(ctx)
         if att:
             data = io.BytesIO()
             await att.save(data)
