@@ -310,6 +310,14 @@ class Template(commands.Cog):
                 out.append("Updating name failed: Names cannot begin with hyphens.")
                 await Template.send_end(ctx, out)
                 return
+            # Make sure the name isn't a number
+            try:
+                c = int(new_name)
+                out.append("Updating name failed: Names cannot be numbers.")
+                await Template.send_end(ctx, out)
+                return
+            except ValueError:
+                pass
 
             # None with new nick, update template
             sql.template_kwarg_update(ctx.guild.id, orig_template.name, new_name=new_name, date_modified=int(time.time()))
@@ -577,6 +585,12 @@ class Template(commands.Cog):
         if name[0] == "-":
             await ctx.send("Template names cannot begin with hyphens.")
             return
+        try:
+            c = int(name)
+            await ctx.send("Template names cannot be numbers.")
+            return
+        except ValueError:
+            pass
         if sql.template_count_by_guild_id(ctx.guild.id) >= config.MAX_TEMPLATES_PER_GUILD:
             await ctx.send(ctx.s("template.err.max_templates"))
             return
