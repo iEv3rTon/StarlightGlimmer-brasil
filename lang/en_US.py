@@ -52,6 +52,7 @@ STRINGS = {
     "error.not_png": "That command requires a PNG image.",
     "error.non_discord_url": "I can only accept Discord attachment URLs.",
     "error.template_not_found": "That template could not be found.",
+    "error.template_did_you_mean": "Did you mean: {0}?",
     "error.timed_out": "Command timed out.",
     "error.unknown": "An unknown error occurred. The dev has been notified.",
     "error.why": "But... why?",

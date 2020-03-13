@@ -25,7 +25,7 @@ from discord.ext.commands import BucketType
 from objects import DbTemplate
 from objects.bot_objects import GlimContext
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from objects.errors import FactionNotFoundError, IdempotentActionError, NoTemplatesError
+from objects.errors import FactionNotFoundError, IdempotentActionError, NoTemplatesError, TemplateNotFoundError
 import utils
 from utils import colors, http, canvases, render, GlimmerArgumentParser, FactionAction, ColorAction, sqlite as sql
 
@@ -88,10 +88,8 @@ class Canvas(commands.Cog):
         exclude_colors = a["excludeColors"]
         only_colors = a["onlyColors"]
 
-        if faction:
-            t = sql.template_get_by_name(faction.id, name)
-        else:
-            t = sql.template_get_by_name(ctx.guild.id, name)
+        gid = ctx.guild.id if not faction else faction.id
+        t = sql.template_get_by_name(gid, name)
 
         if t:
             async with ctx.typing():
@@ -147,7 +145,7 @@ class Canvas(commands.Cog):
                     checker.connect_websocket()
         else:
             # No template found
-            await ctx.send(ctx.s("error.template_not_found"))
+            raise TemplateNotFoundError(gid, name)
 
     @diff.command(name="pixelcanvas", aliases=["pc"])
     async def diff_pixelcanvas(self, ctx, *args):
@@ -205,10 +203,8 @@ class Canvas(commands.Cog):
         faction = a["faction"]
         zoom = a["zoom"]
 
-        if faction:
-            t = sql.template_get_by_name(faction.id, name)
-        else:
-            t = sql.template_get_by_name(ctx.guild.id, name)
+        gid = ctx.guild.id if not faction else faction.id
+        t = sql.template_get_by_name(gid, name)
 
         if t:
             async with ctx.typing():
@@ -235,7 +231,7 @@ class Canvas(commands.Cog):
                 return
 
         # No template found
-        await ctx.send(ctx.s("error.template_not_found"))
+        raise TemplateNotFoundError(gid, name)
 
     @preview.command(name="pixelcanvas", aliases=["pc"])
     async def preview_pixelcanvas(self, ctx, *args):
@@ -441,14 +437,14 @@ class Canvas(commands.Cog):
         parser.add_argument("-z", "--zoom", type=int, default=1)
 
         # Pre-Parsing
-        if len(args) < 1:
-            name = ""
+        if len(args) == 0:
+            name = None
             a = args
         elif args[0][0] != "-":
             name = args[0]
             a = args[1:]
         else:
-            name = ""
+            name = None
             a = args
 
         try:
@@ -460,17 +456,18 @@ class Canvas(commands.Cog):
         color = a["color"]
         zoom = a["zoom"]
 
-        if faction:
-            t = sql.template_get_by_name(faction.id, name)
-        else:
-            t = sql.template_get_by_name(ctx.guild.id, name)
+        gid = ctx.guild.id if not faction else faction.id
+        t = sql.template_get_by_name(gid, name)
 
-        if t:
-            log.info("(T:{} | GID:{})".format(t.name, t.gid))
-            data = await http.get_template(t.url, t.name)
-            max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
-            zoom = max(1, min(zoom, max_zoom))
-            template = await render.gridify(data, color, zoom)
+        if name:
+            if t:
+                log.info("(T:{} | GID:{})".format(t.name, t.gid))
+                data = await http.get_template(t.url, t.name)
+                max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
+                zoom = max(1, min(zoom, max_zoom))
+                template = await render.gridify(data, color, zoom)
+            else:
+                raise TemplateNotFoundError(gid, name)
         else:
             att = await utils.verify_attachment(ctx)
             data = io.BytesIO()
@@ -840,6 +837,16 @@ async def _quantize(ctx, args, canvas, palette):
     parser = GlimmerArgumentParser(ctx)
     parser.add_argument("-f", "--faction", default=None, action=FactionAction)
     parser.add_argument("-z", "--zoom", type=int, default=1)
+
+    # Pre-Parsing
+    if len(args) == 0:
+        name = None
+    elif args[0][0] != "-":
+        name = args[0]
+        args = args[1:]
+    else:
+        name = None
+
     try:
         args = vars(parser.parse_args(args))
     except TypeError:
@@ -848,17 +855,18 @@ async def _quantize(ctx, args, canvas, palette):
     faction = args["faction"]
     zoom = args["zoom"]
 
-    if faction:
-        t = sql.template_get_by_name(faction.id, name)
-    else:
-        t = sql.template_get_by_name(ctx.guild.id, name)
+    gid = ctx.guild.id if not faction else faction.id
+    t = sql.template_get_by_name(gid, name)
 
     data = None
-    if t:
-        log.info("(T:{} | GID:{})".format(t.name, t.gid))
-        if t.canvas == canvas:
-            raise IdempotentActionError
-        data = await http.get_template(t.url, t.name)
+    if name:
+        if t:
+            log.info("(T:{} | GID:{})".format(t.name, t.gid))
+            if t.canvas == canvas:
+                raise IdempotentActionError
+            data = await http.get_template(t.url, t.name)
+        else:
+            raise TemplateNotFoundError(gid, name)
     else:
         att = await utils.verify_attachment(ctx)
         if att:

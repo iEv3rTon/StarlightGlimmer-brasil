@@ -199,7 +199,7 @@ class Template(commands.Cog):
 
         orig_template = sql.template_get_by_name(ctx.guild.id, name)
         if not orig_template:
-            raise TemplateNotFoundError
+            raise TemplateNotFoundError(ctx.guild.id, name)
 
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
@@ -362,7 +362,7 @@ class Template(commands.Cog):
 
         t = sql.template_get_by_name(gid, name)
         if not t:
-            raise TemplateNotFoundError
+            raise TemplateNotFoundError(gid, name)
 
         if image_only:
             try:
@@ -427,7 +427,7 @@ class Template(commands.Cog):
     async def template_remove(self, ctx, name):
         t = sql.template_get_by_name(ctx.guild.id, name)
         if not t:
-            raise TemplateNotFoundError
+            raise TemplateNotFoundError(ctx.guild.id, name)
         log.info("(T:{})".format(t.name, t.gid))
         if t.owner_id != ctx.author.id and not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             await ctx.send(ctx.s("template.err.not_owner"))
