@@ -146,8 +146,8 @@ class Canvas(commands.Cog):
                     checker = Checker(self.bot, ctx, t.canvas, error_list)
                     checker.connect_websocket()
         else:
-            # No template found, try coords + image matching
-            await ctx.invoke_default("diff")
+            # No template found
+            await ctx.send("error.template_not_found")
 
     @diff.command(name="pixelcanvas", aliases=["pc"])
     async def diff_pixelcanvas(self, ctx, *args):
@@ -713,6 +713,10 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
         parser.add_argument("-e", "--errors", action='store_true')
         parser.add_argument("-s", "--snapshot", action='store_true')
         parser.add_argument("-z", "--zoom", type=int, default=1)
+        parser.add_argument("-t", "--excludeTarget", action='store_true')
+        colorFilters = parser.add_mutually_exclusive_group()
+        colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
+        colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
         try:
             a = vars(parser.parse_args(args))
         except TypeError:
@@ -721,6 +725,9 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
         list_pixels = a["errors"]
         create_snapshot = a["snapshot"]
         zoom = a["zoom"]
+        exclude_target = a["excludeTarget"]
+        exclude_colors = a["excludeColors"]
+        only_colors = a["onlyColors"]
 
         data = io.BytesIO()
         await att.save(data)
@@ -746,14 +753,23 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
             await ctx.send(content=out, file=f)
 
         if list_pixels and len(err_list) > 0:
-            for i, pixel in enumerate(err_list):
-                x_, y_, current, target = pixel
-                # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
-                x_ += x
-                y_ += y
-                err_list[i] = Pixel(current, target, x_, y_)
+            error_list = []
+            for x, y, current, target in err_list:
+                # Color Filtering
+                c = current if not exclude_target else target
+                if exclude_colors:
+                    if c in exclude_colors:
+                        continue
+                elif only_colors:
+                    if not c in only_colors:
+                        continue
 
-            checker = Checker(self.bot, ctx, canvas, err_list)
+                # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
+                x += t.x
+                y += t.y
+                error_list.append(Pixel(current, target, x, y))
+
+            checker = Checker(self.bot, ctx, t.canvas, error_list)
             checker.connect_websocket()
 
 async def _preview(ctx, args, fetch):
