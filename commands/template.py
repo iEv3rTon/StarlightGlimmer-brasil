@@ -472,11 +472,21 @@ class Template(commands.Cog):
                     not_updated.append([base, "skip"])
                     continue
             else:
+                done = tot - err
+                perc = done / tot
+                if perc < 0.00005 and done > 0:
+                    perc = ">0.00%"
+                elif perc >= 0.99995 and err > 0:
+                    perc = "<100.00%"
+                else:
+                    perc = "{:.2f}%".format(perc * 100)
+                out = ctx.s("canvas.diff") if bad == 0 else ctx.s("canvas.diff_bad_color")
+                out = out.format(done, tot, err, perc, bad=bad)
                 with io.BytesIO() as bio:
                     diff_img.save(bio, format="PNG")
                     bio.seek(0)
                     f = discord.File(bio, "diff.png")
-                    msg = await ctx.send(file=f)
+                    msg = await ctx.send(content=out, file=f)
                 if not await utils.yes_no(ctx, "There are errors on the snapshot, do you want to update it? You will loose track of progress if you do this."):
                     not_updated.append([base, "err"])
                     continue
