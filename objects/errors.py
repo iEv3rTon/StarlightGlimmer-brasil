@@ -65,7 +65,7 @@ class TemplateHttpError(commands.CommandError):
 class TemplateNotFoundError(commands.CommandError):
     def __init__(self, gid, template_name):
         templates = sql.template_get_all_by_guild_id(gid)
-        self.matches = [t.name for t in templates if fuzz.partial_ratio(t.name, template_name) >= 70]
+        self.matches = [f"`{t.name}`" for t in templates if fuzz.partial_ratio(t.name, template_name) >= 70]
 
 
 class UrlError(commands.CommandError):
