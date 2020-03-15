@@ -157,7 +157,7 @@ STRINGS = {
     # General command messages
     "general.err.cannot_get_changelog": "There was an error fetching the changelog. Visit https://github.com/BrickGrass/StarlightGlimmer/releases to see all releases.",
     "general.help_command_list_header": "Command List",
-    "general.help_more_info": "Use `{}help <command>` to view more info about a specific command. For more in depth documentation, go to https://github.com/BrickGrass/StarlightGlimmer/wiki",
+    "general.help_more_info": "Use {}help <command> to view more info about a specific command. For more in depth documentation, go to https://github.com/BrickGrass/StarlightGlimmer/wiki",
     "general.help_subcommand": "# Use '{}help {} (subcommand)' to view more info about a subcommand",
     "general.ping": "Pinging...",
     "general.pong": "Pong! | **{0}ms**",

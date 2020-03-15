@@ -65,9 +65,9 @@ class GlimmerHelpCommand(HelpCommand):
 
     async def send_bot_help(self, mapping):
 
-        out = ["```xl",
-               "'{}'".format(self.context.s("general.help_command_list_header")),
-               "```"]
+        embed = discord.Embed(
+            title=self.context.s("general.help_command_list_header"),
+            url="https://github.com/BrickGrass/StarlightGlimmer/wiki")
 
         def get_category(command: Command):
             return {
@@ -84,17 +84,12 @@ class GlimmerHelpCommand(HelpCommand):
         for cat, cmds in itertools.groupby(filtered, key=get_category):
             cmds = sorted(cmds, key=lambda x: x.name)
             if len(cmds) > 0:
-                cog_str = "**{} -**".format(cat)
-                for c in cmds:
-                    cog_str += " `{}`".format(c.name)
-                out.append(cog_str)
+                cmds = ", ".join([f"`{c.name}`" for c in cmds])
+                embed.add_field(name=cat, value=cmds)
 
-        out.extend([
-            '',
-            self.context.s("general.help_more_info").format(self.clean_prefix)
-        ])
+        embed.set_footer(text=self.context.s("general.help_more_info").format(self.clean_prefix))
 
-        await self.get_destination().send('\n'.join(out))
+        await self.get_destination().send(embed=embed)
 
     async def send_cog_help(self, cog):
         pass  # TODO
