@@ -67,7 +67,7 @@ class GlimmerHelpCommand(HelpCommand):
 
         embed = discord.Embed(
             title=self.context.s("general.help_command_list_header"),
-            url="https://github.com/BrickGrass/StarlightGlimmer/wiki")
+            url=self.context.s("general.wiki"))
 
         def get_category(command: Command):
             return {
@@ -87,7 +87,7 @@ class GlimmerHelpCommand(HelpCommand):
                 cmds = ", ".join([f"`{c.name}`" for c in cmds])
                 embed.add_field(name=cat, value=cmds)
 
-        embed.set_footer(text=self.context.s("general.help_more_info").format(self.clean_prefix))
+        embed.set_footer(text=self.context.s("general.help_footer").format(self.clean_prefix))
 
         await self.get_destination().send(embed=embed)
 
@@ -95,83 +95,91 @@ class GlimmerHelpCommand(HelpCommand):
         pass  # TODO
 
     async def send_command_help(self, command):
-        dot_name = command.qualified_name.replace(' ', '.')
-        out = ["**`{}`** {}".format(command.qualified_name, self.context.s("brief." + dot_name))]
-
-        usage = "**{}:** ".format(self.context.s("bot.usage"))
-        sig = self.context.s("signature." + dot_name)
-        if isinstance(sig, list):
-            usage += " {} ".format(self.context.s("bot.or_all_caps")) \
-                .join(["`{}{} {}`".format(self.clean_prefix, command.qualified_name, x) for x in sig])
-        elif sig is not None:
-            usage += "`{}{} {}`".format(self.clean_prefix, command.qualified_name, sig)
-        else:
-            usage += "`{}{}`".format(self.clean_prefix, command.qualified_name)
-        out.append(usage)
-
-        if len(command.aliases) > 0:
-            aliases = "**{}:** ".format(self.context.s("bot.aliases"))
-            aliases += ' '.join(["`{}`".format(a) for a in command.aliases])
-            out.append(aliases)
-
-        # <long doc> section
-        long_doc = self.context.s("help." + dot_name)
-        if long_doc:
-            out.append("")
-            out.append("{}".format(inspect.cleandoc(long_doc)).format(p=self.clean_prefix))
-
-        examples = self.context.s("example." + dot_name)
-        if examples:
-            out.append("")
-            out.append("**{}:**".format(self.context.s("bot.examples")))
-            for ex in self.context.s("example." + dot_name):
-                out.append("`{}{} {}` {}".format(self.clean_prefix, command.qualified_name, *ex))
-
-        await self.get_destination().send('\n'.join(out))
+        embed = self.generate_help(command)
+        await self.get_destination().send(embed=embed)
 
     async def send_error_message(self, error):
         pass  # TODO
 
     async def send_group_help(self, group):
-        dot_name = group.qualified_name.replace(' ', '.')
-        out = ["**`{}`** {}".format(group.qualified_name, self.context.s("brief." + dot_name))]
+        embed = self.generate_help(group)
 
-        usage = "**{}:** ".format(self.context.s("bot.usage"))
+        filtered = await self.filter_commands(group.commands, sort=True)
+        s = []
+        for cmd in filtered:
+            s.append('`{0}` - {1}'.format(
+                cmd.name,
+                self.context.s('brief.' + cmd.qualified_name.replace(' ', '.'))))
+        embed.insert_field_at(
+            index=-2,
+            name=self.context.s("bot.subcommands"),
+            value="\n".join(s),
+            inline=False)
+
+        await self.get_destination().send(embed=embed)
+
+    @staticmethod
+    def get_category(command_or_group):
+        return {
+            'General':       'General-Cog',
+            'Canvas':        'Canvas-Cog',
+            'Template':      'Template-Cog',
+            'Faction':       'Faction-Cog',
+            'Animotes':      'Animotes-Cog',
+            'Configuration': 'Configuration-Cog'
+        }[command_or_group.cog_name]
+
+    def generate_help(self, command_or_group):
+        dot_name = command_or_group.qualified_name.replace(' ', '.')
+
+        embed = discord.Embed(
+            title=command_or_group.qualified_name,
+            description=self.context.s("brief." + dot_name),
+            url="{}{}#{}".format(
+                self.context.s("general.wiki"),
+                self.get_category(command_or_group),
+                command_or_group.qualified_name))
+
         sig = self.context.s("signature." + dot_name)
         if isinstance(sig, list):
-            usage += " {} ".format(self.context.s("bot.or_all_caps")) \
-                .join(["`{}{} {}`".format(self.clean_prefix, group.qualified_name, x) for x in sig])
+            usage = ["`{}{} {}`".format(self.clean_prefix, command_or_group.qualified_name, x) for x in sig]
         elif sig is not None:
-            usage += "`{}{} {}`".format(self.clean_prefix, group.qualified_name, sig)
+            usage = ["`{}{} {}`".format(self.clean_prefix, command_or_group.qualified_name, sig)]
         else:
-            usage += "`{}{}`".format(self.clean_prefix, group.qualified_name)
-        out.append(usage)
+            usage = ["`{}{}`".format(self.clean_prefix, command_or_group.qualified_name)]
+        embed.add_field(name=self.context.s("bot.usage"), value="\n".join(usage), inline=False)
 
-        if len(group.aliases) > 0:
-            aliases = "**{}:** ".format(self.context.s("bot.aliases"))
-            aliases += ' '.join(["`{}`".format(a) for a in group.aliases])
-            out.append(aliases)
+        if len(command_or_group.aliases) > 0:
+            embed.add_field(
+                name=self.context.s("bot.aliases"),
+                value="\n".join(["`{}`".format(a) for a in command_or_group.aliases]),
+                inline=False)
 
         # <long doc> section
         long_doc = self.context.s("help." + dot_name)
         if long_doc:
-            out.append("")
-            out.append("{}".format(inspect.cleandoc(long_doc)).format(p=self.clean_prefix))
+            embed.add_field(
+                name=self.context.s("general.help_more_info"),
+                value="{}".format(inspect.cleandoc(long_doc)).format(p=self.clean_prefix),
+                inline=False)
 
-        filtered = await self.filter_commands(group.commands, sort=True)
-        out.append("")
-        out.append("**{}:**".format(self.context.s("bot.subcommands")))
-        out.append('```xl')
-        max_width = max(map(lambda x: len(x.name), filtered))
-        for cmd in filtered:
-            out.append('{0:<{width}} // {1}'.format(cmd.name, self.context.s('brief.' + cmd.qualified_name.replace(' ', '.')), width=max_width))
-        out.append('```')
+        args = self.context.s("args." + dot_name)
+        if args:
+            embed.add_field(
+                name=self.context.s("general.help_arguments"),
+                value="{}".format(inspect.cleandoc(args)).format(p=self.clean_prefix),
+                inline=False)
 
         examples = self.context.s("example." + dot_name)
         if examples:
-            out.append("")
-            out.append("**{}:**".format(self.context.s("bot.examples")))
+            e = []
             for ex in self.context.s("example." + dot_name):
-                out.append("`{}{} {}` {}".format(self.clean_prefix, group.qualified_name, *ex))
+                e.append("`{}{} {}` {}".format(self.clean_prefix, command_or_group.qualified_name, *ex))
+            embed.add_field(
+                name=self.context.s("bot.examples"),
+                value="\n".join(e),
+                inline=False)
 
-        await self.get_destination().send('\n'.join(out))
+        embed.set_footer(text=self.context.s("general.help_footer").format(self.clean_prefix))
+
+        return embed

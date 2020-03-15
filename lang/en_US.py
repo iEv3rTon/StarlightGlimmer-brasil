@@ -157,12 +157,15 @@ STRINGS = {
     # General command messages
     "general.err.cannot_get_changelog": "There was an error fetching the changelog. Visit https://github.com/BrickGrass/StarlightGlimmer/releases to see all releases.",
     "general.help_command_list_header": "Command List",
-    "general.help_more_info": "Use {}help <command> to view more info about a specific command. For more in depth documentation, go to https://github.com/BrickGrass/StarlightGlimmer/wiki",
+    "general.help_footer": "Use {}help <command> to view more info about a specific command. For more in depth documentation, click the title's link.",
     "general.help_subcommand": "# Use '{}help {} (subcommand)' to view more info about a subcommand",
+    "general.help_more_info": "More Info",
+    "general.help_arguments": "Optional Arguments",
     "general.ping": "Pinging...",
     "general.pong": "Pong! | **{0}ms**",
     "general.suggest": "Your suggestion has been sent. Thank you for your input!",
     "general.version": "My version number is **{0}**",
+    "general.wiki": "https://github.com/BrickGrass/StarlightGlimmer/wiki/",
 
     # Template command messages
     "template.added": "Template '{0}' added!",
@@ -294,26 +297,10 @@ STRINGS = {
         - Previews take precedence over diffs
         - Messages which use spoiler tags will be entirely ignored""",
     "help.canvas": "Defaults to Pixelcanvas.io.",
-    "help.check":
-        """The following optional arguments are available:
-        `-e` or `--onlyErrors` - This argument filters the results and only shows templates with errors.
-        `-f` or `--faction` - Searches for the faction name provided and tries to check it's templates.
-        `-s` or `--sort` - Select how the results are sorted, default is by template name, a-z.
-            options: name_az, name_za, errors_az, errors_za, percent_az, percent_za""",
     "help.diff":
         """Images must be in PNG format.
         Error pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `{p}help quantize`).
-        You cannot zoom an image to contain more than 4 million pixels.
-
-        The following optional arguments are available:
-        `-e` or `--errors` - Sends the specific coordinates of 10 error pixels. I then monitor these pixels for 5 minutes and remove any from the list that are fixed, replacing them with other damage if there are more than 10 errors.
-        `-s` or `--snapshot` - Sends a snapshot of a template. All correct pixels will be the colour they are on your template and all other pixels will be transparent.
-        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
-        `-z` or `--zoom` - Zooms in the diff by the factor you provide.
-        The following args filter `-e`. Colors are represented by a number from 0-palleteLength.
-        `-t` or `--excludeTarget` - If not used, pixels are filtered based on what color they are damaged to, if used, they are filtered based on what they should be.
-        `-oc` or `--onlyColors` - Only target pixels of the colors you list here will be shown.
-        `-ec` or `--excludeColors` - Pixels target pixels of the colors you list here will not be shown.""",
+        You cannot zoom an image to contain more than 4 million pixels.""",
     "help.dither":
         """Images must be in PNG or JPEG format.
         The image will be converted to the palette you select using the dithering algorithm specified.
@@ -328,8 +315,7 @@ STRINGS = {
         Floyd Steinberg dithering: `[-f|-fs|--floyd-steinberg] <order>`
 
         Threshold can be either: 2, 4, 8, 16, 32, 64, 128, 256 or 512
-        Order can be either: 2, 4, 8 or 16
-        """,
+        Order can be either: 2, 4, 8 or 16""",
     "help.faction.create":
         """Factions must have unique names (6 to 32 chars, case sensitive) and, if at all, unique aliases (1 to 5 chars, case insensitive).
         A guild can only have one faction at any given time.""",
@@ -339,28 +325,10 @@ STRINGS = {
     "help.faction.desc.set": "Max 240 characters.",
     "help.faction.emblem.set": "URLs must be Discord URLs.",
     "help.faction.color.set": "Color must be a valid hexidecimal number. Default 0xCF6EE4.",
-    "help.gridify":
-        """You cannot zoom an image to contain more than 4 million pixels.
-
-        The following optional arguments are available:
-        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
-        `-c` or `--color` - Uses the hexadecimal color value you provide for the grid lines of the final image.
-        `-z` or `--zoom` - Zooms in the image by the factor you provide.""",
     "help.prefix": "Max length is 5 characters. You really shouldn't need more than 2.",
-    "help.preview":
-        """Maximum zoom is 16. Minimum zoom is -8. You cannot zoom an image to contain more than 4 million pixels.
-
-        The following optional arguments are available:
-        `-t` or `--templateRegion` - Creates a default size preview centered on a template.
-        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
-        `-z` or `--zoom` - Zooms in the preview by the factor you provide.""",
     "help.quantize":
         """This should primarily be used if `{p}diff` is telling you your image has 'bad color' in it.
-        Using this command to create templates from raw images is not suggested, use the {p}dither command instead.
-
-        The following optional arguments are available:
-        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
-        `-z` or `--zoom` - Zooms in the image by the factor you provide.""",
+        Using this command to create templates from raw images is not suggested, use the {p}dither command instead.""",
     "help.register":
         """Opting into this feature means that whenever you type :animated_emoji_name: I will delete
         your message and replace it with the emoji specified, as long as that emoji is in a server
@@ -372,36 +340,57 @@ STRINGS = {
     "help.role.botadmin": "If a user has a role with this privilege bound to it, that user can use any of my commands with no restrictions. They will have the same permissions as guild Administrators.",
     "help.role.templateadder": "If this privilege is bound to a role, all regular members will lose the ability to modify templates unless they have that role.",
     "help.role.templateadmin": "If a user has a role with this privilege bound to it, that user can add and remove any template using the 'templates' command, regardless of ownership.",
-    "help.template":
-        """You can scroll through the pages of the templates listed using the reactions underneath, this times out and stops responding after 5 minutes.
-
-        The following optional arguments are available:
-        `-p` or `--page` - Opens on the page number you provide, if it is a valid page.
-        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.""",
+    "help.template": "You can scroll through the pages of the templates listed using the reactions underneath, this times out and stops responding after 5 minutes.",
     "help.template.add":
         """Image must be in PNG format. If the image is not quantized to the target canvas's palette, I will offer to quantize it for you.
         A guild can have up to 25 templates at any time.
         Templates must have unique names (max 32 chars, case sensitive). If you attempt to add a new template with the same name as an existing one, it will be replaced if you have permission to remove the old one (see `{p}help remove`).
         I only store URLs to templates. If the message that originally uploaded a template is deleted, its URL will break and the template will be lost. Save backups to your computer just in case.""",
-    "help.template.update":
-    """Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.
-
-    The following optional arguments are available:
-    `-n` or `--name` - Any text following this argument will be used to update the name of the template.
-    `-x` - A number after this argument will be used to update the x coordinate.
-    `-y` - A number after this argument will be used to update the y coordinate.
-    `-i` or `--image` - This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image.""",
-    "help.template.info":
-        """The following optional arguments are available:
-        `-r` or `--raw` - Returns just the template image without extra info.
-        `-z` or `--zoom` - Zooms in the image by the factor you provide. Only works when `-r` is enabled.
-        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.""",
+    "help.template.update": "Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.",
     "help.template.remove": "This command can only be used if the template being removed was added by you, unless you are a Template Admin, Bot Admin, or have the Administrator permission (see 'role').",
     "help.template.snapshot": """
         Attempts to update all currently registered snapshot templates. If a snapshot has errors, it will not be updated.
         This command can only be used by Template Admins and those with Admin perms. If you wish to only attempt to update specific templates you can specify them by listing their base template names.""",
     "help.template.snapshot.add": "Base is what you want the template to look like, snapshot is what it looks like currently.",
     "help.unregister": "You only need to unregister once for this to apply to all guilds.",
+
+    "args.check": """
+        `-e` or `--onlyErrors` - This argument filters the results and only shows templates with errors.
+        `-f` or `--faction` - Searches for the faction name provided and tries to check it's templates.
+        `-s` or `--sort` - Select how the results are sorted, default is by template name, a-z.
+            options: name_az, name_za, errors_az, errors_za, percent_az, percent_za""",
+    "args.diff": """
+        `-e` or `--errors` - Sends the specific coordinates of 10 error pixels. I then monitor these pixels for 5 minutes and remove any from the list that are fixed.
+        `-s` or `--snapshot` - Sends a snapshot of a template. All correct pixels will be the colour they are on your template and all other pixels will be transparent.
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
+        `-z` or `--zoom` - Zooms in the diff by the factor you provide.
+        The following args filter `-e`. Colors are represented by a number from 0-palleteLength.
+        `-t` or `--excludeTarget` - If not used, pixels are filtered based on what color they are damaged to, if used, they are filtered based on what they should be.
+        `-oc` or `--onlyColors` - Only target pixels of the colors you list here will be shown.
+        `-ec` or `--excludeColors` - Pixels target pixels of the colors you list here will not be shown.""",
+    "args.gridify": """
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
+        `-c` or `--color` - Uses the hexadecimal color value you provide for the grid lines of the final image.
+        `-z` or `--zoom` - Zooms in the image by the factor you provide. You cannot zoom an image to contain more than 4 million pixels.""",
+    "args.preview": """
+        `-t` or `--templateRegion` - Creates a default size preview centered on a template.
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
+        `-z` or `--zoom` - Zooms in the preview by the factor you provide. Maximum zoom is 16. Minimum zoom is -8. You cannot zoom an image to contain more than 4 million pixels.""",
+    "args.preview": """
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
+        `-z` or `--zoom` - Zooms in the image by the factor you provide.""",
+    "args.template": """
+        `-p` or `--page` - Opens on the page number you provide, if it is a valid page.
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.""",
+    "args.template_update": """
+        `-n` or `--name` - Any text following this argument will be used to update the name of the template.
+        `-x` - A number after this argument will be used to update the x coordinate.
+        `-y` - A number after this argument will be used to update the y coordinate.
+        `-i` or `--image` - This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image.""",
+    "args.template.info": """
+        `-r` or `--raw` - Returns just the template image without extra info.
+        `-z` or `--zoom` - Zooms in the image by the factor you provide. Only works when `-r` is enabled.
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.""",
 
     # Command signatures
     "signature.alertchannel": "(subcommand)",
