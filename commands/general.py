@@ -84,8 +84,14 @@ class GlimmerHelpCommand(HelpCommand):
         for cat, cmds in itertools.groupby(filtered, key=get_category):
             cmds = sorted(cmds, key=lambda x: x.name)
             if len(cmds) > 0:
-                cmds = ", ".join([f"`{c.name}`" for c in cmds])
-                embed.add_field(name=cat, value=cmds)
+                commands = []
+                for c in cmds:
+                    url = "{}{}#{}".format(
+                        self.context.s("general.wiki"),
+                        self.get_category(c),
+                        c.qualified_name)
+                    commands.append(f"[{c.name}]({url})")
+                embed.add_field(name=cat, value=", ".join(commands))
 
         embed.set_footer(text=self.context.s("general.help_footer").format(self.clean_prefix))
 
