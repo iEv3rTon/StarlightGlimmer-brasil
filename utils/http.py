@@ -18,7 +18,7 @@ from utils.version import VERSION
 log = logging.getLogger(__name__)
 
 useragent = {
-    'User-Agent': 'StarlightGlimmer/{} (+https://github.com/DiamondIceNS/StarlightGlimmer)'.format(VERSION),
+    'User-Agent': 'StarlightGlimmer/{} (+https://github.com/BrickGrass/StarlightGlimmer)'.format(VERSION),
     'Cache-Control': 'no-cache'
 }
 pz_rate_limiter = None
@@ -37,7 +37,7 @@ async def fetch_chunks(chunks: Iterable):
 
 async def _fetch_chunks_pixelcanvas(bigchunks: Iterable[BigChunk]):
     """Fetches chunk data from pixelcanvas.io.
-    
+
     Arguments:
     bigchunks - An iterable of a list of BigChunk objects."""
     async with aiohttp.ClientSession() as session:
@@ -64,7 +64,7 @@ async def _fetch_chunks_pixelcanvas(bigchunks: Iterable[BigChunk]):
 
 async def _fetch_chunks_pixelzone(chunks: Iterable[ChunkPz]):
     """Fetches chunk data from pixelzone.io.
-    
+
     Arguments:
     chunks - An iterable of a list of ChunkPz objects."""
     global pz_rate_limiter
@@ -134,7 +134,7 @@ async def _fetch_chunks_pixelzone(chunks: Iterable[ChunkPz]):
 
 async def _fetch_pxlsspace(chunks: Iterable[PxlsBoard]):
     """Fetches chunk data from pxls.space.
-    
+
     Arguments:
     chunks - An iterable of a list of PxlsBoard objects."""
     board = next(iter(chunks))
@@ -214,7 +214,7 @@ async def fetch_online_pxlsspace():
 
 async def get_changelog(version):
     """Gets recent changelog data from my github page.
-    
+
     Arguments:
     version - Version number, float.
 

@@ -586,6 +586,8 @@ class Checker:
         self.pixels = pixels
         self.sending = False
         self.msg = None
+        self.content = ""
+        self.timeout_string = self.ctx.s("canvas.diff_timeout") # Was failing weirdly when called outside of init
 
         asyncio.ensure_future(send_err_embed(self))
 
@@ -596,6 +598,8 @@ class Checker:
         def on_message(ws, message):
             asyncio.set_event_loop(self.bot.loop)
             if self._5_mins_time < time.time():
+                self.content = self.timeout_string
+                asyncio.ensure_future(send_err_embed(self))
                 ws.close()
             if unpack_from('B', message, 0)[0] == 193:
                 x = unpack_from('!h', message, 1)[0]
@@ -610,10 +614,11 @@ class Checker:
 
         def on_error(ws, exception):
             logger.exception(exception)
-            asyncio.ensure_future(self.msg.edit(content=self.ctx.s("canvas.diff_timeout")))
+            self.content = self.timeout_string
+            asyncio.ensure_future(send_err_embed(self))
 
         def on_close(ws):
-            asyncio.ensure_future(self.msg.edit(content=self.ctx.s("canvas.diff_timeout")))
+            pass
 
         def on_open(ws):
             pass
@@ -661,9 +666,9 @@ async def send_err_embed(self):
     embed.add_field(name=self.ctx.s("canvas.diff_error_title"), value=out)
 
     if self.msg:
-        await self.msg.edit(embed=embed)
+        await self.msg.edit(embed=embed, content=self.content)
     else:
-        self.msg = await self.ctx.send(embed=embed)
+        self.msg = await self.ctx.send(embed=embed, content=self.content)
     # Release send lock
     self.sending = False
 
