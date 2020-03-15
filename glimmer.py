@@ -215,8 +215,8 @@ async def on_command_error(ctx, error):
     elif isinstance(error, TemplateNotFoundError):
         out = ctx.s("error.template_not_found")
         if error.matches != []:
-            m = "{} or {}".format(", ".join(error.matches[:-1]), error.matches[-1]) if len(error.matches) > 1 else error.matches[0]
-            out = "{} {}".format(out, ctx.s("error.template_did_you_mean").format(m))
+            m = ctx.s("bot.or").format(", ".join(error.matches[:-1]), error.matches[-1]) if len(error.matches) > 1 else error.matches[0]
+            out = "{} {}".format(out, ctx.s("error.did_you_mean").format(m))
         await ctx.send(out)
     elif isinstance(error, UrlError):
         await ctx.send(ctx.s("error.non_discord_url"))

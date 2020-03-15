@@ -2,10 +2,11 @@ import itertools
 import inspect
 import logging
 from time import time
+from fuzzywuzzy import fuzz
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import BucketType, Command, HelpCommand
+from discord.ext.commands import BucketType, Command, HelpCommand, Group
 
 import utils
 from utils import config, http
@@ -105,7 +106,7 @@ class GlimmerHelpCommand(HelpCommand):
         await self.get_destination().send(embed=embed)
 
     async def send_error_message(self, error):
-        pass  # TODO
+        await self.get_destination().send(error)
 
     async def send_group_help(self, group):
         embed = self.generate_help(group)
@@ -123,6 +124,22 @@ class GlimmerHelpCommand(HelpCommand):
             inline=False)
 
         await self.get_destination().send(embed=embed)
+
+    def command_not_found(self, string):
+        out = self.context.s("general.help_command_not_found").format(string)
+
+        matches = [f"`{c.qualified_name}`" for c in self.context.bot.commands if fuzz.partial_ratio(c.qualified_name, string) >= 70]
+        if matches != []:
+            m = "{} or {}".format(", ".join(matches[:-1]), matches[-1]) if len(matches) > 1 else matches[0]
+            out = "{} {}".format(out, self.context.s("error.did_you_mean").format(m))
+        return out
+
+    def subcommand_not_found(self, command, string):
+        if isinstance(command, Group) and len(command.all_commands) > 0:
+            subcommands = [f"`{c.name}`" for c in command.commands]
+            subcommands = self.context.s("bot.or").format(", ".join(subcommands[:-1]), subcommands[-1]) if len(subcommands) > 1 else subcommands[0]
+            return self.context.s("general.help_no_subcommand_named").format(command.qualified_name, string, subcommands)
+        return self.context.s("general.help_no_subcommands").format(command.qualified_name)
 
     @staticmethod
     def get_category(command_or_group):
