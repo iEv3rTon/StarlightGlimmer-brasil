@@ -1,0 +1,27 @@
+error:
+  account_deleted: [[Account deleted]]
+  bad_image: An error occurred while attempting to open an image. Ensure that the supplied image is not corrupted.
+  bad_png: "This image seems to be corrupted. Try re-saving it with an image editor or using `{0}quantize`."
+  cannot_fetch_template: "Could not access URL for template '{}'. (Was the original attachment deleted?)"
+  cooldown: "That command is on cooldown. Try again in {0:.01f}s."
+  did_you_mean: "Did you mean: {0}?"
+  faction_not_found: That faction could not be found.
+  http: There was an error retrieving data from a remote location. Try again later.
+  http_canvas: "{0} seems to be having connection issues. Try again later."
+  invalid_color: That is not a valid color.
+  invalid_option: That is not a valid option. Please try again.
+  jpeg: Seriously? A JPEG? Gross! Please create a PNG template instead.
+  missing_arg_faction: "Missing argument: The `-f` flag must be followed by a faction name or alias."
+  missing_argument: You are missing a required argument. Please try again.
+  no_attachment: That command requires an attachment.
+  no_dm: That command only works in guilds.
+  no_self_permission: I do not have the permission to do that in this channel.
+  no_templates: This guild currently has no templates.
+  no_templates_for_canvas: This guild currently has no templates for that canvas.
+  no_user_permission: You do not have permission to use that command.
+  non_discord_url: I can only accept Discord attachment URLs.
+  not_png: That command requires a PNG image.
+  template_not_found: That template could not be found.
+  timed_out: Command timed out.
+  unknown: An unknown error occurred. The dev has been notified.
+  why: But... why?

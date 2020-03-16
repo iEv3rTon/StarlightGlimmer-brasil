@@ -1,0 +1,30 @@
+bot:
+  added_by: Added By
+  alias: Alias
+  aliases: Aliases
+  canvas: Canvas
+  canvases: Canvases
+  coordinates: Coordinates
+  date_added: Date Added
+  date_modified: Date Modified
+  dimensions: Dimensions
+  errors: Errors
+  examples: Examples
+  faction: Faction
+  name: Name
+  no: No
+  or: "{0} or {1}"
+  or_all_caps: OR
+  page: Page
+  percent: Percent
+  private: Private
+  public: Public
+  size: Size
+  subcommands: Subcommands
+  timeout: Menu timed out.
+  total: Total
+  update: "I have updated to version **{0}**! Here's the changelog:"
+  update_no_changelog: "I have updated to version **{0}**! Visit https://github.com/DiamondIceNS/StarlightGlimmer/releases for the full changelog."
+  usage: Usage
+  visibility: Visibility
+  yes: Yes
