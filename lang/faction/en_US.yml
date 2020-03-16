@@ -1,21 +1,21 @@
 faction:
   alias_already_exists: A faction with that alias already exists.
   already_faction: This guild is already a faction.
-  assembled: Faction `{}` assembled.
+  assembled: "Faction `{}` assembled."
   clear_alias: Faction alias cleared.
   clear_color: Faction color cleared.
   clear_description: Faction description cleared.
   clear_emblem: Faction emblem cleared.
-  clear_hide: Unhid faction `{}`.
-  clear_invite: Faction invite cleared. NOTE: Invite link is still active and must be removed manually.
+  clear_hide: "Unhid faction `{}`."
+  clear_invite: "Faction invite cleared. NOTE: Invite link is still active and must be removed manually."
   disbanded: Faction successfully disbanded.
   err.alias_length: Faction aliases must be between 1 and 5 characters.
   err.description_length: Faction descriptions must be at most 240 characters.
   err.invalid_invite: That is not a valid invite.
   err.invite_not_this_guild: You must use an invite to this guild.
   err.name_length: Faction names must be between 6 and 32 characters.
-  faction_list_footer_1: Use '{0}faction <page>' to see that page
-  faction_list_footer_2: Use '{0}faction info <name>' to see more info on a faction
+  faction_list_footer_1: "Use '{0}faction <page>' to see that page"
+  faction_list_footer_2: "Use '{0}faction info <name>' to see more info on a faction"
   list_header: Faction List
   must_be_a_faction: This guild needs to become a faction to use that command.
   name_already_exists: A faction with that name already exists.
@@ -25,10 +25,10 @@ faction:
   no_factions: There doesn't seem to be any guilds yet...
   no_invite: This faction has not set a public invite.
   not_a_faction_yet: This guild has not created a faction yet.
-  set_alias: Faction alias set to `{}`.
+  set_alias: "Faction alias set to `{}`."
   set_color: Faction color set.
   set_description: Faction description set.
   set_emblem: Faction emblem set.
-  set_hide: Hid faction `{}`.
+  set_hide: "Hid faction `{}`."
   set_invite: Faction invite set.
-  set_name: Faction renamed to `{}`.
+  set_name: "Faction renamed to `{}`."
