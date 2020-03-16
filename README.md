@@ -3,6 +3,8 @@
 # Starlight Glimmer
 A template utility bot based on [Alastair](Make-Alastair-Great-Again) and [Pinkie Pie](https://pastebin.com/Tg1p5AnW).
 
+This bot is forked from Fawfulcopter's original [Starlight Glimmer](https://github.com/DiamondIceNS/StarlightGlimmer).
+
 Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Features for other pixel sites are still somewhat functional, but I will not be maintaining them.
 
 **Invite:** `https://discordapp.com/oauth2/authorize?client_id=589606792926068736&permissions=35840&scope=bot`
@@ -17,6 +19,8 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Features for other
 - [websocket-client](https://pypi.org/project/websocket_client/)
 - [prettytable](https://pypi.org/project/PrettyTable/) v0.7.2
 - [hitherdither](https://www.github.com/hbldh/hitherdither)
+- [fuzzywuzzy](https://github.com/seatgeek/fuzzywuzzy) v0.18.0
+- [python-Levenshtein](https://github.com/ztane/python-Levenshtein/) v0.12.0
 
 #### Installation:
 1. Install Python 3.6
@@ -32,6 +36,7 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Features for other
 - Template storage for easy access to templates you care about most
 - Faction creation, to share your templates with other guilds
 - Color quantization of templates to canvas palette
+- Dithering of images to canvas palettes using a variety of algorithms
 - Gridifyer to create gridded, human-readable templates
 - Dithering sample charts for assisting color selection when you are making a template
 - Configurable roles
@@ -42,7 +47,7 @@ For a more in-depth walkthrough of Glimmer's core functions, see [the wiki page]
 
 #### Languages:
 - English (US)
-- Portuguese (BR) - Special thanks to Ataribr / ✠ /#6703
+- Portuguese (BR) - Special thanks to Ataribr / ✠ /#6703 and Brian Deneke#9654
 - Turkish (TR) (partial) - Special thanks to furkan#3251
 
 If you happen to know a language that is not listed and would be willing to translate, please translate the strings in `lang/en_US.py` and submit a pull request.
