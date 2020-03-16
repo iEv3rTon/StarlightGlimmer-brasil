@@ -1,0 +1,93 @@
+brief:
+  alertchannel: Set or clear the channel used for receiving bot update alerts from my github page.
+  alertchannel.clear: Clears the alert channel.
+  alertchannel.set: Sets the alert channel.
+  assemble: Assemble this guild into a faction.
+  autoscan: Toggles automatic preview and diff.
+  canvas: Sets the default canvas website for this guild.
+  canvas.pixelcanvas: Sets the default canvas to Pixelcanvas.io.
+  canvas.pixelzone: Sets the default canvas to Pixelzone.io.
+  canvas.pxlsspace: Sets the default canvas to Pxls.space.
+  changelog: Gets a link to my releases page.
+  check: Check the completion status of all templates.
+  diff: Checks completion status of a template on a canvas.
+  diff.pixelcanvas: Creates a diff using Pixelcanvas.io.
+  diff.pixelzone: Creates a diff using Pixelzone.io.
+  diff.pxlsspace: Creates a diff using Pxls.space.
+  disband: Disband this guild's faction.
+  dither: Dither a png or jpg image.
+  dither.geo32: Dithers an image using the geo32 palette
+  dither.pixelcanvas: Dithers an image using the pixelcanvas palette
+  ditherchart: Gets a chart of canvas colors dithered together.
+  ditherchart.pixelcanvas: Gets a dither chart of Pixelcanvas.io colors.
+  ditherchart.pixelzone: Gets a dither chart of Pixelzone.io colors.
+  ditherchart.pxlsspace: Gets a dither chart of Pxls.space colors.
+  faction: Manages this guild's faction.
+  faction.alias: View or modify the alias of this guild's faction.
+  faction.alias.clear: Clear the alias of this guild's faction.
+  faction.alias.set: Set the alias of this guild's faction.
+  faction.color: View or modify the color.
+  faction.color.clear: Clear the color.
+  faction.color.set: Set the color.
+  faction.desc: View or modify the description.
+  faction.desc.clear: Clear the description.
+  faction.desc.set: Set the description.
+  faction.emblem: View or modify the emblem image.
+  faction.emblem.clear: Clear the emblem image.
+  faction.emblem.set: Set the emblem image.
+  faction.invite: View or modify the invite link.
+  faction.invite.clear: Clear the invite link.
+  faction.invite.set: Set the invite link.
+  faction.name: View or modify the name of this guild's faction.
+  faction.name.set: Set the name of this guild's faction.
+  factioninfo: Get info about a faction.
+  factionlist: List all factions.
+  github: Gets a link to my GitHub repository.
+  gridify: Adds a grid to a template.
+  help: Displays this message.
+  hide: Toggle hiding a faction from public lists on and off.
+  info: Get info about a faction.
+  invite: Gets my invite link.
+  language: Sets my language.
+  online: Shows how many players are currently online.
+  online.pixelcanvas: Shows how many players are currently online on Pixelcanvas.io.
+  online.pixelzone: Shows how many players are currently online on Pixelzone.io.
+  online.pxlsspace: Shows how many players are currently online on Pxls.space.
+  ping: Pong!
+  prefix: Sets my command prefix for this guild.
+  preview: Previews the canvas at a given coordinate or template.
+  preview.pixelcanvas: Creates a preview using Pixelcanvas.io.
+  preview.pixelzone: Creates a preview using Pixelzone.io.
+  preview.pxlsspace: Creates a preview using Pxls.space.
+  quantize: Rough converts an image to the palette of a canvas.
+  quantize.pixelcanvas: Quantizes colors using the palette of Pixelcanvas.io.
+  quantize.pixelzone: Quantizes colors using the palette of Pixelzone.io.
+  quantize.pxlsspace: Quantizes colors using the palette of Pxls.space.
+  register: Opt-in to animated emoji replacement.
+  repeat: Repeats the last used canvas command.
+  role: Assign bot privileges to a role.
+  role.botadmin: Configure Bot Admin privileges.
+  role.botadmin.clear: Clear the role assigned to Bot Admin.
+  role.botadmin.set: Set the role assigned to Bot Admin.
+  role.templateadder: Configure Template Adder privileges.
+  role.templateadder.clear: Clear the role assigned to Template Adder.
+  role.templateadder.set: Set the role assigned to Template Adder.
+  role.templateadmin: Configure Template Admin privileges.
+  role.templateadmin.clear: Clear the role assigned to Template Admin.
+  role.templateadmin.set: Set the role assigned to Template Admin.
+  suggest: Sends a suggestion to the developer.
+  template: Manages templates.
+  template.add: Adds a template.
+  template.add.pixelcanvas: Adds a template for Pixelcanvas.io.
+  template.add.pixelzone: Adds a template for Pixelzone.io.
+  template.add.pxlsspace: Adds a template for Pxls.space.
+  template.all: List all templates for all factions.
+  template.info: Displays info about a template.
+  template.remove: Removes a template.
+  template.snapshot: Manages snapshots.
+  template.snapshot.add: Add snapshots.
+  template.snapshot.list: List snapshots.
+  template.snapshot.remove: Remove snapshots.
+  template.update: Updates a template.
+  unregister: Opt-out of animated emoji replacement.
+  version: Gets my version number.

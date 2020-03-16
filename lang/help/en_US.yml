@@ -1,0 +1,29 @@
+help:
+  alertchannel.set: "Use the #channel mention syntax with this command to ensure the correct channel is set."
+  assemble: Faction names and aliases must be unique. Names must be between 6 and 32 characters, case sensitive. Aliases must be between 1 and 5 characters, case insensitive.
+  autoscan: "If enabled, I will watch all messages for coordinates and automatically create previews and diffs according to these rules:\n- Any message with coordinates in the form @0, 0 will trigger a preview for the default canvas (see `{p}help canvas`)\n- Any message with a link to a supported canvas will trigger a preview for that canvas.\n- Any message with coordinates in the form 0, 0 with a PNG attached will trigger a diff for the default canvas.\n- Previews take precedence over diffs\nMessages which use spoiler tags will be entirely ignored"
+  canvas: Defaults to Pixelcanvas.io.
+  diff: "Images must be in PNG format.\nError pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `{p}help quantize`).\nYou cannot zoom an image to contain more than 4 million pixels."
+  dither:
+    "Images must be in PNG or JPEG format.\nThe image will be converted to the palette you select using the dithering algorithm specified.\nPlease be aware that the algorthims other than Bayer dithering can be quite slow, you may need to wait a while.\nThe dimension limits on each algorithm are as follows:\nBayer dithering: 1500px by 1500px\nYliluoma dithering: 100px by 100px\nFloyd Steinberg dithering: 100px by 100px\n \nBayer dithering: `[-b|--bayer] <threshold> <order>`\nYliluoma dithering: `[-y|--yliluoma] <order>`\nFloyd Steinberg dithering: `[-f|-fs|--floyd-steinberg] <order>`\n \nThreshold can be either: 2, 4, 8, 16, 32, 64, 128, 256 or 512\nOrder can be either: 2, 4, 8 or 16"
+  faction.alias.set: Faction aliases must be unique. Min 1 char, max 32 chars. Case insensitive.
+  faction.color.set: Color must be a valid hexidecimal number. Default 0xCF6EE4.
+  faction.create: "Factions must have unique names (6 to 32 chars, case sensitive) and, if at all, unique aliases (1 to 5 chars, case insensitive).\nA guild can only have one faction at any given time."
+  faction.desc.set: Max 240 characters.
+  faction.emblem.set: URLs must be Discord URLs.
+  faction.hide: "You can still view info about hidden factions if you explicitly use their name or alias in commands with the `-f` paramater."
+  faction.name.set: Faction names must be unique. Min 6 chars, max 32 chars. Case sensitive.
+  prefix: Max length is 5 characters. You really shouldn't need more than 2.
+  quantize: "This should primarily be used if `{p}diff` is telling you your image has 'bad color' in it.\nUsing this command to create templates from raw images is not suggested, use the {p}dither command instead."
+  register: "Opting into this feature means that whenever you type :animated_emoji_name: I will delete your message and replace it with the emoji specified, as long as that emoji is in a server that I can see.\n \nYou only need to register once for this to apply to all guilds.\nThis feature requires that I have the Manage Messages permission."
+  repeat: "This command only applies to 'preview', 'diff', and their autoscan invocations. Only the last 50 messages will be searched."
+  role.botadmin: If a user has a role with this privilege bound to it, that user can use any of my commands with no restrictions. They will have the same permissions as guild Administrators.
+  role.templateadder: If this privilege is bound to a role, all regular members will lose the ability to modify templates unless they have that role.
+  role.templateadmin: If a user has a role with this privilege bound to it, that user can add and remove any template using the 'templates' command, regardless of ownership.
+  template: You can scroll through the pages of the templates listed using the reactions underneath, this times out and stops responding after 5 minutes.
+  template.add: "Image must be in PNG format. If the image is not quantized to the target canvas's palette, I will offer to quantize it for you.\nA guild can have up to 25 templates at any time.\nTemplates must have unique names (max 32 chars, case sensitive). If you attempt to add a new template with the same name as an existing one, it will be replaced if you have permission to remove the old one (see `{p}help remove`).\nI only store URLs to templates. If the message that originally uploaded a template is deleted, its URL will break and the template will be lost. Save backups to your computer just in case."
+  template.remove: "This command can only be used if the template being removed was added by you, unless you are a Template Admin, Bot Admin, or have the Administrator permission (see 'role')."
+  template.snapshot: "Attempts to update all currently registered snapshot templates. If a snapshot has errors, it will not be updated.\nThis command can only be used by Template Admins and those with Admin perms.\nIf you wish to only attempt to update specific templates you can specify them by listing their base template names."
+  template.snapshot.add: Base is what you want the template to look like, snapshot is what it looks like currently.
+  template.update: "Update an existing template. The only required argument is <name> which is the name of the template you wish to update.\nAll other arguments are optional and can be used in any order as long as <name> is before all of them."
+  unregister: You only need to unregister once for this to apply to all guilds.

@@ -1,168 +1,3 @@
-  brief:
-    alertchannel: Set or clear the channel used for receiving bot update alerts from my github page.
-    alertchannel.clear: Clears the alert channel.
-    alertchannel.set: Sets the alert channel.
-    assemble: Assemble this guild into a faction.
-    autoscan: Toggles automatic preview and diff.
-    canvas: Sets the default canvas website for this guild.
-    canvas.pixelcanvas: Sets the default canvas to Pixelcanvas.io.
-    canvas.pixelzone: Sets the default canvas to Pixelzone.io.
-    canvas.pxlsspace: Sets the default canvas to Pxls.space.
-    changelog: Gets a link to my releases page.
-    check: Check the completion status of all templates.
-    diff: Checks completion status of a template on a canvas.
-    diff.pixelcanvas: Creates a diff using Pixelcanvas.io.
-    diff.pixelzone: Creates a diff using Pixelzone.io.
-    diff.pxlsspace: Creates a diff using Pxls.space.
-    disband: Disband this guild's faction.
-    dither: Dither a png or jpg image.
-    dither.geo32: Dithers an image using the geo32 palette
-    dither.pixelcanvas: Dithers an image using the pixelcanvas palette
-    ditherchart: Gets a chart of canvas colors dithered together.
-    ditherchart.pixelcanvas: Gets a dither chart of Pixelcanvas.io colors.
-    ditherchart.pixelzone: Gets a dither chart of Pixelzone.io colors.
-    ditherchart.pxlsspace: Gets a dither chart of Pxls.space colors.
-    faction: Manages this guild's faction.
-    faction.alias: View or modify the alias of this guild's faction.
-    faction.alias.clear: Clear the alias of this guild's faction.
-    faction.alias.set: Set the alias of this guild's faction.
-    faction.color: View or modify the color.
-    faction.color.clear: Clear the color.
-    faction.color.set: Set the color.
-    faction.desc: View or modify the description.
-    faction.desc.clear: Clear the description.
-    faction.desc.set: Set the description.
-    faction.emblem: View or modify the emblem image.
-    faction.emblem.clear: Clear the emblem image.
-    faction.emblem.set: Set the emblem image.
-    faction.invite: View or modify the invite link.
-    faction.invite.clear: Clear the invite link.
-    faction.invite.set: Set the invite link.
-    faction.name: View or modify the name of this guild's faction.
-    faction.name.set: Set the name of this guild's faction.
-    factioninfo: Get info about a faction.
-    factionlist: List all factions.
-    github: Gets a link to my GitHub repository.
-    gridify: Adds a grid to a template.
-    help: Displays this message.
-    hide: Toggle hiding a faction from public lists on and off.
-    info: Get info about a faction.
-    invite: Gets my invite link.
-    language: Sets my language.
-    online: Shows how many players are currently online.
-    online.pixelcanvas: Shows how many players are currently online on Pixelcanvas.io.
-    online.pixelzone: Shows how many players are currently online on Pixelzone.io.
-    online.pxlsspace: Shows how many players are currently online on Pxls.space.
-    ping: Pong!
-    prefix: Sets my command prefix for this guild.
-    preview: Previews the canvas at a given coordinate or template.
-    preview.pixelcanvas: Creates a preview using Pixelcanvas.io.
-    preview.pixelzone: Creates a preview using Pixelzone.io.
-    preview.pxlsspace: Creates a preview using Pxls.space.
-    quantize: Rough converts an image to the palette of a canvas.
-    quantize.pixelcanvas: Quantizes colors using the palette of Pixelcanvas.io.
-    quantize.pixelzone: Quantizes colors using the palette of Pixelzone.io.
-    quantize.pxlsspace: Quantizes colors using the palette of Pxls.space.
-    register: Opt-in to animated emoji replacement.
-    repeat: Repeats the last used canvas command.
-    role: Assign bot privileges to a role.
-    role.botadmin: Configure Bot Admin privileges.
-    role.botadmin.clear: Clear the role assigned to Bot Admin.
-    role.botadmin.set: Set the role assigned to Bot Admin.
-    role.templateadder: Configure Template Adder privileges.
-    role.templateadder.clear: Clear the role assigned to Template Adder.
-    role.templateadder.set: Set the role assigned to Template Adder.
-    role.templateadmin: Configure Template Admin privileges.
-    role.templateadmin.clear: Clear the role assigned to Template Admin.
-    role.templateadmin.set: Set the role assigned to Template Admin.
-    suggest: Sends a suggestion to the developer.
-    template: Manages templates.
-    template.add: Adds a template.
-    template.add.pixelcanvas: Adds a template for Pixelcanvas.io.
-    template.add.pixelzone: Adds a template for Pixelzone.io.
-    template.add.pxlsspace: Adds a template for Pxls.space.
-    template.all: List all templates for all factions.
-    template.info: Displays info about a template.
-    template.remove: Removes a template.
-    template.snapshot: Manages snapshots.
-    template.snapshot.add: Add snapshots.
-    template.snapshot.list: List snapshots.
-    template.snapshot.remove: Remove snapshots.
-    template.update: Updates a template.
-    unregister: Opt-out of animated emoji replacement.
-    version: Gets my version number.
-  help:
-    alertchannel.set: Use the \#channel mention syntax with this command to ensure the correct channel is set.
-    assemble: Faction names and aliases must be unique. Names must be between 6 and 32 characters, case sensitive. Aliases must be between 1 and 5 characters, case insensitive.
-    autoscan: |
-      If enabled, I will watch all messages for coordinates and automatically create previews and diffs according to these rules:
-      - Any message with coordinates in the form @0, 0 will trigger a preview for the default canvas (see `\{p\}help canvas`)
-      - Any message with a link to a supported canvas will trigger a preview for that canvas.
-      - Any message with coordinates in the form 0, 0 with a PNG attached will trigger a diff for the default canvas.
-      - Previews take precedence over diffs
-      - Messages which use spoiler tags will be entirely ignored
-    canvas: Defaults to Pixelcanvas.io.
-    diff: |
-      Images must be in PNG format.
-      Error pixels will be marked in red. Pixels that do not match the canvas palette ('bad color') will be marked in blue (see `\{p\}help quantize`).
-      You cannot zoom an image to contain more than 4 million pixels.
-    dither: |
-      Images must be in PNG or JPEG format.
-      The image will be converted to the palette you select using the dithering algorithm specified.
-      Please be aware that the algorthims other than Bayer dithering can be quite slow, you may need to wait a while.
-      The dimension limits on each algorithm are as follows:
-      Bayer dithering: 1500px by 1500px
-      Yliluoma dithering: 100px by 100px
-      Floyd Steinberg dithering: 100px by 100px
-
-      Bayer dithering: `[-b|--bayer] <threshold> <order>`
-      Yliluoma dithering: `[-y|--yliluoma] <order>`
-      Floyd Steinberg dithering: `[-f|-fs|--floyd-steinberg] <order>`
-
-      Threshold can be either: 2, 4, 8, 16, 32, 64, 128, 256 or 512
-      Order can be either: 2, 4, 8 or 16
-    faction.alias.set: Faction aliases must be unique. Min 1 char, max 32 chars. Case insensitive.
-    faction.color.set: Color must be a valid hexidecimal number. Default 0xCF6EE4.
-    faction.create: |
-      Factions must have unique names (6 to 32 chars, case sensitive) and, if at all, unique aliases (1 to 5 chars, case insensitive).
-      A guild can only have one faction at any given time.
-    faction.desc.set: Max 240 characters.
-    faction.emblem.set: URLs must be Discord URLs.
-    faction.hide: You can still view info about hidden factions if you explicitly use their name or alias in commands with the `-f` paramater.
-    faction.name.set: Faction names must be unique. Min 6 chars, max 32 chars. Case sensitive.
-    prefix: Max length is 5 characters. You really shouldn't need more than 2.
-    quantize: |
-      This should primarily be used if `\{p\}diff` is telling you your image has 'bad color' in it.
-      Using this command to create templates from raw images is not suggested, use the \{p\}dither command instead.
-    register: |
-      Opting into this feature means that whenever you type :animated_emoji_name: I will delete
-      your message and replace it with the emoji specified, as long as that emoji is in a server
-      that I can see.
-
-      You only need to register once for this to apply to all guilds.
-      This feature requires that I have the Manage Messages permission.
-    repeat: This command only applies to 'preview', 'diff', and their autoscan invocations. Only the last 50 messages will be searched.
-    role.botadmin: If a user has a role with this privilege bound to it, that user can use any of my commands with no restrictions. They will have the same permissions as guild Administrators.
-    role.templateadder: If this privilege is bound to a role, all regular members will lose the ability to modify templates unless they have that role.
-    role.templateadmin: If a user has a role with this privilege bound to it, that user can add and remove any template using the 'templates' command, regardless of ownership.
-    template: You can scroll through the pages of the templates listed using the reactions underneath, this times out and stops responding after 5 minutes.
-    template.add: |
-      Image must be in PNG format. If the image is not quantized to the target canvas's palette, I will offer to quantize it for you.
-      A guild can have up to 25 templates at any time.
-      Templates must have unique names (max 32 chars, case sensitive). If you attempt to add a new template with the same name as an existing one, it will be replaced if you have permission to remove the old one (see `\{p\}help remove`).
-      I only store URLs to templates. If the message that originally uploaded a template is deleted, its URL will break and the template will be lost. Save backups to your computer just in case.
-    template.remove: |
-      This command can only be used if the template being removed was added by you,
-      unless you are a Template Admin, Bot Admin, or have the Administrator permission (see 'role').
-    template.snapshot: |
-      Attempts to update all currently registered snapshot templates. If a snapshot has errors, it will not be updated.
-      This command can only be used by Template Admins and those with Admin perms.
-      If you wish to only attempt to update specific templates you can specify them by listing their base template names.
-    template.snapshot.add: Base is what you want the template to look like, snapshot is what it looks like currently.
-    template.update: |
-      Update an existing template. The only required argument is <name> which is the name of the template you wish to update.
-      All other arguments are optional and can be used in any order as long as <name> is before all of them.
-    unregister: You only need to unregister once for this to apply to all guilds.
   args:
     check: |
       `-e` or `--onlyErrors` - This argument filters the results and only shows templates with errors.
@@ -197,112 +32,67 @@
       `-x` - A number after this argument will be used to update the x coordinate.
       `-y` - A number after this argument will be used to update the y coordinate.
       `-i` or `--image` - This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image.
-  signature:
-    alertchannel: (subcommand)
-    alertchannel.set: <channel>
-    assemble: <name> (alias)
-    canvas: (subcommand)
-    check: (-e|--onlyErrors) (-f|--faction) (-s|--sort)
-    diff: <template_name> (-e) (-s) (-f) (-z) (-t) (-oc) (-ec)
-    diff.pixelcanvas: <coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)
-    diff.pixelzone: <coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)
-    diff.pxlsspace: <coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)
-    dither: [-b|-y|-fs] (threshold) <order>
-    ditherchart: (subcommand)
-    faction: (subcommand)
-    faction.alias: (subcommand)
-    faction.alias.set: <alias>
-    faction.color: (subcommand)
-    faction.color.set: <color>
-    faction.desc: (subcommand)
-    faction.desc.set: <description>
-    faction.emblem: (subcommand)
-    faction.emblem.set: <url>
-    faction.name: (subcommand)
-    faction.name.set: <name>
-    factioninfo: (faction)
-    gridify: (-f|--faction) (-c|--color) (-z|--zoom) <template> (-f|--faction) (-c|--color) (-z|--zoom)
-    info: <faction>
-    language: (code)
-    online: (subcommand)
-    prefix: <prefix>
-    preview: (subcommand) <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom) <template_name> (-t|--templateRegion) (-f|--faction) (-z|--zoom)
-    preview.pixelcanvas: <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)
-    preview.pixelzone: <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)
-    preview.pxlsspace: <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)
-    quantize: (subcommand) (-f|--faction) (-z|--zoom)
-    quantize.pixelcanvas: (-f|--faction) (-z|--zoom) <template> (-f|--faction) (-z|--zoom)
-    quantize.pixelzone: (-f|--faction) (-z|--zoom) <template> (-f|--faction) (-z|--zoom)
-    quantize.pxlsspace: (-f|--faction) (-z|--zoom) <template> (-f|--faction) (-z|--zoom)
-    role: (role)
-    role.botadmin: (subcommand)
-    role.botadmin.set: <role>
-    role.templateadder: (subcommand)
-    role.templateadder.set: <role>
-    role.templateadmin: (subcommand)
-    role.templateadmin.set: <role>
-    suggest: <suggestion>
-    template: (subcommand) (-p|--page) (-f|--faction)
-    template.add: (subcommand) <name> <x> <y> (url)
-    template.add.pixelcanvas: <name> <x> <y> (url)
-    template.add.pixelzone: <name> <x> <y> (url)
-    template.add.pxlsspace: <name> <x> <y> (url)
-    template.info: <template> (-r|--raw) (-f|--faction) (-z|--zoom)
-    template.remove: <template>
-    template.snapshot: (subcommand) (template_filtering)
-    template.snapshot.add: <base_template_name> <snapshot_template_name>
-    template.snapshot.remove: <base_template_name> <snapshot_template_name>
-    template.update: <name> (-n|--name) (-x) (-y) (-i|--image)
   example:
-    alertchannel: |
-      clear
-      Clear the alert channel if there is one
-      set \#bot-spam
-      Set the alert channel to a channel named 'bot-spam'
-    alertchannel.set: |
-        - \#bot-spam
-        - Set the alert channel to a channel named 'bot-spam'
-    assemble: |
-        - CoolFaction
-        - Assembles your guild into a faction named 'CoolFaction'
-        - "Cool Faction" cf
-        - Assembles your guild into a faction named 'Cool Faction' with alias 'cf'
-    canvas: |
-        -
-        - Show the currently set default canvas
-        - pc
-        - Set the default canvas to Pixelcanvas.io
-    check: |
-        -
-        - Check the completion status of all of this guild's templates
-        - -e
-        - Check the completion status of all of this guild's templates and only show those that have errors
-        - -f factionName
-        - Check the completion status of all of the templates of 'factionName'
-        - -s errors_za
-        - Check the completion status of all templates and sort the results by number of errors in decending order
-    dither: |
-      -
-        - -y 4
-        - (with an attachment) Dither an image using yliluoma dithering and an order of 4)
-      -
-        - --bayer 512 8
-        - (with an attachment) Dither an image using bayer dithering, a threshold of 512/4 and an order of 8
-    diff.pixelcanvas: |
-      -
-        - 100, 100
-        - (with an attachment) Check an image against Pixelcanvas.io at (100, 100)
-      -
-        - 100 100 -z 7
-        - (with an attachment) Check an image against Pixelcanvas.io at (100, 100) and magnify the result 7 times
-    diff.pixelzone: |
+    alertchannel:
+      0:
+        args: clear
+        summary: Clear the alert channel if there is one
+      1:
+        args: "set #bot-spam"
+        summary: Set the alert channel to a channel named 'bot-spam'
+    alertchannel.set:
+      0:
+        args: "#bot-spam"
+        summary: Set the alert channel to a channel named 'bot-spam'
+    assemble:
+      0:
+        args: CoolFaction
+        summary: Assembles your guild into a faction named 'CoolFaction'
+      1:
+        args: "Cool Faction" cf
+        summary: Assembles your guild into a faction named 'Cool Faction' with alias 'cf'
+    canvas:
+      0:
+        args: ""
+        summary: Show the currently set default canvas
+      1:
+        args: pc
+        summary: Set the default canvas to Pixelcanvas.io
+    check:
+      0:
+        args: ""
+        summary: Check the completion status of all of this guild's templates
+      1:
+        args: "-e"
+        summary: Check the completion status of all of this guild's templates and only show those that have errors
+      2:
+        args: "-f factionName"
+        summary: Check the completion status of all of the templates of 'factionName'
+      3:
+        args: "-s errors_za"
+        summary: Check the completion status of all templates and sort the results by number of errors in decending order
+    dither:
+      0:
+        args: "-y 4"
+        summary: (with an attachment) Dither an image using yliluoma dithering and an order of 4)
+      1:
+        args: "--bayer 512 8"
+        summary: (with an attachment) Dither an image using bayer dithering, a threshold of 512/4 and an order of 8
+    diff.pixelcanvas:
+      0:
+        args: "100 100"
+        summary: "(with an attachment) Check an image against Pixelcanvas.io at (100, 100)"
+      1:
+        args: "100 100 -z 7"
+        summary: "(with an attachment) Check an image against Pixelcanvas.io at (100, 100) and magnify the result 7 times"
+    diff.pixelzone:
       -
         - 100, 100
         - (with an attachment) Check an image against Pixelzone.io at (100, 100)
       -
         - 100 100 -z 7
         - (with an attachment) Check an image against Pixelzone.io at (100, 100) and magnify the result 7 times
-    diff.pxlsspace: |
+    diff.pxlsspace:
       -
         - 100, 100
         - (with an attachment) Check an image against Pxls.space at (100, 100)
@@ -632,64 +422,3 @@
       -
         - MyTemplate -i https://cdn.discordapp.com/.../template.png -y 876
         - Update the template 'MyTemplate' with the image linked and the y coordinate 876.
-  color:
-    unknown: Unknown
-
-    pixelcanvas.0: White
-    pixelcanvas.1: Light Grey
-    pixelcanvas.2: Dark Grey
-    pixelcanvas.3: Black
-    pixelcanvas.4: Pink
-    pixelcanvas.5: Red
-    pixelcanvas.6: Orange
-    pixelcanvas.7: Brown
-    pixelcanvas.8: Yellow
-    pixelcanvas.9: Light Green
-    pixelcanvas.10: Green
-    pixelcanvas.11: Cyan
-    pixelcanvas.12: Teal
-    pixelcanvas.13: Blue
-    pixelcanvas.14: Light Purple
-    pixelcanvas.15: Purple
-
-    pixelzone.0: Dark Grey
-    pixelzone.1: Black
-    pixelzone.2: Light Grey
-    pixelzone.3: White
-    pixelzone.4: Brown
-    pixelzone.5: Pink
-    pixelzone.6: Light Purple
-    pixelzone.7: Purple
-    pixelzone.8: Red
-    pixelzone.9: Orange
-    pixelzone.10: Yellow
-    pixelzone.11: Light Green
-    pixelzone.12: Green
-    pixelzone.13: Cyan
-    pixelzone.14: Teal
-    pixelzone.15: Blue
-
-    pxlssapce.0: White
-    pxlssapce.1: Lightest Grey
-    pxlssapce.2: Mid Light Grey
-    pxlssapce.3: Mid Dark Grey
-    pxlssapce.4: Darkest Grey
-    pxlssapce.5: Black
-    pxlssapce.6: Pink
-    pxlssapce.7: Red
-    pxlssapce.8: Maroon
-    pxlssapce.9: Beige
-    pxlssapce.10: Tan
-    pxlssapce.11: Orange
-    pxlssapce.12: Light Brown
-    pxlssapce.13: Dark Brown
-    pxlssapce.14: Yellow
-    pxlssapce.15: Light Green
-    pxlssapce.16: Mid Green
-    pxlssapce.17: Dark Green
-    pxlssapce.18: Cyan
-    pxlssapce.19: Teal
-    pxlssapce.20: Blue
-    pxlssapce.21: Lavender
-    pxlssapce.22: Magenta
-    pxlssapce.23: Purple
