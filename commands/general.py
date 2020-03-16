@@ -98,9 +98,6 @@ class GlimmerHelpCommand(HelpCommand):
 
         await self.get_destination().send(embed=embed)
 
-    async def send_cog_help(self, cog):
-        pass  # TODO
-
     async def send_command_help(self, command):
         embed = self.generate_help(command)
         await self.get_destination().send(embed=embed)
@@ -161,7 +158,7 @@ class GlimmerHelpCommand(HelpCommand):
             url="{}{}#{}".format(
                 self.context.s("general.wiki"),
                 self.get_category(command_or_group),
-                command_or_group.qualified_name))
+                command_or_group.qualified_name.replace(" ", "-")))
 
         sig = self.context.s("signature." + dot_name)
         if isinstance(sig, list):
