@@ -84,7 +84,20 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Animotes Cog.html">Animotes Cog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Canvas Cog.html">Canvas Cog</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration Cog</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration Cog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#alertchannel">Alertchannel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#autoscan">Autoscan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#canvas">Canvas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#language">Language</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prefix">Prefix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#role">Role</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#role-botadmin">Role Botadmin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#role-templateadder">Role Templateadder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#role-templateadmin">Role Templateadmin</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="Faction Cog.html">Faction Cog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="General Cog.html">General Cog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Template Cog.html">Template Cog</a></li>
@@ -154,6 +167,66 @@
             
   <div class="section" id="configuration-cog">
 <h1>Configuration Cog<a class="headerlink" href="#configuration-cog" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="alertchannel">
+<h2>Alertchannel<a class="headerlink" href="#alertchannel" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">g!alertchannel</span> <span class="pre">(subcommand)</span></code></p>
+</div>
+<div class="section" id="autoscan">
+<h2>Autoscan<a class="headerlink" href="#autoscan" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">g!autoscan</span></code></p>
+<p>Toggles automatic <span class="xref std std-ref">previews</span> and <span class="xref std std-ref">diffs</span>.</p>
+<p>If enabled, I will watch all messages for coordinates and automatically create previews and diffs according to these rules:</p>
+<ul class="simple">
+<li><p>Any message with coordinates in the form “&#64;0, 0” will trigger a preview for the default canvas <a class="reference internal" href="#canvas"><span class="std std-ref">(see g!canvas)</span></a></p></li>
+<li><p>Any message with a link to a supported canvas will trigger a preview for that canvas.</p></li>
+<li><p>Any message with coordinates in the form “0, 0” with a PNG attached will trigger a diff for the default canvas.</p></li>
+<li><p>Previews take precedence over diffs</p></li>
+<li><p>Messages which use spoiler tags will be entirely ignored</p></li>
+</ul>
+</div>
+<div class="section" id="canvas">
+<h2>Canvas<a class="headerlink" href="#canvas" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">g!canvas</span> <span class="pre">(subcommand)</span></code></p>
+<p>View and set the default canvas website for a guild, this defaults to Pixelcanvas.io.</p>
+</div>
+<div class="section" id="language">
+<h2>Language<a class="headerlink" href="#language" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">g!language</span> <span class="pre">(code)</span></code></p>
+<p>View and set the language the bot will use for a guild, this defaults to en_US.</p>
+</div>
+<div class="section" id="prefix">
+<h2>Prefix<a class="headerlink" href="#prefix" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">g!prefix</span> <span class="pre">(prefix)</span></code></p>
+<p>View and set the command prefix for a guild. Max length is 5 characters. You really shouldn’t need more than 2.</p>
+</div>
+<div class="section" id="role">
+<h2>Role<a class="headerlink" href="#role" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">g!role</span> <span class="pre">(subcommand)</span></code></p>
+<p>View and configure the permissions that various roles are assigned on a guild.</p>
+<p>The permission levels available are:</p>
+<ul class="simple">
+<li><p>botadmin - Can do anything an Administrator can do</p></li>
+<li><p>templateadder - Can add templates, and remove templates they added themself</p></li>
+<li><p>templateadmin - Can add and remove any template</p></li>
+</ul>
+<p>By default those with Administrator permissions will always have <code class="docutils literal notranslate"><span class="pre">botadmin</span></code> permissions and everyone else will have <code class="docutils literal notranslate"><span class="pre">templateadder</span></code> permissions.
+To customise this (eg: giving your moderators more permissions or not letting those without a role remove any templates, even those they added themselves) you need to use the subcommands.</p>
+<div class="section" id="role-botadmin">
+<h3>Role Botadmin<a class="headerlink" href="#role-botadmin" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">g!role</span> <span class="pre">botadmin</span></code> or <code class="docutils literal notranslate"><span class="pre">g!role</span> <span class="pre">botadmin</span> <span class="pre">clear</span></code> or <code class="docutils literal notranslate"><span class="pre">g!role</span> <span class="pre">botadmin</span> <span class="pre">set</span> <span class="pre">&lt;role&gt;</span></code></p>
+<p>View, clear or set the current role that has <code class="docutils literal notranslate"><span class="pre">botadmin</span></code> permissions.</p>
+</div>
+<div class="section" id="role-templateadder">
+<h3>Role Templateadder<a class="headerlink" href="#role-templateadder" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">g!role</span> <span class="pre">templateadder</span></code> or <code class="docutils literal notranslate"><span class="pre">g!role</span> <span class="pre">templateadder</span> <span class="pre">clear</span></code> or <code class="docutils literal notranslate"><span class="pre">g!role</span> <span class="pre">templateadder</span> <span class="pre">set</span> <span class="pre">&lt;role&gt;</span></code></p>
+<p>View, clear or set the current role that has <code class="docutils literal notranslate"><span class="pre">templateadder</span></code> permissions.</p>
+</div>
+<div class="section" id="role-templateadmin">
+<h3>Role Templateadmin<a class="headerlink" href="#role-templateadmin" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">g!role</span> <span class="pre">templateadmin</span></code> or <code class="docutils literal notranslate"><span class="pre">g!role</span> <span class="pre">templateadmin</span> <span class="pre">clear</span></code> or <code class="docutils literal notranslate"><span class="pre">g!role</span> <span class="pre">templateadmin</span> <span class="pre">set</span> <span class="pre">&lt;role&gt;</span></code></p>
+<p>View, clear or set the current role that has <code class="docutils literal notranslate"><span class="pre">templateadmin</span></code> permissions.</p>
+</div>
+</div>
 </div>
 
 

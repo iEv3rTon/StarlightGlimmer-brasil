@@ -100,6 +100,7 @@ STRINGS = {
     "configuration.language_check_1": "This guild's current language is **{0}**.",
     "configuration.language_check_2": "To set a new language, run this command again with one of the following options:",
     "configuration.language_set": "Language has been set to **English (US)**.",
+    "configuration.prefix_current": "This guild's current prefix is **{0}**.",
     "configuration.prefix_set": "Prefix for this guild has been set to **{0}**.",
     "configuration.role_bot_admin_check": "Bot admin privileges are currently assigned to `@{0}`.",
     "configuration.role_bot_admin_cleared": "Bot admin privileges successfully cleared.",
@@ -664,6 +665,6 @@ STRINGS = {
     "color.pxlssapce.20": "Blue",
     "color.pxlssapce.21": "Lavender",
     "color.pxlssapce.22": "Magenta",
-    "color.pxlssapce.23": "Purple",
+    "color.pxlssapce.23": "Purple"
 
 }

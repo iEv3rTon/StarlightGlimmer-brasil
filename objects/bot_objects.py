@@ -1,7 +1,7 @@
 from discord.ext import commands
 from discord.utils import get as dget
+import i18n
 
-from lang import en_US, pt_BR, tr_TR
 from utils import canvases, sqlite as sql
 
 
@@ -47,12 +47,16 @@ class GlimContext(commands.Context):
 
     def s(self, str_id):
         language = sql.guild_get_language_by_id(self.guild.id).lower()
+
+        i18n.set('file_format', 'json')
+        i18n.load_path.append('/lang')
+
         if language == "en-us":
-            return en_US.STRINGS.get(str_id, None)
+            return i18n.s(srt_id)
         if language == "pt-br":
-            return pt_BR.STRINGS.get(str_id, None)
+            return i18n.s(srt_id)
         if language == "tr-tr":
-            return tr_TR.STRINGS.get(str_id, None)
+            return i18n.s(srt_id)
 
     async def invoke_default(self, cmd: str):
         default_canvas = self.canvas
