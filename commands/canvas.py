@@ -753,7 +753,7 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
 
         if list_pixels and len(err_list) > 0:
             error_list = []
-            for x, y, current, target in err_list:
+            for _x, _y, current, target in err_list:
                 # Color Filtering
                 c = current if not exclude_target else target
                 if exclude_colors:
@@ -764,9 +764,9 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
                         continue
 
                 # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
-                x += t.x
-                y += t.y
-                error_list.append(Pixel(current, target, x, y))
+                _x += x
+                _y += y
+                error_list.append(Pixel(current, target, _x, _y))
 
             checker = Checker(self.bot, ctx, t.canvas, error_list)
             checker.connect_websocket()

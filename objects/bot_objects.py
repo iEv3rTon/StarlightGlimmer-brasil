@@ -47,16 +47,12 @@ class GlimContext(commands.Context):
 
     def s(self, str_id):
         language = sql.guild_get_language_by_id(self.guild.id).lower()
-
-        i18n.set('file_format', 'json')
-        i18n.load_path.append('/lang')
-
         if language == "en-us":
-            return i18n.s(srt_id)
+            return en_US.STRINGS.get(str_id, None)
         if language == "pt-br":
-            return i18n.s(srt_id)
+            return pt_BR.STRINGS.get(str_id, None)
         if language == "tr-tr":
-            return i18n.s(srt_id)
+            return tr_TR.STRINGS.get(str_id, None)
 
     async def invoke_default(self, cmd: str):
         default_canvas = self.canvas
