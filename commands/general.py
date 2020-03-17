@@ -99,26 +99,14 @@ class GlimmerHelpCommand(HelpCommand):
         await self.get_destination().send(embed=embed)
 
     async def send_command_help(self, command):
-        embed = self.generate_help(command)
+        embed = await self.generate_help(command)
         await self.get_destination().send(embed=embed)
 
     async def send_error_message(self, error):
         await self.get_destination().send(error)
 
     async def send_group_help(self, group):
-        embed = self.generate_help(group)
-
-        filtered = await self.filter_commands(group.commands, sort=True)
-        s = []
-        for cmd in filtered:
-            s.append('`{0}` - {1}'.format(
-                cmd.name,
-                self.context.s('brief.' + cmd.qualified_name.replace(' ', '.'))))
-        embed.insert_field_at(
-            index=-2,
-            name=self.context.s("bot.subcommands"),
-            value="\n".join(s),
-            inline=False)
+        embed = await self.generate_help(group)
 
         await self.get_destination().send(embed=embed)
 
@@ -149,7 +137,7 @@ class GlimmerHelpCommand(HelpCommand):
             'Configuration': 'Configuration-Cog'
         }[command_or_group.cog_name]
 
-    def generate_help(self, command_or_group):
+    async def generate_help(self, command_or_group):
         dot_name = command_or_group.qualified_name.replace(' ', '.')
 
         embed = discord.Embed(
@@ -181,6 +169,18 @@ class GlimmerHelpCommand(HelpCommand):
             embed.add_field(
                 name=self.context.s("general.help_more_info"),
                 value="{}".format(inspect.cleandoc(long_doc)).format(p=self.clean_prefix),
+                inline=False)
+
+        if isinstance(command_or_group, Group):
+            filtered = await self.filter_commands(command_or_group.commands, sort=True)
+            s = []
+            for cmd in filtered:
+                s.append('`{0}` - {1}'.format(
+                    cmd.name,
+                    self.context.s('brief.' + cmd.qualified_name.replace(' ', '.'))))
+            embed.add_field(
+                name=self.context.s("bot.subcommands"),
+                value="\n".join(s),
                 inline=False)
 
         args = self.context.s("args." + dot_name)
