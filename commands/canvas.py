@@ -768,7 +768,7 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
                 _y += y
                 error_list.append(Pixel(current, target, _x, _y))
 
-            checker = Checker(self.bot, ctx, t.canvas, error_list)
+            checker = Checker(self.bot, ctx, canvas, error_list)
             checker.connect_websocket()
 
 async def _preview(ctx, args, fetch):
