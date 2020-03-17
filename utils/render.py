@@ -73,7 +73,7 @@ async def floyd_steinberg_dither(origImg, canvas_palette, order):
 
     return dithered_image
 
-async def diff(x, y, data, zoom, fetch, palette, create_snapshot, highlight_correct, color_blind):
+async def diff(x, y, data, zoom, fetch, palette, **kwargs):
     """Calculates and renders a diff image.
 
     Arguments:
@@ -83,6 +83,7 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot, highlight_corr
     zoom - The factor to zoom by, integer.
     fetch - A fetching function.
     palette - The palette to use, a list of rgb tuples.
+    Kwargs:
     create_snapshot - If a "finished template" should be made, where the only non-transparent pixels are those that are correct on canvas right now, boolean.
     highlight_correct - If correct pixels should be highlighted in green, bool
     color_blind - If the renders should be color blind friendly, bool
@@ -94,6 +95,15 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot, highlight_corr
     bad - The total number of off-palette pixels, integer.
     error_list - A list of errors, each error being a tuple like (pixel, is_colour, should_be_colour).
     """
+    create_snapshot = False
+    highlight_correct = False
+    color_blind = False
+
+    for key, value in kwargs.items():
+        create_snapshot = True if key == "create_snapshot" and value == True else create_snapshot
+        highlight_correct = True if key == "highlight_correct" and value == True else highlight_correct
+        color_blind = True if key == "color_blind" and value == True else color_blind
+
     with data:
         template = Image.open(data).convert('RGBA')
 

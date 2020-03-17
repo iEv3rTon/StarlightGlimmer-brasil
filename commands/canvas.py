@@ -112,9 +112,9 @@ class Canvas(commands.Cog):
                         zoom,
                         fetchers[t.canvas],
                         colors.by_name[t.canvas],
-                        create_snapshot,
-                        highlight_correct,
-                        color_blind)
+                        create_snapshot=create_snapshot,
+                        highlight_correct=highlight_correct,
+                        color_blind=color_blind)
 
                 done = tot - err
                 perc = done / tot
@@ -759,7 +759,16 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
         await att.save(data)
         max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
         zoom = max(1, min(zoom, max_zoom))
-        diff_img, tot, err, bad, err_list, bad_list = await render.diff(x, y, data, zoom, fetch, palette, create_snapshot, highlight_correct, color_blind)
+        diff_img, tot, err, bad, err_list, bad_list = await render.diff(
+            x,
+            y,
+            data,
+            zoom,
+            fetch,
+            palette,
+            create_snapshot=create_snapshot,
+            highlight_correct=highlight_correct,
+            color_blind=color_blind)
 
         done = tot - err
         perc = done / tot
