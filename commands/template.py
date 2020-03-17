@@ -465,8 +465,8 @@ class Template(commands.Cog):
                 'pixelzone': render.fetch_pixelzone,
                 'pxlsspace': render.fetch_pxlsspace
             }
-            diff_img, tot, err, bad, err_list \
-                = await render.diff(target.x, target.y, data, 1, fetchers[target.canvas], colors.by_name[target.canvas], False)
+            diff_img, tot, err, bad, err_list, bad_list \
+                = await render.diff(target.x, target.y, data, 1, fetchers[target.canvas], colors.by_name[target.canvas], False, False, False)
             if err == 0:
                 if not await utils.yes_no(ctx, "There are no errors on the snapshot, do you want to update it?"):
                     not_updated.append([base, "skip"])
@@ -498,8 +498,8 @@ class Template(commands.Cog):
                 'pixelzone': render.fetch_pixelzone,
                 'pxlsspace': render.fetch_pxlsspace
             }
-            diff_img, tot, err, bad, err_list \
-                = await render.diff(base.x, base.y, data, 1, fetchers[base.canvas], colors.by_name[base.canvas], True)
+            diff_img, tot, err, bad, err_list, bad_list \
+                = await render.diff(base.x, base.y, data, 1, fetchers[base.canvas], colors.by_name[base.canvas], True, False, False)
 
             if bad == 0:
                 with io.BytesIO() as bio:
