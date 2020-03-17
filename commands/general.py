@@ -184,10 +184,16 @@ class GlimmerHelpCommand(HelpCommand):
                 inline=False)
 
         args = self.context.s("args." + dot_name)
+        args2 = self.context.s("args." + dot_name + "2")
         if args:
             embed.add_field(
                 name=self.context.s("general.help_arguments"),
                 value="{}".format(inspect.cleandoc(args)).format(p=self.clean_prefix),
+                inline=False)
+        if args2:
+            embed.add_field(
+                name=self.context.s("general.help_arguments") + " 2",
+                value="{}".format(inspect.cleandoc(args2)).format(p=self.clean_prefix),
                 inline=False)
 
         examples = self.context.s("example." + dot_name)

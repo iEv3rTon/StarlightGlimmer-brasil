@@ -375,6 +375,9 @@ STRINGS = {
         `-t` or `--excludeTarget` - If not used, pixels are filtered based on what color they are damaged to, if used, they are filtered based on what they should be.
         `-oc` or `--onlyColors` - Only target pixels of the colors you list here will be shown.
         `-ec` or `--excludeColors` - Pixels target pixels of the colors you list here will not be shown.""",
+    "args.diff2": """
+        `-c` or `--highlightCorrect` - Overlay errors with red, correct (and on template) pixels with green and leaves anything off template greyscale.
+        `-cb` or `--colorBlind` - Switches the colours used in `-c` to be more color blind friendly, correct in blue incorrect in red.""",
     "args.gridify": """
         `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
         `-c` or `--color` - Uses the hexadecimal color value you provide for the grid lines of the final image.
@@ -401,10 +404,10 @@ STRINGS = {
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
     "signature.check": "(-e|--onlyErrors) (-f|--faction) (-s|--sort)",
-    "signature.diff": "<template_name> (-e) (-s) (-f) (-z) (-t) (-oc) (-ec)",
-    "signature.diff.pixelcanvas": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
-    "signature.diff.pixelzone": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
-    "signature.diff.pxlsspace": "<coordinates> (-e|--errors) (-s|--snapshot) (-z|--zoom)",
+    "signature.diff": "<template_name> (-e) (-s) (-f) (-z) (-c) (-cb) (-t) (-oc) (-ec)",
+    "signature.diff.pixelcanvas": "<coordinates> (-e) (-s) (-z) (-c) (-cb)",
+    "signature.diff.pixelzone": "<coordinates> (-e) (-s) (-z) (-c) (-cb)",
+    "signature.diff.pxlsspace": "<coordinates> (-e) (-s) (-z) (-c) (-cb)",
     "signature.dither": "[-b|-y|-fs] (threshold) <order>",
     "signature.ditherchart": "(subcommand)",
     "signature.faction": "(subcommand)",
@@ -471,6 +474,14 @@ STRINGS = {
     "example.dither":
         [("-y 4", "(with an attachment) Dither an image using yliluoma dithering and an order of 4"),
          ("--bayer 512 8", "(with an attachment) Dither an image using bayer dithering, a threshold of 512/4 and an order of 8")],
+    "example.diff":
+        [("pc 100 100", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100)"),
+         ("520 -94 -z 7", "(with an attachment) Check an image against the default canvas at (520, -94) and magnify the result 7 times"),
+         ("-256 345 -e", "(with an attachment) Check an image against the default canvas at (-256, 345) and print a short list of specific error pixels"),
+         ("100 22 -s", "(with an attachment) Check an image against the default canvas at (100, 22) and generate a snapshot, where correct pixels display as they are on the template, and the rest are transparent."),
+         ("CoolTemplate -f CoolFaction", "Check a template named 'CoolTemplate' belonging to the faction 'CoolFaction'"),
+         ("CoolTemplate -e -t -oc 0", "Check a template named 'CoolTemplate' and display a short list of errors, filtered to only show those that should be color index 0. (white on pc)"),
+         ("CoolTemplate -c -cb", "Check a template named 'CoolTemplate' and display the resulting diff in color highlight and colorblind mode.")],
     "example.diff.pixelcanvas":
         [("100 100", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100)"),
          ("100 100 -z 7", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100) and magnify the result 7 times")],
