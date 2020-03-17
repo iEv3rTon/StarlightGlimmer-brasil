@@ -12,7 +12,7 @@ bot:
   examples: Examples
   faction: Faction
   name: Name
-  'no': "false"
+  'no': "No"
   or: "{0} or {1}"
   or_all_caps: OR
   page: Page
@@ -27,7 +27,7 @@ bot:
   update_no_changelog: "I have updated to version **{0}**! Visit https://github.com/DiamondIceNS/StarlightGlimmer/releases for the full changelog."
   usage: Usage
   visibility: Visibility
-  'yes': "true"
+  'yes': "Yes"
 canvas:
   calculating: Calculating...
   diff: "{0}/{1} | {2} errors | {3} complete"
@@ -383,60 +383,60 @@ signature:
   ditherchart: (subcommand)
   faction: (subcommand)
   faction.alias: (subcommand)
-  faction.alias.set: "<alias>"
+  faction.alias.set: <alias>
   faction.color: (subcommand)
-  faction.color.set: "<color>"
+  faction.color.set: <color>
   faction.desc: (subcommand)
-  faction.desc.set: "<description>"
+  faction.desc.set: <description>
   faction.emblem: (subcommand)
-  faction.emblem.set: "<url>"
+  faction.emblem.set: <url>
   faction.name: (subcommand)
-  faction.name.set: "<name>"
+  faction.name.set: <name>
   factioninfo: (faction)
   gridify:
-    0: "(-f|--faction) (-c|--color) (-z|--zoom)"
-    1: "<template> (-f|--faction) (-c|--color) (-z|--zoom)"
-  info: "<faction>"
+    0: (-f|--faction) (-c|--color) (-z|--zoom)
+    1: <template> (-f|--faction) (-c|--color) (-z|--zoom)
+  info: <faction>
   language: (code)
   online: (subcommand)
-  prefix: "<prefix>"
+  prefix: <prefix>
   preview:
-    0: "(subcommand) <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)"
-    1: "<template_name> (-t|--templateRegion) (-f|--faction) (-z|--zoom)"
-  preview.pixelcanvas": "<coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)"
-  preview.pixelzone": "<coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)"
-  preview.pxlsspace": "<coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)"
-  quantize: "(subcommand) (-f|--faction) (-z|--zoom)"
+    0: (subcommand) <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)
+    1: <template_name> (-t|--templateRegion) (-f|--faction) (-z|--zoom)
+  preview.pixelcanvas": <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)
+  preview.pixelzone": <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)
+  preview.pxlsspace": <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)
+  quantize: (subcommand) (-f|--faction) (-z|--zoom)
   quantize.pixelcanvas:
-    0: "(-f|--faction) (-z|--zoom)"
-    1: "<template> (-f|--faction) (-z|--zoom)"
+    0: (-f|--faction) (-z|--zoom)
+    1: <template> (-f|--faction) (-z|--zoom)
   quantize.pixelzone:
-    0: "(-f|--faction) (-z|--zoom)"
-    1: "<template> (-f|--faction) (-z|--zoom)"
+    0: (-f|--faction) (-z|--zoom)
+    1: <template> (-f|--faction) (-z|--zoom)
   quantize.pxlsspace:
-    0: "(-f|--faction) (-z|--zoom)"
-    1: "<template> (-f|--faction) (-z|--zoom)"
-  role: "(role)"
-  role.botadmin: "(subcommand)"
-  role.botadmin.set: "<role>"
-  role.templateadder: "(subcommand)"
-  role.templateadder.set: "<role>"
-  role.templateadmin: "(subcommand)"
-  role.templateadmin.set: "<role>"
-  suggest: "<suggestion>"
-  template: "(subcommand) (-p|--page) (-f|--faction)"
-  template.add: "(subcommand) <name> <x> <y> (url)"
-  template.add.pixelcanvas: "<name> <x> <y> (url)"
-  template.add.pixelzone: "<name> <x> <y> (url)"
-  template.add.pxlsspace: "<name> <x> <y> (url)"
-  template.info: "<template> (-r|--raw) (-f|--faction) (-z|--zoom)"
-  template.remove: "<template>"
+    0: (-f|--faction) (-z|--zoom)
+    1: <template> (-f|--faction) (-z|--zoom)
+  role: (role)
+  role.botadmin: (subcommand)
+  role.botadmin.set: <role>
+  role.templateadder: (subcommand)
+  role.templateadder.set: <role>
+  role.templateadmin: (subcommand)
+  role.templateadmin.set: <role>
+  suggest: <suggestion>
+  template: (subcommand) (-p|--page) (-f|--faction)
+  template.add: (subcommand) <name> <x> <y> (url)
+  template.add.pixelcanvas: <name> <x> <y> (url
+  template.add.pixelzone: <name> <x> <y> (url)
+  template.add.pxlsspace: <name> <x> <y> (url)
+  template.info: <template> (-r|--raw) (-f|--faction) (-z|--zoom)
+  template.remove: <template>
   template.snapshot:
-    0: "(subcommand)"
-    1: "(template_filtering)"
-  template.snapshot.add: "<base_template_name> <snapshot_template_name>"
-  template.snapshot.remove: "<base_template_name> <snapshot_template_name>"
-  template.update: "<name> (-n|--name) (-x) (-y) (-i|--image)"
+    0: (subcommand)
+    1: (template_filtering)
+  template.snapshot.add: <base_template_name> <snapshot_template_name>
+  template.snapshot.remove: <base_template_name> <snapshot_template_name>
+  template.update: <name> (-n|--name) (-x) (-y) (-i|--image)
 example:
   alertchannel:
     0:

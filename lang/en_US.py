@@ -66,6 +66,8 @@ STRINGS = {
     "canvas.calculating": "Calculating...",
     "canvas.diff": "{0}/{1} | {2} errors | {3} complete",
     "canvas.diff_bad_color": "{0}/{1} | {2} errors | {bad} bad color | {3} complete",
+    "canvas.diff_bad_color_list": "{0} of bad color #{1:02x}{2:02x}{3:02x}",
+    "canvas.diff_bad_color_title": "Bad Colors:",
     "canvas.diff_error_list": "({}, {}) is {}, should be {}",
     "canvas.diff_error_title": "Errors",
     "canvas.diff_fixed": "All fixed!",

@@ -73,7 +73,7 @@ async def floyd_steinberg_dither(origImg, canvas_palette, order):
 
     return dithered_image
 
-async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
+async def diff(x, y, data, zoom, fetch, palette, create_snapshot, highlight_correct, color_blind):
     """Calculates and renders a diff image.
 
     Arguments:
@@ -84,6 +84,8 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
     fetch - A fetching function.
     palette - The palette to use, a list of rgb tuples.
     create_snapshot - If a "finished template" should be made, where the only non-transparent pixels are those that are correct on canvas right now, boolean.
+    highlight_correct - If correct pixels should be highlighted in green, bool
+    color_blind - If the renders should be color blind friendly, bool
 
     Returns:
     diff_img - The rendered image, a PIL Image object.
@@ -108,9 +110,19 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
         def lut(i):
             return 255 if i > 0 else 0
 
+        def lut_50(i):
+            return 127 if i > 0 else 0
+
         with ImageChops.difference(template, diff_img) as error_mask:
             error_mask = error_mask.point(lut).convert('L').point(lut).convert('1')
             error_mask = Image.composite(error_mask, black, mask)
+
+        if highlight_correct:
+            _r, _g, _b, template_mask = template_copy.split()
+            with ImageChops.difference(template_mask, error_mask) as template_mask:
+                template_mask = template_mask.point(lut).convert('L').point(lut).convert('1')
+                template_mask = Image.composite(template_mask, black, mask)
+                template_mask = template_mask.convert('L').point(lut_50)
 
         with ImageChops.difference(template, _quantize(template, palette)) as bad_mask:
             bad_mask = bad_mask.point(lut).convert('L').point(lut).convert('1')
@@ -120,10 +132,11 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
         err = np.array(error_mask).sum()
         bad = np.array(bad_mask).sum()
         errors = np.argwhere(np.array(error_mask)).tolist()
+        bad_pixels = np.argwhere(np.array(bad_mask)).tolist()
 
         error_list = []
         for p in errors:
-            p.reverse()  # NumPy is backwards
+            p.reverse() # NumPy is backwards
             try:
                 t_color = palette.index(template.getpixel(tuple(p)))
             except ValueError:
@@ -134,6 +147,15 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
                 f_color = -1
             error_list.append((*p, f_color, t_color))
 
+        for p in bad_pixels:
+            p.reverse()
+        bad_list = [template.getpixel(tuple(p)) for p in bad_pixels]
+        bad_dict = dict.fromkeys(bad_list, 0)
+        for color in bad_list:
+            bad_dict[color] += 1
+        bad_list = [(key, value) for key, value in bad_dict.items()]
+        bad_list = sorted(bad_list, key=lambda n: n[1], reverse=True) # Sort by number of occurances, high to low
+
         if create_snapshot:
             # make a snapshot
             diff_img = template_copy
@@ -141,13 +163,19 @@ async def diff(x, y, data, zoom, fetch, palette, create_snapshot):
         else:
             # make a normal diff
             diff_img = diff_img.convert('L').convert('RGB')
-            diff_img = Image.composite(Image.new('RGB', template.size, (255, 0, 0)), diff_img, error_mask)
+            if highlight_correct:
+                correct_color, incorrect_color = ((30, 200, 60), (200, 60, 30)) if not color_blind else ((60, 30, 255), (200, 60, 30))
+                diff_img = Image.composite(Image.new('RGB', template.size, correct_color), diff_img, template_mask)
+                error_mask = error_mask.convert('L').point(lut_50)
+                diff_img = Image.composite(Image.new('RGB', template.size, incorrect_color), diff_img, error_mask)
+            else:
+                diff_img = Image.composite(Image.new('RGB', template.size, (255, 0, 0)), diff_img, error_mask)
             diff_img = Image.composite(Image.new('RGB', template.size, (0, 0, 255)), diff_img, bad_mask)
 
             if zoom > 1:
                 diff_img = diff_img.resize(tuple(zoom * x for x in diff_img.size), Image.NEAREST)
 
-    return diff_img, tot, err, bad, error_list
+    return diff_img, tot, err, bad, error_list, bad_list
 
 
 async def preview(x, y, zoom, fetch):

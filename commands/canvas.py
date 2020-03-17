@@ -65,6 +65,8 @@ class Canvas(commands.Cog):
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--errors", action='store_true')
         parser.add_argument("-s", "--snapshot", action='store_true')
+        parser.add_argument("-c", "--highlightCorrect", action='store_true')
+        parser.add_argument("-cb", "--colorBlind", action='store_true')
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         parser.add_argument("-z", "--zoom", type=int, default=1)
         parser.add_argument("-t", "--excludeTarget", action='store_true')
@@ -78,6 +80,8 @@ class Canvas(commands.Cog):
 
         list_pixels = a["errors"]
         create_snapshot = a["snapshot"]
+        highlight_correct = a["highlightCorrect"]
+        color_blind = a["colorBlind"]
         faction = a["faction"]
         zoom = a["zoom"]
         exclude_target = a["excludeTarget"]
@@ -100,8 +104,17 @@ class Canvas(commands.Cog):
                     'pxlsspace': render.fetch_pxlsspace
                 }
 
-                diff_img, tot, err, bad, err_list \
-                    = await render.diff(t.x, t.y, data, zoom, fetchers[t.canvas], colors.by_name[t.canvas], create_snapshot)
+                diff_img, tot, err, bad, err_list, bad_list \
+                    = await render.diff(
+                        t.x,
+                        t.y,
+                        data,
+                        zoom,
+                        fetchers[t.canvas],
+                        colors.by_name[t.canvas],
+                        create_snapshot,
+                        highlight_correct,
+                        color_blind)
 
                 done = tot - err
                 perc = done / tot
@@ -114,11 +127,21 @@ class Canvas(commands.Cog):
                 out = ctx.s("canvas.diff") if bad == 0 else ctx.s("canvas.diff_bad_color")
                 out = out.format(done, tot, err, perc, bad=bad)
 
+                if bad_list != []:
+                    bad_out = [ctx.s("canvas.diff_bad_color_list").format(num, *color) for color, num in bad_list]
+                    bad_out = "{0}{1}".format("\n".join(bad_out[:10]), "\n..." if len(bad_out) > 10 else "")
+                    embed = discord.Embed()
+                    embed.add_field(name=ctx.s("canvas.diff_bad_color_title"), value=bad_out)
+                    embed.color = discord.Color.from_rgb(*bad_list[0][0])
+
                 with io.BytesIO() as bio:
                     diff_img.save(bio, format="PNG")
                     bio.seek(0)
                     f = discord.File(bio, "diff.png")
-                    await ctx.send(content=out, file=f)
+                    try:
+                        await ctx.send(content=out, file=f, embed=embed)
+                    except UnboundLocalError:
+                        await ctx.send(content=out, file=f)
 
                 if list_pixels and len(err_list) > 0:
                     error_list = []
@@ -711,6 +734,8 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--errors", action='store_true')
         parser.add_argument("-s", "--snapshot", action='store_true')
+        parser.add_argument("-c", "--highlightCorrect", action='store_true')
+        parser.add_argument("-cb", "--colorBlind", action='store_true')
         parser.add_argument("-z", "--zoom", type=int, default=1)
         parser.add_argument("-t", "--excludeTarget", action='store_true')
         colorFilters = parser.add_mutually_exclusive_group()
@@ -723,6 +748,8 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
 
         list_pixels = a["errors"]
         create_snapshot = a["snapshot"]
+        highlight_correct = a["highlightCorrect"]
+        color_blind = a["colorBlind"]
         zoom = a["zoom"]
         exclude_target = a["excludeTarget"]
         exclude_colors = a["excludeColors"]
@@ -732,7 +759,7 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
         await att.save(data)
         max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
         zoom = max(1, min(zoom, max_zoom))
-        diff_img, tot, err, bad, err_list = await render.diff(x, y, data, zoom, fetch, palette, create_snapshot)
+        diff_img, tot, err, bad, err_list, bad_list = await render.diff(x, y, data, zoom, fetch, palette, create_snapshot, highlight_correct, color_blind)
 
         done = tot - err
         perc = done / tot
@@ -745,11 +772,21 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
         out = ctx.s("canvas.diff") if bad == 0 else ctx.s("canvas.diff_bad_color")
         out = out.format(done, tot, err, perc, bad=bad)
 
+        if bad_list != []:
+            bad_out = [ctx.s("canvas.diff_bad_color_list").format(num, *color) for color, num in bad_list]
+            bad_out = "{0}{1}".format("\n".join(bad_out[:10]), "\n..." if len(bad_out) > 10 else "")
+            embed = discord.Embed()
+            embed.add_field(name=ctx.s("canvas.diff_bad_color_title"), value=bad_out)
+            embed.color = discord.Color.from_rgb(*bad_list[0][0])
+
         with io.BytesIO() as bio:
             diff_img.save(bio, format="PNG")
             bio.seek(0)
             f = discord.File(bio, "diff.png")
-            await ctx.send(content=out, file=f)
+            try:
+                await ctx.send(content=out, file=f, embed=embed)
+            except UnboundLocalError:
+                await ctx.send(content=out, file=f)
 
         if list_pixels and len(err_list) > 0:
             error_list = []
