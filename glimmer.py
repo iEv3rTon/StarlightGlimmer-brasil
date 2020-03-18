@@ -160,82 +160,82 @@ async def on_command_preprocess(ctx):
                   .format(invocation_type, ctx.author, ctx.command.qualified_name, ctx.guild))
     log.info(ctx.message.content)
 
-@bot.event
-async def on_command_error(ctx, error):
-    # Command errors
-    if isinstance(error, commands.BadArgument):
-        pass
-    elif isinstance(error, commands.CommandInvokeError) \
-            and isinstance(error.original, discord.HTTPException) \
-            and error.original.code == 50013:
-        pass
-    elif isinstance(error, commands.CommandOnCooldown):
-        await ctx.send(ctx.s("error.cooldown").format(error.retry_after))
-    elif isinstance(error, commands.CommandNotFound):
-        pass
-    elif isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send(ctx.s("error.missing_argument"))
-    elif isinstance(error, commands.NoPrivateMessage):
-        await ctx.send(ctx.s("error.no_dm"))
-
-    # Check errors
-    elif isinstance(error, BadArgumentErrorWithMessage):
-        await ctx.send(error.message)
-    elif isinstance(error, FactionNotFoundError):
-        await ctx.send(ctx.s("error.faction_not_found"))
-    elif isinstance(error, IdempotentActionError):
-        try:
-            f = discord.File("assets/y_tho.png", "y_tho.png")
-            await ctx.send(ctx.s("error.why"), file=f)
-        except IOError:
-            await ctx.send(ctx.s("error.why"))
-    elif isinstance(error, NoAttachmentError):
-        await ctx.send(ctx.s("error.no_attachment"))
-    elif isinstance(error, NoJpegsError):
-        try:
-            f = discord.File("assets/disdain_for_jpegs.gif", "disdain_for_jpegs.gif")
-            await ctx.send(ctx.s("error.jpeg"), file=f)
-        except IOError:
-            await ctx.send(ctx.s("error.jpeg"))
-    elif isinstance(error, NoSelfPermissionError):
-        await ctx.send(ctx.s("error.no_self_permission"))
-    elif isinstance(error, NoTemplatesError):
-        if error.is_canvas_specific:
-            await ctx.send(ctx.s("error.no_templates_for_canvas"))
-        else:
-            await ctx.send(ctx.s("error.no_templates"))
-    elif isinstance(error, NoUserPermissionError):
-        await ctx.send(ctx.s("error.no_user_permission"))
-    elif isinstance(error, NotPngError):
-        await ctx.send(ctx.s("error.not_png"))
-    elif isinstance(error, PilImageError):
-        await ctx.send(ctx.s("error.bad_image"))
-    elif isinstance(error, TemplateHttpError):
-        await ctx.send(ctx.s("error.cannot_fetch_template").format(error.template_name))
-    elif isinstance(error, TemplateNotFoundError):
-        out = ctx.s("error.template_not_found")
-        if error.matches != []:
-            m = ctx.s("bot.or").format(", ".join(error.matches[:-1]), error.matches[-1]) if len(error.matches) > 1 else error.matches[0]
-            out = "{} {}".format(out, ctx.s("error.did_you_mean").format(m))
-        await ctx.send(out)
-    elif isinstance(error, UrlError):
-        await ctx.send(ctx.s("error.non_discord_url"))
-    elif isinstance(error, HttpCanvasError):
-        await ctx.send(ctx.s("error.http_canvas").format(canvases.pretty_print[error.canvas]))
-    elif isinstance(error, HttpGeneralError):
-        await ctx.send(ctx.s("error.http"))
-    elif isinstance(error, ColorError):
-        await ctx.send(ctx.s("error.invalid_color"))
-
-    # Uncaught error
-    else:
-        name = ctx.command.qualified_name if ctx.command else "None"
-        await utils.channel_log(bot,
-            "An error occurred executing `{0}` in server **{1.name}** (ID: `{1.id}`):".format(name, ctx.guild))
-        await utils.channel_log(bot, "```{}```".format(error))
-        log.error("An error occurred executing '{}': {}\n{}"
-                  .format(name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
-        await ctx.send(ctx.s("error.unknown"))
+# @bot.event
+# async def on_command_error(ctx, error):
+#     # Command errors
+#     if isinstance(error, commands.BadArgument):
+#         pass
+#     elif isinstance(error, commands.CommandInvokeError) \
+#             and isinstance(error.original, discord.HTTPException) \
+#             and error.original.code == 50013:
+#         pass
+#     elif isinstance(error, commands.CommandOnCooldown):
+#         await ctx.send(ctx.s("error.cooldown").format(error.retry_after))
+#     elif isinstance(error, commands.CommandNotFound):
+#         pass
+#     elif isinstance(error, commands.MissingRequiredArgument):
+#         await ctx.send(ctx.s("error.missing_argument"))
+#     elif isinstance(error, commands.NoPrivateMessage):
+#         await ctx.send(ctx.s("error.no_dm"))
+#
+#     # Check errors
+#     elif isinstance(error, BadArgumentErrorWithMessage):
+#         await ctx.send(error.message)
+#     elif isinstance(error, FactionNotFoundError):
+#         await ctx.send(ctx.s("error.faction_not_found"))
+#     elif isinstance(error, IdempotentActionError):
+#         try:
+#             f = discord.File("assets/y_tho.png", "y_tho.png")
+#             await ctx.send(ctx.s("error.why"), file=f)
+#         except IOError:
+#             await ctx.send(ctx.s("error.why"))
+#     elif isinstance(error, NoAttachmentError):
+#         await ctx.send(ctx.s("error.no_attachment"))
+#     elif isinstance(error, NoJpegsError):
+#         try:
+#             f = discord.File("assets/disdain_for_jpegs.gif", "disdain_for_jpegs.gif")
+#             await ctx.send(ctx.s("error.jpeg"), file=f)
+#         except IOError:
+#             await ctx.send(ctx.s("error.jpeg"))
+#     elif isinstance(error, NoSelfPermissionError):
+#         await ctx.send(ctx.s("error.no_self_permission"))
+#     elif isinstance(error, NoTemplatesError):
+#         if error.is_canvas_specific:
+#             await ctx.send(ctx.s("error.no_templates_for_canvas"))
+#         else:
+#             await ctx.send(ctx.s("error.no_templates"))
+#     elif isinstance(error, NoUserPermissionError):
+#         await ctx.send(ctx.s("error.no_user_permission"))
+#     elif isinstance(error, NotPngError):
+#         await ctx.send(ctx.s("error.not_png"))
+#     elif isinstance(error, PilImageError):
+#         await ctx.send(ctx.s("error.bad_image"))
+#     elif isinstance(error, TemplateHttpError):
+#         await ctx.send(ctx.s("error.cannot_fetch_template").format(error.template_name))
+#     elif isinstance(error, TemplateNotFoundError):
+#         out = ctx.s("error.template_not_found")
+#         if error.matches != []:
+#             m = ctx.s("bot.or").format(", ".join(error.matches[:-1]), error.matches[-1]) if len(error.matches) > 1 else error.matches[0]
+#             out = "{} {}".format(out, ctx.s("error.did_you_mean").format(m))
+#         await ctx.send(out)
+#     elif isinstance(error, UrlError):
+#         await ctx.send(ctx.s("error.non_discord_url"))
+#     elif isinstance(error, HttpCanvasError):
+#         await ctx.send(ctx.s("error.http_canvas").format(canvases.pretty_print[error.canvas]))
+#     elif isinstance(error, HttpGeneralError):
+#         await ctx.send(ctx.s("error.http"))
+#     elif isinstance(error, ColorError):
+#         await ctx.send(ctx.s("error.invalid_color"))
+#
+#     # Uncaught error
+#     else:
+#         name = ctx.command.qualified_name if ctx.command else "None"
+#         await utils.channel_log(bot,
+#             "An error occurred executing `{0}` in server **{1.name}** (ID: `{1.id}`):".format(name, ctx.guild))
+#         await utils.channel_log(bot, "```{}```".format(error))
+#         log.error("An error occurred executing '{}': {}\n{}"
+#                   .format(name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
+#         await ctx.send(ctx.s("error.unknown"))
 
 @bot.event
 async def on_message(message):

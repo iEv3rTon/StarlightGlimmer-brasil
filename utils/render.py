@@ -121,23 +121,24 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
         def lut(i):
             return 255 if i > 0 else 0
 
-        def lut_50(i):
-            return 127 if i > 0 else 0
-
         with ImageChops.difference(template, diff_img) as error_mask:
             error_mask = error_mask.point(lut).convert('L').point(lut).convert('1')
-            error_mask = Image.composite(error_mask, black, mask)
+            error_mask.paste(black, mask=mask)
 
         if highlight_correct:
             _r, _g, _b, template_mask = template_copy.split()
             with ImageChops.difference(template_mask, error_mask) as template_mask:
                 template_mask = template_mask.point(lut).convert('L').point(lut).convert('1')
-                template_mask = Image.composite(template_mask, black, mask)
-                template_mask = template_mask.convert('L').point(lut)
+                template_mask.paste(black, mask=mask)
 
         with ImageChops.difference(template, _quantize(template, palette)) as bad_mask:
             bad_mask = bad_mask.point(lut).convert('L').point(lut).convert('1')
-            bad_mask = Image.composite(bad_mask, black, mask)
+            bad_mask.paste(black, mask=mask)
+
+        for x in range(diff_img.width):
+            for y in range(diff_img.height):
+                if diff_img.getpixel((x, y)) == (34, 34, 34):
+                    diff_img.putpixel((x, y), (0, 0, 0))
 
         tot = np.array(mask).sum()
         err = np.array(error_mask).sum()
@@ -170,11 +171,12 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
         if create_snapshot:
             # Make a snapshot
             diff_img = template_copy
-            diff_img = Image.composite(Image.new('RGBA', template.size, (0, 0, 0, 0)), diff_img, error_mask)
+            diff_img.paste(Image.new('RGBA', template.size, (0, 0, 0, 0)), mask=error_mask)
         else:
             # Make a normal diff
             diff_img_mask = diff_img.copy().convert('L')
             diff_img = diff_img_mask.copy().convert('RGB')
+
             if highlight_correct:
                 # Highlight both correct and incorrect pixels
                 correct_color_light, correct_color_dark = ((87, 191, 71), (6, 36, 1)) if not color_blind else ((36, 89, 249), (8, 19, 82))
@@ -191,12 +193,12 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
                 incorrect_img = Image.composite(incorrect_color_light, incorrect_color_dark, diff_img_mask)
                 bad_img = Image.composite(bad_color_light, bad_color_dark, diff_img_mask)
 
-                diff_img = Image.composite(correct_img, diff_img, template_mask)
-                diff_img = Image.composite(incorrect_img, diff_img, error_mask)
-                diff_img = Image.composite(bad_img, diff_img, bad_mask)
+                diff_img.paste(correct_img, mask=template_mask)
+                diff_img.paste(incorrect_img, mask=error_mask)
+                diff_img.paste(bad_img, mask=bad_mask)
             else:
-                diff_img = Image.composite(Image.new('RGB', template.size, (255, 0, 0)), diff_img, error_mask)
-                diff_img = Image.composite(Image.new('RGB', template.size, (0, 0, 255)), diff_img, bad_mask)
+                diff_img.paste(Image.new('RGB', template.size, (255, 0, 0)), mask=error_mask)
+                diff_img.paste(Image.new('RGB', template.size, (0, 0, 255)), mask=bad_mask)
 
             if zoom > 1:
                 diff_img = diff_img.resize(tuple(zoom * x for x in diff_img.size), Image.NEAREST)
