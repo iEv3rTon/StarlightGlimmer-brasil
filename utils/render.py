@@ -123,17 +123,17 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
 
         with ImageChops.difference(template, diff_img) as error_mask:
             error_mask = error_mask.point(lut).convert('L').point(lut).convert('1')
-            error_mask.paste(black, mask=mask)
+            error_mask = Image.composite(error_mask, black, mask)
 
         if highlight_correct:
             _r, _g, _b, template_mask = template_copy.split()
             with ImageChops.difference(template_mask, error_mask) as template_mask:
                 template_mask = template_mask.point(lut).convert('L').point(lut).convert('1')
-                template_mask.paste(black, mask=mask)
+                template_mask = Image.composite(template_mask, black, mask)
 
         with ImageChops.difference(template, _quantize(template, palette)) as bad_mask:
             bad_mask = bad_mask.point(lut).convert('L').point(lut).convert('1')
-            bad_mask.paste(black, mask=mask)
+            bad_mask = Image.composite(bad_mask, black, mask)
 
         for x in range(diff_img.width):
             for y in range(diff_img.height):
