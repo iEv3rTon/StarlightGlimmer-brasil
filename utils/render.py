@@ -90,10 +90,11 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
 
     Returns:
     diff_img - The rendered image, a PIL Image object.
-    tot - The total number of pixels in this image, integer. (don't know if it counts transparent px's or not)
+    tot - The total number of pixels in this image not including transparency, integer.
     err - The total number of errors, integer.
     bad - The total number of off-palette pixels, integer.
     error_list - A list of errors, each error being a tuple like (pixel, is_colour, should_be_colour).
+    bad_list - A list of bad-pixel colours, each being a list like [(r, g, b), number_of_occurances].
     """
     create_snapshot = False
     highlight_correct = False
@@ -132,7 +133,7 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
             with ImageChops.difference(template_mask, error_mask) as template_mask:
                 template_mask = template_mask.point(lut).convert('L').point(lut).convert('1')
                 template_mask = Image.composite(template_mask, black, mask)
-                template_mask = template_mask.convert('L').point(lut_50)
+                template_mask = template_mask.convert('L').point(lut)
 
         with ImageChops.difference(template, _quantize(template, palette)) as bad_mask:
             bad_mask = bad_mask.point(lut).convert('L').point(lut).convert('1')
@@ -167,20 +168,35 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
         bad_list = sorted(bad_list, key=lambda n: n[1], reverse=True) # Sort by number of occurances, high to low
 
         if create_snapshot:
-            # make a snapshot
+            # Make a snapshot
             diff_img = template_copy
             diff_img = Image.composite(Image.new('RGBA', template.size, (0, 0, 0, 0)), diff_img, error_mask)
         else:
-            # make a normal diff
-            diff_img = diff_img.convert('L').convert('RGB')
+            # Make a normal diff
+            diff_img_mask = diff_img.copy().convert('L')
+            diff_img = diff_img_mask.copy().convert('RGB')
             if highlight_correct:
-                correct_color, incorrect_color = ((30, 200, 60), (200, 60, 30)) if not color_blind else ((60, 30, 255), (200, 60, 30))
-                diff_img = Image.composite(Image.new('RGB', template.size, correct_color), diff_img, template_mask)
-                error_mask = error_mask.convert('L').point(lut_50)
-                diff_img = Image.composite(Image.new('RGB', template.size, incorrect_color), diff_img, error_mask)
+                # Highlight both correct and incorrect pixels
+                correct_color_light, correct_color_dark = ((87, 191, 71), (6, 36, 1)) if not color_blind else ((36, 89, 249), (8, 19, 82))
+                bad_color_light, bad_color_dark = ((36, 89, 249), (8, 19, 82)) if not color_blind else ((200, 71, 216), (58, 8, 82))
+
+                correct_color_light = Image.new('RGB', template.size, correct_color_light)
+                correct_color_dark = Image.new('RGB', template.size, correct_color_dark)
+                incorrect_color_light = Image.new('RGB', template.size, (230, 60, 60))
+                incorrect_color_dark = Image.new('RGB', template.size, (82, 8, 8))
+                bad_color_light = Image.new('RGB', template.size, bad_color_light)
+                bad_color_dark = Image.new('RGB', template.size, bad_color_dark)
+
+                correct_img = Image.composite(correct_color_light, correct_color_dark, diff_img_mask)
+                incorrect_img = Image.composite(incorrect_color_light, incorrect_color_dark, diff_img_mask)
+                bad_img = Image.composite(bad_color_light, bad_color_dark, diff_img_mask)
+
+                diff_img = Image.composite(correct_img, diff_img, template_mask)
+                diff_img = Image.composite(incorrect_img, diff_img, error_mask)
+                diff_img = Image.composite(bad_img, diff_img, bad_mask)
             else:
                 diff_img = Image.composite(Image.new('RGB', template.size, (255, 0, 0)), diff_img, error_mask)
-            diff_img = Image.composite(Image.new('RGB', template.size, (0, 0, 255)), diff_img, bad_mask)
+                diff_img = Image.composite(Image.new('RGB', template.size, (0, 0, 255)), diff_img, bad_mask)
 
             if zoom > 1:
                 diff_img = diff_img.resize(tuple(zoom * x for x in diff_img.size), Image.NEAREST)
