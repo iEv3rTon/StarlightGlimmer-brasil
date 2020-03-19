@@ -135,11 +135,6 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
             bad_mask = bad_mask.point(lut).convert('L').point(lut).convert('1')
             bad_mask = Image.composite(bad_mask, black, mask)
 
-        for x in range(diff_img.width):
-            for y in range(diff_img.height):
-                if diff_img.getpixel((x, y)) == (34, 34, 34):
-                    diff_img.putpixel((x, y), (0, 0, 0))
-
         tot = np.array(mask).sum()
         err = np.array(error_mask).sum()
         bad = np.array(bad_mask).sum()
@@ -167,6 +162,11 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
             bad_dict[color] += 1
         bad_list = [(key, value) for key, value in bad_dict.items()]
         bad_list = sorted(bad_list, key=lambda n: n[1], reverse=True) # Sort by number of occurances, high to low
+
+        for x in range(diff_img.width):
+            for y in range(diff_img.height):
+                if diff_img.getpixel((x, y)) == (34, 34, 34):
+                    diff_img.putpixel((x, y), (0, 0, 0))
 
         if create_snapshot:
             # Make a snapshot
