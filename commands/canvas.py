@@ -74,6 +74,7 @@ class Canvas(commands.Cog):
         colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
         colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
         try:
+            logger.exception("got here 0")
             a = vars(parser.parse_args(args))
         except TypeError:
             return
@@ -90,6 +91,8 @@ class Canvas(commands.Cog):
 
         gid = ctx.guild.id if not faction else faction.id
         t = sql.template_get_by_name(gid, name)
+
+        logger.exception("got here 1")
 
         if t:
             async with ctx.typing():
@@ -164,6 +167,7 @@ class Canvas(commands.Cog):
                     checker.connect_websocket()
         else:
             # No template found
+            logger.exception("got here 2")
             raise TemplateNotFoundError(gid, name)
 
     @diff.command(name="pixelcanvas", aliases=["pc"])
