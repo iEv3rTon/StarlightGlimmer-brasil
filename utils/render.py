@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from PIL import Image, ImageChops, ImageDraw, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageOps, ImagePalette
 import math
 import hitherdither
 import discord
@@ -413,8 +413,13 @@ async def fetch_pxlsspace(x, y, dx, dy):
 
 def _quantize(t: Image, palette) -> Image:
     with Image.new('P', (1, 1)) as palette_img:
-        p = [x for sub in palette for x in sub] + [0] * (768 - 3 * len(palette))
+        p = [v for color in palette for v in color] # Flatten 2d array to 1d
+        padding_amt = 256 - len(palette) # calc number of color triplets needed to pad out the palette
+        for n in range(padding_amt): # Use first color in palette to pad so there's no off palette colors in palette
+            p.append(p[0])
+            p.append(p[1])
+            p.append(p[2])
         palette_img.putpalette(p)
         palette_img.load()
-        im = t.im.convert('P', 0, palette_img.im)
+        im = t.im.convert('P', 0, palette_img.im) # Quantize using internal PIL shit so it's not dithered
         return t._new(im).convert('RGB')
