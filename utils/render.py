@@ -413,12 +413,8 @@ async def fetch_pxlsspace(x, y, dx, dy):
 
 def _quantize(t: Image, palette) -> Image:
     with Image.new('P', (1, 1)) as palette_img:
-        p = [v for color in palette for v in color] # Flatten 2d array to 1d
-        padding_amt = 256 - len(palette) # calc number of color triplets needed to pad out the palette
-        for n in range(padding_amt): # Use first color in palette to pad so there's no off palette colors in palette
-            p.append(p[0])
-            p.append(p[1])
-            p.append(p[2])
+        # Flatten 2d array to 1d, then pad with first color to 786 total values
+        p = [v for color in palette for v in color] + list(palette[0]) * (256 - len(palette))
         palette_img.putpalette(p)
         palette_img.load()
         im = t.im.convert('P', 0, palette_img.im) # Quantize using internal PIL shit so it's not dithered
