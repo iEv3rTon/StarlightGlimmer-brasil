@@ -8,3 +8,4 @@ git+https://www.github.com/hbldh/hitherdither
 websocket-client
 fuzzywuzzy==0.18.0
 python-Levenshtein==0.12.0
+psutil==5.7.0

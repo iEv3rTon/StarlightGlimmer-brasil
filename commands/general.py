@@ -2,7 +2,9 @@ import itertools
 import inspect
 import logging
 from time import time
+import datetime
 from fuzzywuzzy import fuzz
+import psutil
 
 import discord
 from discord.ext import commands
@@ -48,6 +50,30 @@ class General(commands.Cog):
         ping_time = time() - ping_start
         log.info("(Ping:{0}ms)".format(int(ping_time * 1000)))
         await ping_msg.edit(content=ctx.s("general.pong").format(int(ping_time * 1000)))
+
+    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.command(name="stats")
+    async def stats(self, ctx):
+        system_uptime = datetime.timedelta(seconds=time() - psutil.boot_time())
+        bot_uptime = datetime.timedelta(seconds=time() - self.bot.start_time)
+        disk = psutil.disk_usage('/')
+        mem = psutil.virtual_memory()
+
+        embed = discord.Embed(description="System statistics")
+        embed.add_field(
+            name="System uptime",
+            value=str(system_uptime).split(".")[0])
+        embed.add_field(
+            name="Bot uptime",
+            value=str(bot_uptime).split(".")[0])
+        embed.add_field(
+            name="Memory usage",
+            value=f"{mem.used/mem.total*100:.0f}% - {mem.used/1000000:.0f}/{mem.total/1000000:.0f} MB")
+        embed.add_field(
+            name="Disk usage",
+            value=f"{disk.used/disk.total*100:.0f}% - {disk.used/1000000:.0f}/{disk.total/1000000:.0f} MB")
+
+        await ctx.send(embed=embed)
 
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.command()

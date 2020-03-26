@@ -1,6 +1,7 @@
 import logging
 import traceback
 import re
+import time
 
 import discord
 from discord import TextChannel
@@ -18,8 +19,14 @@ def get_prefix(bot_, msg: discord.Message):
         if msg.guild else [config.PREFIX, bot_.user.mention + " "]
 
 
+class glimmer(commands.Bot):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.start_time = time.time()
+
 log = logging.getLogger(__name__)
-bot = commands.Bot(
+bot = glimmer(
     command_prefix=get_prefix,
     case_insensitive=True)
 sql.menu_locks_delete_all()
