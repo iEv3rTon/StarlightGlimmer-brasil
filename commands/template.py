@@ -449,8 +449,8 @@ class Template(commands.Cog):
             return
 
         if filter != ():
-            for i, s in enumerate(snapshots):
-                if s[0].name not in filter:
+            for i, snapshot in enumerate(snapshots):
+                if snapshot[0].name not in filter:
                     snapshots[i] = None
 
         snapshots = [s for s in snapshots if s is not None]
@@ -511,7 +511,7 @@ class Template(commands.Cog):
                 url = msg.attachments[0].url
                 await Template.add_template(ctx, base.canvas, target.name, str(base.x), str(base.y), url)
             else:
-                not_updated.append(base, "bad")
+                not_updated.append([base, "bad"])
                 continue
 
         if not_updated != []:
@@ -595,7 +595,7 @@ class Template(commands.Cog):
             await ctx.send("Template names cannot begin with hyphens.")
             return
         try:
-            c = int(name)
+            _c = int(name)
             await ctx.send("Template names cannot be numbers.")
             return
         except ValueError:

@@ -841,7 +841,7 @@ async def _preview(ctx, args, fetch):
 
         # X and Y Cleanup
         try:
-            #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
+            #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex.
             x = int(re.sub('[^0-9-]','', x))
             y = int(re.sub('[^0-9-]','', y))
         except ValueError:
