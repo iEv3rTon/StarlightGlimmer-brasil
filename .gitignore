@@ -4,3 +4,4 @@ commands/__pycache__/
 *.pyc
 */__pycache__/*
 *.db
+.mypy_cache/*
