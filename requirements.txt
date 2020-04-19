@@ -10,3 +10,4 @@ fuzzywuzzy
 python-Levenshtein
 psutil
 i18n
+requests
