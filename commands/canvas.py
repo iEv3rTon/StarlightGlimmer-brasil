@@ -711,8 +711,8 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
         # Order Parsing
         try:
             x, y = args[0], args[1]
-        except TypeError:
-            await ctx.send("Error: no arguments were provided.")
+        except IndexError:
+            await ctx.send("Error: not enough arguments were provided.")
             return
 
         if re.match("-\D+", x) != None:

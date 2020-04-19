@@ -331,8 +331,8 @@ class Template(commands.Cog):
         # Order Parsing
         try:
             name = args[0]
-        except TypeError:
-            await ctx.send("Error: no arguments were provided.")
+        except IndexError:
+            await ctx.send("Error: not enough arguments were provided.")
             return
 
         if re.match("-\D+", name) != None:
