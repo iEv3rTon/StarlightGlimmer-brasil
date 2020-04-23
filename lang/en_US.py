@@ -36,7 +36,7 @@ STRINGS = {
     "error.bad_png": "This image seems to be corrupted. Try re-saving it with an image editor or using `{0}quantize`.",
     "error.cannot_fetch_template": "Could not access URL for template '{}'. (Was the original attachment deleted?)",
     "error.cooldown": "That command is on cooldown. Try again in {0:.01f}s.",
-    "error.did_you_mean": "Did you mean: {0}?",
+    "error.did_you_mean": "Template {0} not found. Did you mean: {1}?",
     "error.faction_not_found": "That faction could not be found.",
     "error.http": "There was an error retrieving data from a remote location. Try again later.",
     "error.http_canvas": "{0} seems to be having connection issues. Try again later.",
