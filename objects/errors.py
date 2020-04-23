@@ -71,7 +71,7 @@ class TemplateNotFoundError(commands.CommandError):
             if ratio >= 70:
                 matches.append([t, ratio])
         matches.sort(key=lambda match: match[1])
-        self.matches = [f"`{t.name}`" for i, t in enumerate(matches) if i < 5]
+        self.matches = [f"`{t[0].name}`" for i, t in enumerate(matches) if i < 5]
         self.query = template_name
 
 
