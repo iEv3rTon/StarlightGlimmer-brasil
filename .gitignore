@@ -5,3 +5,5 @@ commands/__pycache__/
 */__pycache__/*
 *.db
 .mypy_cache/*
+nohup.out
+/venv/*
