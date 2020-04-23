@@ -220,7 +220,7 @@ async def on_command_error(ctx, error):
     elif isinstance(error, TemplateHttpError):
         await ctx.send(ctx.s("error.cannot_fetch_template").format(error.template_name))
     elif isinstance(error, TemplateNotFoundError):
-        out = ctx.s("error.template_not_found".format(error.query))
+        out = ctx.s("error.template_not_found").format(error.query)
         if error.matches != []:
             m = ctx.s("bot.or").format(", ".join(error.matches[:-1]), error.matches[-1]) if len(error.matches) > 1 else error.matches[0]
             out = "{} {}".format(out, ctx.s("error.did_you_mean").format(m))
