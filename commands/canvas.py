@@ -47,7 +47,7 @@ class Canvas(commands.Cog):
         # Order Parsing
         try:
             name = args[0]
-        except TypeError:
+        except IndexError:
             await ctx.send("Error: no arguments were provided.")
             return
 
@@ -194,7 +194,7 @@ class Canvas(commands.Cog):
         # Order Parsing
         try:
             name = args[0]
-        except TypeError:
+        except IndexError:
             await ctx.send("Error: no arguments were provided.")
             return
 
@@ -829,7 +829,7 @@ async def _preview(ctx, args, fetch):
         # Order Parsing
         try:
             x, y = args[0], args[1]
-        except TypeError:
+        except IndexError:
             await ctx.send("Error: no arguments were provided.")
             return
 
