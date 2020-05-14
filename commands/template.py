@@ -457,7 +457,7 @@ class Template(commands.Cog):
 
         not_updated = []
 
-        for base, target in snapshots:
+        for i, (base, target) in enumerate(snapshots):
             await ctx.send(f"Checking {target.name} for errors...")
             data = await http.get_template(target.url, target.name)
             fetchers = {
@@ -465,12 +465,19 @@ class Template(commands.Cog):
                 'pixelzone': render.fetch_pixelzone,
                 'pxlsspace': render.fetch_pxlsspace
             }
-            diff_img, tot, err, bad, err_list, bad_list \
+            diff_img, tot, err, bad, _err, _bad \
                 = await render.diff(target.x, target.y, data, 1, fetchers[target.canvas], colors.by_name[target.canvas])
             if err == 0:
-                if not await utils.yes_no(ctx, "There are no errors on the snapshot, do you want to update it?"):
+                query = await self.yes_no_cancel(ctx, "There are no errors on the snapshot, do you want to update it?")
+                if query == False:
                     not_updated.append([base, "skip"])
                     continue
+                elif query == "cancel":
+                    for j, (b, t) in enumerate(snapshots):
+                        if i >= j:
+                            not_updated.append([b, "cancel"])
+                    break
+
             else:
                 done = tot - err
                 perc = done / tot
@@ -487,9 +494,15 @@ class Template(commands.Cog):
                     bio.seek(0)
                     f = discord.File(bio, "diff.png")
                     msg = await ctx.send(content=out, file=f)
-                if not await utils.yes_no(ctx, "There are errors on the snapshot, do you want to update it? You will loose track of progress if you do this."):
+                query = await self.yes_no_cancel(ctx, "There are errors on the snapshot, do you want to update it? You will loose track of progress if you do this.")
+                if query == False:
                     not_updated.append([base, "err"])
                     continue
+                elif query == "cancel":
+                    for j, (b, t) in enumerate(snapshots):
+                        if i >= j:
+                            not_updated.append([b, "cancel"])
+                    break
 
             await ctx.send(f"Generating snapshot from {base.name}...")
             data = await http.get_template(base.url, base.name)
@@ -498,7 +511,7 @@ class Template(commands.Cog):
                 'pixelzone': render.fetch_pixelzone,
                 'pxlsspace': render.fetch_pxlsspace
             }
-            diff_img, tot, err, bad, err_list, bad_list \
+            diff_img, tot, err, bad, _err, _bad \
                 = await render.diff(base.x, base.y, data, 1, fetchers[base.canvas], colors.by_name[base.canvas], create_snapshot=True)
 
             if bad == 0:
@@ -521,6 +534,10 @@ class Template(commands.Cog):
                     out.append(f"The snapshot of {t.name} was not updated, as there were errors on the current snapshot.")
                 if reason == "bad":
                     out.append(f"The snapshot of {t.name} was not updated, as there were unquantised pixels detected.")
+                if reason == "cancel":
+                    out.append(f"The snapshot of {t.name} was not updated, as the command was cancelled.")
+                if reason == "skip":
+                    out.append(f"The snapshot of {t.name} was not updated, as the template was skipped.")
 
             await ctx.send("```{}```".format("\n".join(out)))
 
@@ -575,6 +592,32 @@ class Template(commands.Cog):
 
         out = [f"Base Template Name:{base.name} Snapshot Template Name:{target.name}" for base, target in snapshots]
         await ctx.send("Snapshots:```{}```".format("\n".join(out)))
+
+    @staticmethod
+    async def yes_no_cancel(ctx, question):
+        sql.menu_locks_add(ctx.channel.id, ctx.author.id)
+        query_msg = await ctx.send("{}\n  `0` - {}\n  `1` - {}\n `cancel` - Exit command".format(question, ctx.s("bot.no"), ctx.s("bot.yes")))
+
+        def check(m):
+            return ctx.channel.id == m.channel.id and ctx.author.id == m.author.id
+
+        try:
+            resp_msg = await ctx.bot.wait_for('message', timeout=480.0, check=check)
+            while not (resp_msg.content == "0" or resp_msg.content == "1" or resp_msg.content.lower() == "cancel"):
+                await ctx.send(ctx.s("error.invalid_option"))
+                resp_msg = await ctx.bot.wait_for('message', timeout=480.0, check=check)
+        except asyncio.TimeoutError:
+            await query_msg.edit(content=ctx.s("error.timed_out"))
+            return False
+        finally:
+            sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
+
+        options = {
+            "0": False,
+            "1": True,
+            "cancel": "cancel"
+        }
+        return options.get(resp_msg.content.lower(), False)
 
     @staticmethod
     async def add_template(ctx, canvas, name, x, y, url):
