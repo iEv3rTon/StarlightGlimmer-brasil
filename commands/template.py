@@ -474,7 +474,7 @@ class Template(commands.Cog):
                     continue
                 elif query == "cancel":
                     for j, (b, t) in enumerate(snapshots):
-                        if i >= j:
+                        if j >= i:
                             not_updated.append([b, "cancel"])
                     break
 
@@ -500,7 +500,7 @@ class Template(commands.Cog):
                     continue
                 elif query == "cancel":
                     for j, (b, t) in enumerate(snapshots):
-                        if i >= j:
+                        if j >= i:
                             not_updated.append([b, "cancel"])
                     break
 
