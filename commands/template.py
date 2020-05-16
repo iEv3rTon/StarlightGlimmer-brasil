@@ -473,9 +473,8 @@ class Template(commands.Cog):
                     not_updated.append([base, "skip"])
                     continue
                 elif query == "cancel":
-                    for j, (b, t) in enumerate(snapshots):
-                        if j >= i:
-                            not_updated.append([b, "cancel"])
+                    for (b, t) in snapshots[i:]:
+                        not_updated.append([b, "cancel"])
                     break
 
             else:
@@ -499,9 +498,8 @@ class Template(commands.Cog):
                     not_updated.append([base, "err"])
                     continue
                 elif query == "cancel":
-                    for j, (b, t) in enumerate(snapshots):
-                        if j >= i:
-                            not_updated.append([b, "cancel"])
+                    for (b, t) in snapshots[i:]:
+                        not_updated.append([b, "cancel"])
                     break
 
             await ctx.send(f"Generating snapshot from {base.name}...")
