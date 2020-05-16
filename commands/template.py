@@ -65,7 +65,7 @@ class Template(commands.Cog):
         await message.add_reaction('▶')
 
         def is_valid(reaction, user):
-            return reaction.message.id == message.id and (reaction.emoji == '◀' or reaction.emoji == '▶') and user.id != discord.ClientUser.id
+            return reaction.message.id == message.id and (reaction.emoji == '◀' or reaction.emoji == '▶') and user.id != self.bot.user.id
 
         _5_minutes_in_future = (datetime.datetime.today() + datetime.timedelta(minutes=5.0))
         try:
@@ -221,8 +221,8 @@ class Template(commands.Cog):
 
         out = []
 
-        """Image is done first since I'm using the build_template method to update stuff,
-        and I don't want anything to have changed in orig_template before I use it"""
+        # Image is done first since I'm using the build_template method to update stuff,
+        # and I don't want anything to have changed in orig_template before I use it
         if image:
             # Update image
             url = None
