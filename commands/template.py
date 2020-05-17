@@ -1,6 +1,5 @@
 import asyncio
 import aiohttp
-import argparse
 import datetime
 import discord
 from discord.ext import commands
@@ -10,16 +9,12 @@ import io
 import itertools
 import logging
 import math
-import numpy as np
-from prettytable import *
-from PIL import Image, ImageChops
+from PIL import Image
 import re
 import time
-from typing import List
 
 from objects import DbTemplate
-from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from objects.errors import NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, IgnoreError, TemplateHttpError, NoJpegsError, NotPngError
+from objects.errors import NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, TemplateHttpError, NoJpegsError, NotPngError
 import utils
 from utils import canvases, checks, colors, config, http, render, GlimmerArgumentParser, FactionAction, sqlite as sql
 
