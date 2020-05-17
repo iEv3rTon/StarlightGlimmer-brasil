@@ -120,7 +120,7 @@ async def _fetch_chunks_pixelzone(chunks: Iterable[ChunkPz]):
                         if packet is None:
                             if msg[:2] == '45':
                                 packet = {}
-                                data = json.loads(msg[msg.find('-')+1:])[1]
+                                data = json.loads(msg[msg.find('-') + 1:])[1]
                                 packet['cx'] = data['cx']
                                 packet['cy'] = data['cy']
                         else:

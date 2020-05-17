@@ -233,6 +233,8 @@ async def on_command_error(ctx, error):
         await ctx.send(ctx.s("error.http"))
     elif isinstance(error, ColorError):
         await ctx.send(ctx.s("error.invalid_color"))
+    elif isinstance(error, TemplateTooLargeError):
+        await ctx.send(ctx.s("canvas.dither_toolarge").format(error.limit))
 
     # Uncaught error
     else:

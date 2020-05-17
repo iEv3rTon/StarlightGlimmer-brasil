@@ -82,3 +82,8 @@ class UrlError(commands.CommandError):
 
 class ColorError(commands.CommandError):
     pass
+
+
+class TemplateTooLargeError(commands.CommandError):
+    def __init__(self, limit):
+        self.limit = limit

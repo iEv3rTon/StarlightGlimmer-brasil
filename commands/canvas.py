@@ -15,7 +15,7 @@ from typing import List
 from objects import DbTemplate
 from objects.bot_objects import GlimContext
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from objects.errors import IdempotentActionError, NoTemplatesError, TemplateNotFoundError, TemplateHttpError, UrlError, PilImageError
+from objects.errors import IdempotentActionError, NoTemplatesError, TemplateNotFoundError, TemplateHttpError, UrlError, PilImageError, TemplateTooLargeError
 from objects.checker import Pixel, Checker
 from utils import autoscan, colors, http, canvases, render, GlimmerArgumentParser, FactionAction, ColorAction, verify_attachment, sqlite as sql
 
@@ -828,14 +828,16 @@ async def _dither(ctx, palette, type, threshold, order):
     """
     start_time = datetime.datetime.now()
 
+    def too_large(img, limit):
+        if img.height > limit or img.width > limit:
+            raise TemplateTooLargeError(limit)
+
     with ctx.typing():
-        # getting the attachment url
         url = await select_url(ctx, None)
         if url is None:
             await ctx.send(ctx.s("error.no_attachment"))
             return
 
-        # load user's image
         try:
             with await get_dither_image(url, ctx) as data:
                 with Image.open(data).convert("RGBA") as origImg:
@@ -843,18 +845,15 @@ async def _dither(ctx, palette, type, threshold, order):
                     option_string = ""
 
                     if type == "bayer":
-                        if origImg.height > 1500 or origImg.width > 1500:
-                            return await ctx.send(ctx.s("canvas.dither_toolarge").format("1500"))
+                        too_large(origImg, 1500)
                         dithered_image = await render.bayer_dither(origImg, palette, threshold, order)
                         option_string = ctx.s("canvas.dither_order_and_threshold_option").format(threshold, order)
                     elif type == "yliluoma":
-                        if origImg.height > 100 or origImg.width > 100:
-                            return await ctx.send(ctx.s("canvas.dither_toolarge").format("100"))
+                        too_large(origImg, 100)
                         dithered_image = await render.yliluoma_dither(origImg, palette, order)
                         option_string = ctx.s("canvas.dither_order_option").format(order)
                     elif type == "floyd-steinberg":
-                        if origImg.height > 100 or origImg.width > 100:
-                            return await ctx.send(ctx.s("canvas.dither_toolarge").format("100"))
+                        too_large(origImg, 100)
                         dithered_image = await render.floyd_steinberg_dither(origImg, palette, order)
                         option_string = ctx.s("canvas.dither_order_option").format(order)
 
@@ -885,11 +884,10 @@ async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
     page - An integer specifying the page that the user is on, or nothing.
     pages - The total number of pages for the current set of templates, integer.
     """
-    if page is not None:  # Sending one page
+    def create_embed(templates, page, pages):
         embed = discord.Embed(
             title=ctx.s("canvas.template_report_header"),
             description=f"Page {page} of {pages}")
-        embed.set_footer(text=f"Do {ctx.gprefix}t check <page_number> to see other pages")
 
         for template in templates:
             embed.add_field(
@@ -903,6 +901,12 @@ async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
                     x=template.x,
                     y=template.y),
                 inline=False)
+
+        return embed
+
+    if page is not None:  # Sending one page
+        embed = create_embed(templates, page, pages)
+        embed.set_footer(text=f"Do {ctx.gprefix}t check <page_number> to see other pages")
         await ctx.send(embed=embed)
     else:  # Sending *all* pages
         for page in range(pages):
@@ -911,23 +915,7 @@ async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
             start = (page - 1) * 25
             end = page * 25
             templates_copy = templates[start:end]
-
-            embed = discord.Embed(
-                title=ctx.s("canvas.template_report_header"),
-                description=f"Page {page} of {pages}")
-
-            for template in templates_copy:
-                embed.add_field(
-                    name=template.name,
-                    value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
-                        e=ctx.s("bot.errors"),
-                        e_val=template.errors,
-                        t_val=template.size,
-                        p=ctx.s("bot.percent"),
-                        p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
-                        x=template.x,
-                        y=template.y),
-                    inline=False)
+            embed = create_embed(templates_copy, page, pages)
             await ctx.send(embed=embed)
 
 
