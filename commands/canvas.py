@@ -21,6 +21,7 @@ from utils import autoscan, colors, http, canvases, render, GlimmerArgumentParse
 
 log = logging.getLogger(__name__)
 
+
 class Canvas(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -198,7 +199,7 @@ class Canvas(commands.Cog):
         else:
             args = args[1:]
 
-        if re.match(r"-{0,1}\d+", name) is not None: # Skip to coords + image parsing
+        if re.match(r"-{0,1}\d+", name) is not None:  # Skip to coords + image parsing
             await ctx.invoke_default("preview")
             return
 
@@ -572,6 +573,7 @@ class Canvas(commands.Cog):
             ct = await http.fetch_online_pxlsspace()
             await msg.edit(content=ctx.s("canvas.online").format(ct, "Pxls.space"))
 
+
 async def _diff(self, ctx, args, canvas, fetch, palette):
     """Sends a diff on the image provided.
 
@@ -694,6 +696,7 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
             checker = Checker(self.bot, ctx, canvas, error_list)
             checker.connect_websocket()
 
+
 async def _preview(ctx, args, fetch):
     """Sends a preview of the image provided.
 
@@ -804,6 +807,7 @@ async def _quantize(ctx, args, canvas, palette):
             f = discord.File(bio, "template.png")
             return await ctx.send(ctx.s("canvas.quantize").format(bad_pixels), file=f)
 
+
 async def select_url(ctx, input_url):
     """Selects a url from the available information.
 
@@ -821,6 +825,7 @@ async def select_url(ctx, input_url):
     if len(ctx.message.attachments) > 0:
         return ctx.message.attachments[0].url
 
+
 async def get_dither_image(url, ctx):
     """Fetches and opens an image as a bytestream
 
@@ -837,6 +842,7 @@ async def get_dither_image(url, ctx):
             if resp.content_type != "image/png" and resp.content_type != "image/jpg" and resp.content_type != "image/jpeg":
                 await ctx.send(ctx.s("canvas.dither_notpngorjpg"))
             return io.BytesIO(await resp.read())
+
 
 async def _dither(ctx, url, palette, type, options):
     """Sends a message containing a dithered version of the image given.
@@ -924,6 +930,7 @@ async def _dither(ctx, url, palette, type, options):
         except IOError:
             raise PilImageError
 
+
 async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
     """Builds and sends a template check embed on the set of templates provided.
 
@@ -933,7 +940,7 @@ async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
     page - An integer specifying the page that the user is on, or nothing.
     pages - The total number of pages for the current set of templates, integer.
     """
-    if page is not None: # Sending one page
+    if page is not None:  # Sending one page
         embed = discord.Embed(
             title=ctx.s("canvas.template_report_header"),
             description=f"Page {page} of {pages}")
@@ -952,12 +959,12 @@ async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
                     y=template.y),
                 inline=False)
         await ctx.send(embed=embed)
-    else: # Sending *all* pages
+    else:  # Sending *all* pages
         for page in range(pages):
             page += 1
             # Slice so templates only contains the page we want
-            start = (page-1)*25
-            end = page*25
+            start = (page - 1) * 25
+            end = page * 25
             templates_copy = templates[start:end]
 
             embed = discord.Embed(
@@ -977,6 +984,7 @@ async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
                         y=template.y),
                     inline=False)
             await ctx.send(embed=embed)
+
 
 async def check_canvas(ctx, templates, canvas, msg=None):
     """Update the current total errors for a list of templates.
@@ -1006,7 +1014,7 @@ async def check_canvas(ctx, templates, canvas, msg=None):
         await msg.edit(content=ctx.s("canvas.fetching_data").format(canvases.pretty_print[canvas]))
     else:
         msg = await ctx.send(ctx.s("canvas.fetching_data").format(canvases.pretty_print[canvas]))
-    await http.fetch_chunks(chunks) # Fetch all chunks
+    await http.fetch_chunks(chunks)
 
     await msg.edit(content=ctx.s("canvas.calculating"))
     example_chunk = next(iter(chunks))

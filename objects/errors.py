@@ -2,6 +2,7 @@ from discord.ext import commands
 from fuzzywuzzy import fuzz
 from utils import sqlite as sql
 
+
 class IgnoreError(commands.CommandError):
     pass
 

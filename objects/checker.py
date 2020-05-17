@@ -11,12 +11,14 @@ import websocket
 
 log = logging.getLogger(__name__)
 
+
 class Pixel:
     def __init__(self, current, target, x, y):
         self.current = current
         self.target = target
         self.x = x
         self.y = y
+
 
 class Checker:
     URL = 'https://pixelcanvas.io/'
@@ -38,13 +40,14 @@ class Checker:
         self.bot = bot
         self.ctx = ctx
         self.fingerprint = uuid.uuid4().hex
-        self._5_mins_time = time.time() + 60*5
+        self._5_mins_time = time.time() + 60 * 5
         self.canvas = canvas
         self.pixels = pixels
         self.sending = False
         self.msg = None
         self.content = ""
-        self.timeout_string = self.ctx.s("canvas.diff_timeout")  # Was failing weirdly when called outside of init
+        # Was failing weirdly when called outside of init
+        self.timeout_string = self.ctx.s("canvas.diff_timeout")
 
         asyncio.ensure_future(self.send_err_embed())
 
@@ -95,7 +98,7 @@ class Checker:
             if p.x == x and p.y == y:
                 p.current = color
                 check = await self.send_err_embed()
-                if check == True:
+                if check is True:
                     ws.close()
 
     async def send_err_embed(self):

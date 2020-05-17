@@ -25,6 +25,7 @@ async def calculate_size(data):
     white = Image.composite(white, alpha, template)
     return int(np.array(white).any(axis=-1).sum())
 
+
 async def bayer_dither(origImg, canvas_palette, threshold, order):
     # find all fully transparent pixels
     alpha_mask = origImg.split()[3]
@@ -33,13 +34,14 @@ async def bayer_dither(origImg, canvas_palette, threshold, order):
     # convert from RGBA to RGB and dither
     origImg = origImg.convert('RGB')
     palette = hitherdither.palette.Palette(canvas_palette)
-    threshold = [threshold/4]
+    threshold = [threshold / 4]
     dithered_image = hitherdither.ordered.bayer.bayer_dithering(origImg, palette, threshold, order)
 
     # put transparency back in
     dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
 
     return dithered_image
+
 
 async def yliluoma_dither(origImg, canvas_palette, order):
     # find all fully transparent pixels
@@ -56,6 +58,7 @@ async def yliluoma_dither(origImg, canvas_palette, order):
 
     return dithered_image
 
+
 async def floyd_steinberg_dither(origImg, canvas_palette, order):
     # find all fully transparent pixels
     alpha_mask = origImg.split()[3]
@@ -70,6 +73,7 @@ async def floyd_steinberg_dither(origImg, canvas_palette, order):
     dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
 
     return dithered_image
+
 
 async def diff(x, y, data, zoom, fetch, palette, **kwargs):
     """Calculates and renders a diff image.
@@ -141,7 +145,7 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
 
         error_list = []
         for p in errors:
-            p.reverse() # NumPy is backwards
+            p.reverse()  # NumPy is backwards
             try:
                 t_color = palette.index(template.getpixel(tuple(p)))
             except ValueError:
@@ -159,7 +163,7 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
         for color in bad_list:
             bad_dict[color] += 1
         bad_list = [(key, value) for key, value in bad_dict.items()]
-        bad_list = sorted(bad_list, key=lambda n: n[1], reverse=True) # Sort by number of occurances, high to low
+        bad_list = sorted(bad_list, key=lambda n: n[1], reverse=True)  # Sort by n.o. occurances, high to low
 
         for x in range(diff_img.width):
             for y in range(diff_img.height):
@@ -415,5 +419,5 @@ def _quantize(t: Image, palette) -> Image:
         p = [v for color in palette for v in color] + list(palette[0]) * (256 - len(palette))
         palette_img.putpalette(p)
         palette_img.load()
-        im = t.im.convert('P', 0, palette_img.im) # Quantize using internal PIL shit so it's not dithered
+        im = t.im.convert('P', 0, palette_img.im)  # Quantize using internal PIL shit so it's not dithered
         return t._new(im).convert('RGB')

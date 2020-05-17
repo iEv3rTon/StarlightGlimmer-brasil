@@ -15,7 +15,8 @@ class Chunky(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def height(self): pass
+    def height(self):
+        pass
 
     @property
     def image(self):
@@ -23,29 +24,36 @@ class Chunky(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def p_x(self): pass
+    def p_x(self):
+        pass
 
     @property
     @abc.abstractmethod
-    def p_y(self): pass
+    def p_y(self):
+        pass
 
     @property
     @abc.abstractmethod
-    def url(self): pass
+    def url(self):
+        pass
 
     @abc.abstractmethod
-    def is_in_bounds(self): pass
+    def is_in_bounds(self):
+        pass
 
     @abc.abstractmethod
-    def load(self, data): pass
+    def load(self, data):
+        pass
 
     @staticmethod
     @abc.abstractmethod
-    def get_intersecting(x, y, dx, dy): pass
+    def get_intersecting(x, y, dx, dy):
+        pass
 
     @property
     @abc.abstractmethod
-    def width(self): pass
+    def width(self):
+        pass
 
     def __eq__(self, other):
         if type(other) is BigChunk or type(other is ChunkPz):
