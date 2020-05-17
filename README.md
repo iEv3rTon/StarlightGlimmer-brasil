@@ -12,13 +12,13 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Features for other
 #### Requires:
 - [Python](https://www.python.org/downloads/release/python-365/) v3.6
 - [Discord.py](https://github.com/Rapptz/discord.py/) v1.3.1
-- [Pillow](https://pillow.readthedocs.io/en/latest/installation.html) v5.1.0
-- [aiohttp](https://aiohttp.readthedocs.io/en/stable/) v3.5.4
-- [numpy](https://www.scipy.org/scipylib/download.html) v1.14.4
-- [websockets](https://pypi.org/project/websockets/) v4.0.1
+- [Pillow](https://pillow.readthedocs.io/en/latest/installation.html)
+- [aiohttp](https://aiohttp.readthedocs.io/en/stable/) 
+- [numpy](https://www.scipy.org/scipylib/download.html) 
+- [websockets](https://pypi.org/project/websockets/)
 - [hitherdither](https://www.github.com/hbldh/hitherdither)
-- [fuzzywuzzy](https://github.com/seatgeek/fuzzywuzzy) v0.18.0
-- [python-Levenshtein](https://github.com/ztane/python-Levenshtein/) v0.12.0
+- [fuzzywuzzy](https://github.com/seatgeek/fuzzywuzzy) 
+- [python-Levenshtein](https://github.com/ztane/python-Levenshtein/) 
 
 #### Installation:
 1. Install Python 3.6
