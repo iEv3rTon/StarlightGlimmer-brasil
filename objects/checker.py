@@ -1,9 +1,9 @@
 import asyncio
+import logging
 import math
+from struct import unpack_from
 import threading
 import time
-import logging
-from struct import unpack_from
 import uuid
 
 import discord

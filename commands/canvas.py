@@ -1,4 +1,3 @@
-import asyncio
 import aiohttp
 import datetime
 import discord
@@ -16,7 +15,7 @@ from typing import List
 from objects import DbTemplate
 from objects.bot_objects import GlimContext
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from objects.errors import IdempotentActionError, NoTemplatesError, TemplateNotFoundError, TemplateHttpError
+from objects.errors import IdempotentActionError, NoTemplatesError, TemplateNotFoundError, TemplateHttpError, UrlError, PilImageError
 from objects.checker import Pixel, Checker
 from utils import autoscan, colors, http, canvases, render, GlimmerArgumentParser, FactionAction, ColorAction, verify_attachment, sqlite as sql
 
@@ -193,13 +192,13 @@ class Canvas(commands.Cog):
             await ctx.send("Error: no arguments were provided.")
             return
 
-        if re.match("-\D+", name) != None:
+        if re.match(r"-\D+", name) is not None:
             name = args[-1]
             args = args[:-1]
         else:
             args = args[1:]
 
-        if re.match("-{0,1}\d+", name) != None: # Skip to coords + image parsing
+        if re.match(r"-{0,1}\d+", name) is not None: # Skip to coords + image parsing
             await ctx.invoke_default("preview")
             return
 
@@ -391,7 +390,8 @@ class Canvas(commands.Cog):
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-e", "--onlyErrors", action='store_true')
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
-        parser.add_argument("-s", "--sort", default="name_az", choices=["name_az","name_za","errors_az","errors_za","percent_az","percent_za"])
+        parser.add_argument("-s", "--sort", default="name_az", choices=[
+            "name_az", "name_za", "errors_az", "errors_za", "percent_az", "percent_za"])
         try:
             a = vars(parser.parse_args(args))
         except TypeError:
@@ -592,7 +592,7 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
             await ctx.send("Error: not enough arguments were provided.")
             return
 
-        if re.match("-\D+", x) != None:
+        if re.match(r"-\D+", x) is not None:
             x, y = args[-2], args[-1]
             args = args[:-2]
         else:
@@ -600,9 +600,9 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
 
         # X and Y Cleanup
         try:
-            #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
-            x = int(re.sub('[^0-9-]','', x))
-            y = int(re.sub('[^0-9-]','', y))
+            # cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
+            x = int(re.sub('[^0-9-]', '', x))
+            y = int(re.sub('[^0-9-]', '', y))
         except ValueError:
             await ctx.send(ctx.s("canvas.invalid_input"))
             return
@@ -683,7 +683,7 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
                     if c in exclude_colors:
                         continue
                 elif only_colors:
-                    if not c in only_colors:
+                    if c not in only_colors:
                         continue
 
                 # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
@@ -710,7 +710,7 @@ async def _preview(ctx, args, fetch):
             await ctx.send("Error: no arguments were provided.")
             return
 
-        if re.match("-\D+", x) != None:
+        if re.match(r"-\D+", x) is not None:
             x, y = args[-2], args[-1]
             args = args[:-2]
         else:
@@ -718,9 +718,9 @@ async def _preview(ctx, args, fetch):
 
         # X and Y Cleanup
         try:
-            #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex.
-            x = int(re.sub('[^0-9-]','', x))
-            y = int(re.sub('[^0-9-]','', y))
+            # cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex.
+            x = int(re.sub('[^0-9-]', '', x))
+            y = int(re.sub('[^0-9-]', '', y))
         except ValueError:
             await ctx.send(ctx.s("canvas.invalid_input"))
             return
@@ -760,7 +760,6 @@ async def _quantize(ctx, args, canvas, palette):
     # Argument Parsing
     parser = GlimmerArgumentParser(ctx)
     parser.add_argument("-f", "--faction", default=None, action=FactionAction)
-    parser.add_argument("-z", "--zoom", type=int, default=1)
 
     # Pre-Parsing
     if len(args) == 0:
@@ -777,7 +776,6 @@ async def _quantize(ctx, args, canvas, palette):
         return
 
     faction = args["faction"]
-    zoom = args["zoom"]
 
     gid = ctx.guild.id if not faction else faction.id
     t = sql.template_get_by_name(gid, name)
@@ -817,13 +815,13 @@ async def select_url(ctx, input_url):
     Nothing or a discord url, string.
     """
     if input_url:
-        if re.search('^(?:https?://)cdn\.discordapp\.com/', input_url):
+        if re.search(r'^(?:https?://)cdn\.discordapp\.com/', input_url):
             return input_url
         raise UrlError
     if len(ctx.message.attachments) > 0:
         return ctx.message.attachments[0].url
 
-async def get_dither_image(url):
+async def get_dither_image(url, ctx):
     """Fetches and opens an image as a bytestream
 
     Arguments:
@@ -857,15 +855,15 @@ async def _dither(ctx, url, palette, type, options):
     start_time = datetime.datetime.now()
 
     with ctx.typing():
-        #getting the attachment url
+        # getting the attachment url
         url = await select_url(ctx, url)
         if url is None:
             await ctx.send(ctx.s("error.no_attachment"))
             return
 
-        #load user's image
+        # load user's image
         try:
-            with await get_dither_image(url) as data:
+            with await get_dither_image(url, ctx) as data:
                 with Image.open(data).convert("RGBA") as origImg:
                     dithered_image = None
                     option_string = ""
@@ -935,13 +933,13 @@ async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
     page - An integer specifying the page that the user is on, or nothing.
     pages - The total number of pages for the current set of templates, integer.
     """
-    if page != None: # Sending one page
+    if page is not None: # Sending one page
         embed = discord.Embed(
             title=ctx.s("canvas.template_report_header"),
             description=f"Page {page} of {pages}")
         embed.set_footer(text=f"Do {ctx.gprefix}t check <page_number> to see other pages")
 
-        for x, template in enumerate(templates):
+        for template in templates:
             embed.add_field(
                 name=template.name,
                 value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
@@ -966,7 +964,7 @@ async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
                 title=ctx.s("canvas.template_report_header"),
                 description=f"Page {page} of {pages}")
 
-            for x, template in enumerate(templates_copy):
+            for template in templates_copy:
                 embed.add_field(
                     name=template.name,
                     value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(

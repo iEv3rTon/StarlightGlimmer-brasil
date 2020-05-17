@@ -2,7 +2,6 @@ import abc
 import io
 import zlib
 
-import numpy as np
 from PIL import Image
 
 from utils import colors
