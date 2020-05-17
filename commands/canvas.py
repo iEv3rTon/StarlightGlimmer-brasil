@@ -807,6 +807,7 @@ def dither_argparse(ctx, args):
     }
 
     dither_type = default(names.get(a["ditherType"], None), a["ditherType"])
+    dither_type = dither_type if dither_type is not None else "bayer" # Incase they select an invalid option for this
     threshold = default(a["threshold"], default_thresholds.get(dither_type))
     order = order = default(a["order"], default_orders.get(dither_type))
 
