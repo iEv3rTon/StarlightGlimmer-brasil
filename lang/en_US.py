@@ -472,7 +472,8 @@ STRINGS = {
          ("-f factionName", "Check the completion status of all of the templates of 'factionName'"),
          ("-s errors_za", "Check the completion status of all templates and sort the results by number of errors in decending order")],
     "example.dither":
-        [("geo32 --ditherType y --order 4", "(with an attachment) Dither an image using the geo32 palette, yliluoma dithering and an order of 4"),
+        [("", "(with an attachment) Dither an image using the default canvas palette, bayer dithering and the default threshold and order settings"),
+         ("geo32 --ditherType y --order 4", "(with an attachment) Dither an image using the geo32 palette, yliluoma dithering and an order of 4"),
          ("-d bayer -t 512 -o 8", "(with an attachment) Dither an image using the default canvas palette, bayer dithering, a threshold of 512/4 and an order of 8")],
     "example.diff":
         [("pc 100 100", "(with an attachment) Check an image against Pixelcanvas.io at (100, 100)"),
