@@ -806,7 +806,7 @@ def dither_argparse(ctx, args):
         "floyd-steinberg": 2
     }
 
-    dither_type = default(names.get(a["ditherType"], None), a["dither-type"])
+    dither_type = default(names.get(a["ditherType"], None), a["ditherType"])
     threshold = default(a["threshold"], default_thresholds.get(dither_type))
     order = order = default(a["order"], default_orders.get(dither_type))
 
