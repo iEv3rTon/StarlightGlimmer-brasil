@@ -7,3 +7,5 @@ commands/__pycache__/
 .mypy_cache/*
 nohup.out
 /venv/*
+/.vscode/*
+.DS_Store
