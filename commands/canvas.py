@@ -610,7 +610,7 @@ class Checker:
         self.sending = False
         self.msg = None
         self.content = ""
-        self.timeout_string = self.ctx.s("canvas.diff_timeout") # Was failing weirdly when called outside of init
+        self.timeout_string = self.ctx.s("canvas.diff_timeout")  # Was failing weirdly when called outside of init
 
         asyncio.ensure_future(send_err_embed(self))
 

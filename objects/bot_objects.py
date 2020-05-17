@@ -1,6 +1,5 @@
 from discord.ext import commands
 from discord.utils import get as dget
-import i18n
 
 from lang import en_US, pt_BR, tr_TR
 from utils import canvases, sqlite as sql
