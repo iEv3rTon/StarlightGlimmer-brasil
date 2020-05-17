@@ -11,17 +11,13 @@ import math
 import numpy as np
 from PIL import Image, ImageChops
 import re
-from struct import unpack_from
-import threading
-import time
 from typing import List
-import uuid
-import websocket
 
 from objects import DbTemplate
 from objects.bot_objects import GlimContext
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from objects.errors import IdempotentActionError, NoTemplatesError, TemplateNotFoundError
+from objects.errors import IdempotentActionError, NoTemplatesError, TemplateNotFoundError, TemplateHttpError
+from objects.checker import Pixel, Checker
 from utils import autoscan, colors, http, canvases, render, GlimmerArgumentParser, FactionAction, ColorAction, verify_attachment, sqlite as sql
 
 log = logging.getLogger(__name__)
@@ -50,13 +46,13 @@ class Canvas(commands.Cog):
             await ctx.send("Error: no arguments were provided.")
             return
 
-        if re.match("-\D+", name) != None:
+        if re.match(r"-\D+", name) is not None:
             name = args[-1]
             args = args[:-1]
         else:
             args = args[1:]
 
-        if re.match("-{0,1}\d+", name) != None: # Skip to coords + image parsing
+        if re.match(r"-{0,1}\d+", name) is not None:  # Skip to coords + image parsing
             await ctx.invoke_default("diff")
             return
 
@@ -151,10 +147,10 @@ class Canvas(commands.Cog):
                             if c in exclude_colors:
                                 continue
                         elif only_colors:
-                            if not c in only_colors:
+                            if c not in only_colors:
                                 continue
 
-                        # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
+                        # The current x,y are in terms of the template area, add template start coords so they're in terms of canvas
                         x += t.x
                         y += t.y
                         error_list.append(Pixel(current, target, x, y))
@@ -575,121 +571,6 @@ class Canvas(commands.Cog):
             msg = await ctx.send(ctx.s("canvas.online_await"))
             ct = await http.fetch_online_pxlsspace()
             await msg.edit(content=ctx.s("canvas.online").format(ct, "Pxls.space"))
-
-class Pixel:
-    def __init__(self, current, target, x, y):
-        self.current = current
-        self.target = target
-        self.x = x
-        self.y = y
-
-class Checker:
-    URL = 'https://pixelcanvas.io/'
-    TEMPLATE_PATH = ''
-    HEADER_USER_AGENT = {
-        'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3'
-    }
-    HEADERS = {
-        'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
-        'accept': 'application/json',
-        'content-type': 'application/json',
-        'Host': 'pixelcanvas.io',
-        'Origin': URL,
-        'Referer': URL
-    }
-
-    def __init__(self, bot, ctx, canvas, pixels):
-        self.bot = bot
-        self.ctx = ctx
-        self.fingerprint = uuid.uuid4().hex
-        self._5_mins_time = time.time() + 60*5
-        self.canvas = canvas
-        self.pixels = pixels
-        self.sending = False
-        self.msg = None
-        self.content = ""
-        self.timeout_string = self.ctx.s("canvas.diff_timeout")  # Was failing weirdly when called outside of init
-
-        asyncio.ensure_future(send_err_embed(self))
-
-    def connect_websocket(self):
-        def on_message(ws, message):
-            asyncio.set_event_loop(self.bot.loop)
-            if self._5_mins_time < time.time():
-                self.content = self.timeout_string
-                asyncio.ensure_future(send_err_embed(self))
-                ws.close()
-            if unpack_from('B', message, 0)[0] == 193:
-                x = unpack_from('!h', message, 1)[0]
-                y = unpack_from('!h', message, 3)[0]
-                a = unpack_from('!H', message, 5)[0]
-                number = (65520 & a) >> 4
-                x = int(x * 64 + ((number % 64 + 64) % 64))
-                y = int(y * 64 + math.floor(number / 64))
-                color = 15 & a
-
-                asyncio.ensure_future(check_pixels(self, x, y, color, ws))
-
-        def on_error(ws, exception):
-            logger.exception(exception)
-            self.content = self.timeout_string
-            asyncio.ensure_future(send_err_embed(self))
-
-        def on_close(ws):
-            pass
-
-        def on_open(ws):
-            pass
-
-        url = "wss://ws.pixelcanvas.io:8443"
-        ws = websocket.WebSocketApp(
-            url + '/?fingerprint=' + self.fingerprint, on_message=on_message,
-            on_open=on_open, on_close=on_close, on_error=on_error)
-
-        def worker(ws):
-            asyncio.set_event_loop(self.bot.loop)
-            ws.run_forever()
-
-        thread = threading.Thread(target=worker, args=(ws,))
-        thread.setDaemon(True)
-        thread.start()
-
-async def check_pixels(self, x, y, color, ws):
-    for p in self.pixels:
-        if p.x == x and p.y == y:
-            p.current = color
-            check = await send_err_embed(self)
-            if check == True:
-                ws.close()
-
-async def send_err_embed(self):
-    if self.sending:
-        return
-    self.sending = True
-
-    embed = discord.Embed()
-    out = []
-    for i, p in enumerate(self.pixels):
-        if p.current != p.target:
-            current = self.ctx.s("color.{}.{}".format(self.canvas, p.current))
-            target = self.ctx.s("color.{}.{}".format(self.canvas, p.target))
-            out.append(f"[({p.x},{p.y})](https://pixelcanvas.io/@{p.x},{p.y}) is {current}, should be {target}")
-            if len(out) == 10:
-                out.append("...")
-                break
-    if out == []:
-        out = self.ctx.s("canvas.diff_fixed")
-    else:
-        out = "\n".join(out)
-    embed.add_field(name=self.ctx.s("canvas.diff_error_title"), value=out)
-
-    if self.msg:
-        await self.msg.edit(embed=embed, content=self.content)
-    else:
-        self.msg = await self.ctx.send(embed=embed, content=self.content)
-    # Release send lock
-    self.sending = False
 
 async def _diff(self, ctx, args, canvas, fetch, palette):
     """Sends a diff on the image provided.
