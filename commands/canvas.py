@@ -11,7 +11,6 @@ import math
 import numpy as np
 from PIL import Image, ImageChops
 import re
-import requests
 from struct import unpack_from
 import threading
 import time
@@ -613,9 +612,6 @@ class Checker:
         self.timeout_string = self.ctx.s("canvas.diff_timeout")  # Was failing weirdly when called outside of init
 
         asyncio.ensure_future(send_err_embed(self))
-
-    def get(self, route: str, stream: bool = False):
-        return requests.get(Checker.URL + route, stream=stream, headers=Checker.HEADER_USER_AGENT)
 
     def connect_websocket(self):
         def on_message(ws, message):
