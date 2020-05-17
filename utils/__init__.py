@@ -137,6 +137,7 @@ async def yes_no(ctx, question):
         sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
     return resp_msg.content == "1"
 
+
 class GlimmerArgumentParser(argparse.ArgumentParser):
 
     def __init__(self, ctx):
@@ -146,12 +147,14 @@ class GlimmerArgumentParser(argparse.ArgumentParser):
     def error(self, message):
         asyncio.ensure_future(self.ctx.send(f"Error: {message}"))
 
+
 class FactionAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         faction = sql.guild_get_by_faction_name_or_alias(values)
         if faction == None:
             raise FactionNotFoundError
         setattr(namespace, self.dest, faction)
+
 
 class ColorAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):

@@ -317,12 +317,12 @@ STRINGS = {
         Yliluoma dithering: 100px by 100px
         Floyd Steinberg dithering: 100px by 100px
 
-        Bayer dithering: `[-b|--bayer] <threshold> <order>`
-        Yliluoma dithering: `[-y|--yliluoma] <order>`
-        Floyd Steinberg dithering: `[-f|-fs|--floyd-steinberg] <order>`
-
-        Threshold can be either: 2, 4, 8, 16, 32, 64, 128, 256 or 512
-        Order can be either: 2, 4, 8 or 16""",
+        `-d` or `--ditherType` - This argument determines the type of dithering that will happen, the default is bayer.
+            options: b, bayer, y, yliluoma, fs, floyd-steinberg
+        `-t` or `--threshold` - Change the threshold setting. (Note: only bayer dithering uses this option)
+            options: 2, 4, 8, 16, 32, 64, 128, 256, 512
+        `-o` or `--order` - Change the order setting.
+            options: 2, 4, 8, 16""",
     "help.faction.alias.set": "Faction aliases must be unique. Min 1 char, max 32 chars. Case insensitive.",
     "help.faction.color.set": "Color must be a valid hexidecimal number. Default 0xCF6EE4.",
     "help.faction.create": """
@@ -408,7 +408,7 @@ STRINGS = {
     "signature.diff.pixelcanvas": "<coordinates> (-e) (-s) (-z) (-c) (-cb)",
     "signature.diff.pixelzone": "<coordinates> (-e) (-s) (-z) (-c) (-cb)",
     "signature.diff.pxlsspace": "<coordinates> (-e) (-s) (-z) (-c) (-cb)",
-    "signature.dither": "[-b|-y|-fs] (threshold) <order>",
+    "signature.dither": "(subcommand) (-d|--ditherType) (-t|--threshold) (-o|--order)",
     "signature.ditherchart": "(subcommand)",
     "signature.faction": "(subcommand)",
     "signature.faction.alias": "(subcommand)",

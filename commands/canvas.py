@@ -296,87 +296,15 @@ class Canvas(commands.Cog):
     async def dither(self, ctx):
         await ctx.invoke_default("dither")
 
-    @dither.command(name="geo32", aliases=["geo"])
+    @dither.command(name="geo32")
     async def dither_geo32(self, ctx, *args):
-        url = None
-        iter_args = iter(args)
-        arg = next(iter_args, None)
-        if arg == "-b" or arg == "--bayer":
-            threshold = next(iter_args, 256)
-            try:
-                threshold = int(threshold)
-            except ValueError:
-                await ctx.send(ctx.s("canvas.dither_invalid_to"))
-                return
-            order = next(iter_args, 4)
-            try:
-                order = int(order)
-            except ValueError:
-                await ctx.send(ctx.s("canvas.dither_invalid_to"))
-                return
-            bayer_options = (threshold, order)
-            await _dither(ctx, url, colors.geo32, "bayer", bayer_options)
-            return
-        if arg == "-y" or arg == "--yliluoma":
-            order = next(iter_args, 8)
-            try:
-                order = int(order)
-            except ValueError:
-                await ctx.send(ctx.s("canvas.dither_invalid_to"))
-                return
-            await _dither(ctx, url, colors.geo32, "yliluoma", order)
-            return
-        if arg == "-f" or arg == "-fs" or arg == "--floyd-steinberg":
-            order = next(iter_args, 2)
-            try:
-                order = int(order)
-            except ValueError:
-                await ctx.send(ctx.s("canvas.err.dither_to"))
-                return
-            await _dither(ctx, url, colors.geo32, "floyd-steinberg", order)
-            return
-        await ctx.send(ctx.s("canvas.dither_invalid"))
+        dither_type, threshold, order = dither_argparse(ctx, args)
+        await _dither(ctx, colors.geo32, dither_type, threshold, order)
 
     @dither.command(name="pixelcanvas", aliases=["pc"])
     async def dither_pixelcanvas(self, ctx, *args):
-        url = None
-        iter_args = iter(args)
-        arg = next(iter_args, None)
-        if arg == "-b" or arg == "--bayer":
-            threshold = next(iter_args, 256)
-            try:
-                threshold = int(threshold)
-            except ValueError:
-                await ctx.send(ctx.s("canvas.dither_invalid_to"))
-                return
-            order = next(iter_args, 4)
-            try:
-                order = int(order)
-            except ValueError:
-                await ctx.send(ctx.s("canvas.dither_invalid_to"))
-                return
-            bayer_options = (threshold, order)
-            await _dither(ctx, url, colors.pixelcanvas, "bayer", bayer_options)
-            return
-        if arg == "-y" or arg == "--yliluoma":
-            order = next(iter_args, 8)
-            try:
-                order = int(order)
-            except ValueError:
-                await ctx.send(ctx.s("canvas.dither_invalid_to"))
-                return
-            await _dither(ctx, url, colors.pixelcanvas, "yliluoma", order)
-            return
-        if arg == "-f" or arg == "-fs" or arg == "--floyd-steinberg":
-            order = next(iter_args, 2)
-            try:
-                order = int(order)
-            except ValueError:
-                await ctx.send(ctx.s("canvas.dither_invalid_to"))
-                return
-            await _dither(ctx, url, colors.pixelcanvas, "floyd-steinberg", order)
-            return
-        await ctx.send(ctx.s("canvas.dither_invalid"))
+        dither_type, threshold, order = dither_argparse(ctx, args)
+        await _dither(ctx, colors.pixelcanvas, dither_type, threshold, order)
 
     # =======================
     #          CHECK
@@ -844,16 +772,56 @@ async def get_dither_image(url, ctx):
             return io.BytesIO(await resp.read())
 
 
-async def _dither(ctx, url, palette, type, options):
+def dither_argparse(ctx, args):
+    parser = GlimmerArgumentParser(ctx)
+    parser.add_argument(
+        "-d", "--ditherType",
+        choices=["b", "bayer", "y", "yliluoma", "fs", "floyd-steinberg"],
+        default="bayer")
+    parser.add_argument(
+        "-t", "--threshold", type=int,
+        choices=[2, 4, 8, 16, 32, 64, 128, 256, 512])
+    parser.add_argument(
+        "-o", "--order", type=int,
+        choices=[2, 4, 8, 16])
+    try:
+        a = vars(parser.parse_args(args))
+    except TypeError:
+        return
+
+    def default(value, default):
+        return value if value is not None else default
+
+    names = {
+        "b": "bayer",
+        "y": "yliluoma",
+        "fs": "floyd-steinberg"
+    }
+    default_thresholds = {
+        "bayer": 256,
+    }
+    default_orders = {
+        "bayer": 4,
+        "yliluoma": 8,
+        "floyd-steinberg": 2
+    }
+
+    dither_type = default(names.get(a["ditherType"], None), a["dither-type"])
+    threshold = default(a["threshold"], default_thresholds.get(dither_type))
+    order = order = default(a["order"], default_orders.get(dither_type))
+
+    return dither_type, threshold, order
+
+
+async def _dither(ctx, palette, type, threshold, order):
     """Sends a message containing a dithered version of the image given.
 
     Arguments:
     ctx - A commands.Context object.
-    url - The url of the image, string.
     palette - The palette to be used, a list of rgb tuples.
     type - The dithering algorithm to use, string.
-    options - The options to give to the dithering algorithm, a tuple containing integers.
-        Can be either (order) or (order, threshold) depending on the algorithm being used.
+    threshold - Option for the dithering algorithms
+    order - Option for the dithering algorithms
 
     Returns:
     The discord.Message object returned from ctx.send().
@@ -862,7 +830,7 @@ async def _dither(ctx, url, palette, type, options):
 
     with ctx.typing():
         # getting the attachment url
-        url = await select_url(ctx, url)
+        url = await select_url(ctx, None)
         if url is None:
             await ctx.send(ctx.s("error.no_attachment"))
             return
@@ -877,41 +845,18 @@ async def _dither(ctx, url, palette, type, options):
                     if type == "bayer":
                         if origImg.height > 1500 or origImg.width > 1500:
                             return await ctx.send(ctx.s("canvas.dither_toolarge").format("1500"))
-                        threshold = options[0]
-                        order = options[1]
-                        valid_thresholds = [2, 4, 8, 16, 32, 64, 128, 256, 512]
-                        valid_orders = [2, 4, 8, 16]
-                        if threshold in valid_thresholds and order in valid_orders:
-                            dithered_image = await render.bayer_dither(origImg, palette, threshold, order)
-                            option_string = ctx.s("canvas.dither_order_and_threshold_option").format(threshold, order)
-                        else:
-                            # threshold or order val provided is not valid
-                            await ctx.send(ctx.s("canvas.dither_invalid_to"))
-                            return
+                        dithered_image = await render.bayer_dither(origImg, palette, threshold, order)
+                        option_string = ctx.s("canvas.dither_order_and_threshold_option").format(threshold, order)
                     elif type == "yliluoma":
                         if origImg.height > 100 or origImg.width > 100:
                             return await ctx.send(ctx.s("canvas.dither_toolarge").format("100"))
-                        order = options
-                        valid_orders = [2, 4, 8, 16]
-                        if order in valid_orders:
-                            dithered_image = await render.yliluoma_dither(origImg, palette, order)
-                            option_string = ctx.s("canvas.dither_order_option").format(order)
-                        else:
-                            # order val provided is not valid
-                            await ctx.send(ctx.s("canvas.dither_invalid_to"))
-                            return
+                        dithered_image = await render.yliluoma_dither(origImg, palette, order)
+                        option_string = ctx.s("canvas.dither_order_option").format(order)
                     elif type == "floyd-steinberg":
                         if origImg.height > 100 or origImg.width > 100:
                             return await ctx.send(ctx.s("canvas.dither_toolarge").format("100"))
-                        order = options
-                        valid_orders = [2, 4, 8, 16]
-                        if order in valid_orders:
-                            dithered_image = await render.floyd_steinberg_dither(origImg, palette, order)
-                            option_string = ctx.s("canvas.dither_order_option").format(order)
-                        else:
-                            # order val provided is not valid
-                            await ctx.send(ctx.s("canvas.dither_invalid_to"))
-                            return
+                        dithered_image = await render.floyd_steinberg_dither(origImg, palette, order)
+                        option_string = ctx.s("canvas.dither_order_option").format(order)
 
                     with io.BytesIO() as bio:
                         dithered_image.save(bio, format="PNG")
