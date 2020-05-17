@@ -16,7 +16,6 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Features for other
 - [aiohttp](https://aiohttp.readthedocs.io/en/stable/) v3.5.4
 - [numpy](https://www.scipy.org/scipylib/download.html) v1.14.4
 - [websockets](https://pypi.org/project/websockets/) v4.0.1
-- [websocket-client](https://pypi.org/project/websocket_client/)
 - [hitherdither](https://www.github.com/hbldh/hitherdither)
 - [fuzzywuzzy](https://github.com/seatgeek/fuzzywuzzy) v0.18.0
 - [python-Levenshtein](https://github.com/ztane/python-Levenshtein/) v0.12.0

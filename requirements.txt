@@ -4,7 +4,6 @@ numpy
 pillow
 websockets
 git+https://www.github.com/hbldh/hitherdither
-websocket-client
 fuzzywuzzy
 python-Levenshtein
 psutil
