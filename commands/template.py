@@ -631,7 +631,7 @@ class Template(commands.Cog):
             await ctx.send("Template names cannot begin with hyphens.")
             return
         try:
-            _c = int(name)
+            _ = int(name)
             await ctx.send("Template names cannot be numbers.")
             return
         except ValueError:
@@ -644,9 +644,9 @@ class Template(commands.Cog):
             await ctx.send(ctx.s("template.err.no_image"))
             return
         try:
-            #cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
-            x = int(re.sub('[^0-9-]','', x))
-            y = int(re.sub('[^0-9-]','', y))
+            # cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
+            x = int(re.sub('[^0-9-]', '', x))
+            y = int(re.sub('[^0-9-]', '', y))
         except ValueError:
             await ctx.send(ctx.s("template.err.invalid_coords"))
             return
@@ -656,15 +656,45 @@ class Template(commands.Cog):
             await ctx.send(ctx.s("template.err.template_gen_error"))
             return
         log.info("(T:{} | X:{} | Y:{} | Dim:{})".format(t.name, t.x, t.y, t.size))
-        chk = await Template.check_for_duplicate_by_name(ctx, t)
-        if chk is not None:
-            if not chk or await Template.check_for_duplicates_by_md5(ctx, t) is False:
+        name_chk = await Template.check_for_duplicate_by_name(ctx, t)
+        md5_chk = await Template.check_for_duplicates_by_md5(ctx, t)
+
+        if md5_chk is not None:
+            dups = md5_chk
+            dup_msg = ["```xl"]
+            w = max(map(lambda tx: len(tx.name), dups)) + 2
+            for d in dups:
+                name = '"{}"'.format(d.name)
+                canvas_name = canvases.pretty_print[d.canvas]
+                dup_msg.append("{0:<{w}} {1:>15} {2}, {3}\n".format(name, canvas_name, d.x, d.y, w=w))
+            dup_msg.append("```")
+
+        if name_chk is not None:
+            d = name_chk
+            msg = [ctx.s("template.name_exists_ask_replace").format(
+                d.name, canvases.pretty_print[d.canvas], d.x, d.y)]
+
+            if name_chk is False:
                 return
+            elif md5_chk is not None:
+                msg.append(ctx.s("template.duplicate_list_open"))
+                msg = msg + dup_msg
+                msg.append(ctx.s("template.replace"))
+            else:
+                msg = ["{} {}".format(msg[0], ctx.s("template.replace"))]
+
+            if await utils.yes_no(ctx, "\n".join(msg)) is False:
+                return await ctx.send(ctx.s("template.menuclose"))
+
             sql.template_update(t)
             await ctx.send(ctx.s("template.updated").format(name))
             return
-        elif await Template.check_for_duplicates_by_md5(ctx, t) is False:
-            return
+
+        if md5_chk is not None:
+            dup_msg.insert(0, ctx.s("template.duplicate_list_open"))
+            dup_msg.append(ctx.s("template.duplicate_list_close"))
+            if await utils.yes_no(ctx, "\n".join(dup_msg)) is False:
+                return await ctx.send(ctx.s("template.menuclose"))
         sql.template_add(t)
         await ctx.send(ctx.s("template.added").format(name))
 
@@ -772,57 +802,38 @@ class Template(commands.Cog):
 
     @staticmethod
     async def check_for_duplicates_by_md5(ctx, template):
-        """Checks for duplicates using md5 hashing, will bypass this check if the user verifies that they want to.
+        """Checks for duplicates using md5 hashing, returns the list of duplicates if any exist.
 
         Arguments:
         ctx - commands.Context object.
         template - A template object.
 
         Returns:
-        A boolean or nothing.
+        A list or nothing.
         """
         dups = sql.template_get_by_hash(ctx.guild.id, template.md5)
-        if len(dups) > 0:
-            msg = [ctx.s("template.duplicate_list_open"),
-                   "```xl"]
-            w = max(map(lambda tx: len(tx.name), dups)) + 2
-            for d in dups:
-                name = '"{}"'.format(d.name)
-                canvas_name = canvases.pretty_print[d.canvas]
-                msg.append("{0:<{w}} {1:>15} {2}, {3}\n".format(name, canvas_name, d.x, d.y, w=w))
-            msg.append("```")
-            msg.append(ctx.s("template.duplicate_list_close"))
-            yesnomenu = await utils.yes_no(ctx, '\n'.join(msg))
-            if yesnomenu == True:
-                return True
-            else:
-                await ctx.send(ctx.s("template.menuclose"))
-                return False
+        return dups if len(dups) > 0 else None
+            
 
     @staticmethod
     async def check_for_duplicate_by_name(ctx, template):
-        """Checks for duplicates by name, will bypass and signal to overwrite if told to.
+        """Checks for duplicates by name, returns a that template if one exists and the user has
+        permission to overwrite, False if they do not. None is returned if no other templates share 
+        this name.
 
         Arguments:
         ctx - commands.Context.
         template - A template object.
 
         Returns:
-        A boolean or nothing.
+        A template object, False or None.
         """
         dup = sql.template_get_by_name(ctx.guild.id, template.name)
         if dup:
             if template.owner_id != ctx.author.id and not utils.is_admin(ctx):
                 await ctx.send(ctx.s("template.err.name_exists"))
                 return False
-            q = ctx.s("template.name_exists_ask_replace") \
-                .format(dup.name, canvases.pretty_print[dup.canvas], dup.x, dup.y)
-            yesnomenu = await utils.yes_no(ctx, q)
-            if yesnomenu == True:
-                return True
-            else:
-                await ctx.send(ctx.s("template.menuclose"))
-                return False
+            return dup
 
     @staticmethod
     async def select_url_update(ctx, input_url, out):
