@@ -184,6 +184,8 @@ async def on_command_error(ctx, error):
         await ctx.send(ctx.s("error.missing_argument"))
     elif isinstance(error, commands.NoPrivateMessage):
         await ctx.send(ctx.s("error.no_dm"))
+    elif isinstance(error, commands.MaxConcurrencyReached):
+        await ctx.send(ctx.s("error.max_concurrency").format(error.number))
 
     # Check errors
     elif isinstance(error, BadArgumentErrorWithMessage):

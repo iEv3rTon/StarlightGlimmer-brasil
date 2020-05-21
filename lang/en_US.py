@@ -43,6 +43,7 @@ STRINGS = {
     "error.invalid_color": "That is not a valid color.",
     "error.invalid_option": "That is not a valid option. Please try again.",
     "error.jpeg": "Seriously? A JPEG? Gross! Please create a PNG template instead.",
+    "error.max_concurrency": "That command has reached maximum concurrency, it will only run {0} times at once. Try again later.",
     "error.missing_arg_faction": "Missing argument: The `-f` flag must be followed by a faction name or alias.",
     "error.missing_argument": "You are missing a required argument. Please try again.",
     "error.no_attachment": "That command requires an attachment.",

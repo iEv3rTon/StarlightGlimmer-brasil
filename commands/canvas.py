@@ -288,7 +288,7 @@ class Canvas(commands.Cog):
     #         DITHER
     # =======================
 
-    @commands.cooldown(1, 30, BucketType.default)
+    @commands.max_concurrency(2, per=BucketType.default)
     @commands.group(
         name="dither",
         invoke_without_command=True,
