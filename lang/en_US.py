@@ -680,6 +680,16 @@ STRINGS = {
     "color.pxlssapce.20": "Blue",
     "color.pxlssapce.21": "Lavender",
     "color.pxlssapce.22": "Magenta",
-    "color.pxlssapce.23": "Purple"
+    "color.pxlssapce.23": "Purple",
+
+    # Quickstart tour text
+    "tour.intro": "",
+    "tour.exit": "Thank you for taking my tour, exiting.",
+    "tour.invalid": "Invalid, please type: `{0}`",
+    "tour.request": "Please send `{0}`",
+
+    "tour.command.0": "",
+
+    "tour.explain.0": ""
 
 }

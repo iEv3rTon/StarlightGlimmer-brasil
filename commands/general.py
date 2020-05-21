@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import inspect
 import logging
@@ -10,8 +11,9 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import BucketType, Command, HelpCommand, Group
 
+from lang import en_US, pt_BR, tr_TR
 import utils
-from utils import config, http
+from utils import config, http, sqlite as sql
 from utils.version import VERSION
 
 log = logging.getLogger(__name__)
@@ -76,17 +78,65 @@ class General(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.cooldown(1, 5, BucketType.guild)
-    @commands.command()
+    @commands.command(name="suggest")
     async def suggest(self, ctx, *, suggestion: str):
         log.info("Suggestion: {0}".format(suggestion))
         await utils.channel_log(self.bot, "New suggestion from **{0.name}#{0.discriminator}** (ID: `{0.id}`) in guild "
-                              "**{1.name}** (ID: `{1.id}`):".format(ctx.author, ctx.guild))
+                                "**{1.name}** (ID: `{1.id}`):".format(ctx.author, ctx.guild))
         await utils.channel_log(self.bot, "> `{}`".format(suggestion))
         await ctx.send(ctx.s("general.suggest"))
 
-    @commands.command()
+    @commands.command(name="version")
     async def version(self, ctx):
         await ctx.send(ctx.s("general.version").format(VERSION))
+
+    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.command(name="quickstart")
+    async def quickstart(self, ctx):
+        # Put lock on user
+
+        language = sql.guild_get_language_by_id(self.bot.guild.id).lower()
+        if language == "en-us":
+            tour_steps = [s for s in en_US.STRINGS if s.split(".")[:2] == ["tour", "command"]]
+        elif language == "pt-br":
+            tour_steps = [s for s in pt_BR.STRINGS if s.split(".")[:2] == ["tour", "command"]]
+        elif language == "tr-tr":
+            tour_steps = [s for s in tr_TR.STRINGS if s.split(".")[:2] == ["tour", "command"]]
+
+        await ctx.send(ctx.s("tour.intro"))
+
+        for i, _ in enumerate(tour_steps):
+            await ctx.send(ctx.s("tour.request").format(ctx.s(f"tour.command.{i}")))
+            msg = await quickstart_wait(self.bot, ctx, ctx.s(f"tour.command.{i}"))
+
+            if msg is not False:
+                # invoke the command, ensure that it finishes before sending explaination
+
+                await ctx.send(ctx.s(f"tour.explain.{i}"))
+            else:
+                await ctx.send(ctx.s("tour.exit"))
+                # Remove lock on user
+                return
+
+
+async def quickstart_wait(bot, ctx, next):
+    valid = ["exit", "cancel"]
+
+    def check(m):
+        return m.channel == ctx.channel and m.author == ctx.author
+
+    try:
+        while True:
+            msg = await bot.wait_for("message", check=check)
+            if msg.content == next:
+                return msg
+            elif msg.content in valid:
+                return False
+            await ctx.send(ctx.s("tour.invalid").format(next))
+    except asyncio.TimeoutError:
+        pass
+    return False
+
 
 class GlimmerHelpCommand(HelpCommand):
 
