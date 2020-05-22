@@ -5,7 +5,7 @@ import hitherdither
 
 from objects import Coords
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from utils import colors, http, config
+from utils import colors, http, config, yliluoma2
 
 log = logging.getLogger(__name__)
 
@@ -50,8 +50,8 @@ async def yliluoma_dither(origImg, canvas_palette, order):
 
     # convert from RGBA to RGB and dither
     origImg = origImg.convert('RGB')
-    palette = hitherdither.palette.Palette(canvas_palette)
-    dithered_image = hitherdither.ordered.yliluoma.yliluomas_1_ordered_dithering(origImg, palette, order)
+    yliluoma = yliluoma2.Yliluoma(order, canvas_palette, 4)
+    dithered_image = yliluoma.dither(origImg)
 
     # put transparency back in
     dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)

@@ -850,7 +850,7 @@ async def _dither(ctx, palette, type, threshold, order):
                         dithered_image = await render.bayer_dither(origImg, palette, threshold, order)
                         option_string = ctx.s("canvas.dither_order_and_threshold_option").format(threshold, order)
                     elif type == "yliluoma":
-                        too_large(origImg, 100)
+                        too_large(origImg, 200)
                         dithered_image = await render.yliluoma_dither(origImg, palette, order)
                         option_string = ctx.s("canvas.dither_order_option").format(order)
                     elif type == "floyd-steinberg":
