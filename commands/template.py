@@ -759,7 +759,7 @@ class Template(commands.Cog):
                         ctx.send(ctx.s("template.menuclose"))
                         return
 
-                    template, bad_pixels = await render.quantize(data, colors.by_name[canvas])
+                    template, bad_pixels = render.quantize(data, colors.by_name[canvas])
                     with io.BytesIO() as bio:
                         template.save(bio, format="PNG")
                         bio.seek(0)

@@ -299,12 +299,12 @@ class Canvas(commands.Cog):
     @dither.command(name="geo32")
     async def dither_geo32(self, ctx, *args):
         dither_type, threshold, order = dither_argparse(ctx, args)
-        await _dither(ctx, colors.geo32, dither_type, threshold, order)
+        await _dither(self.bot, ctx, colors.geo32, dither_type, threshold, order)
 
     @dither.command(name="pixelcanvas", aliases=["pc"])
     async def dither_pixelcanvas(self, ctx, *args):
         dither_type, threshold, order = dither_argparse(ctx, args)
-        await _dither(ctx, colors.pixelcanvas, dither_type, threshold, order)
+        await _dither(self.bot, ctx, colors.pixelcanvas, dither_type, threshold, order)
 
     # =======================
     #          CHECK
@@ -408,7 +408,7 @@ class Canvas(commands.Cog):
                 data = await http.get_template(t.url, t.name)
                 max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
                 zoom = max(1, min(zoom, max_zoom))
-                template = await render.gridify(data, color, zoom)
+                template = render.gridify(data, color, zoom)
             else:
                 raise TemplateNotFoundError(gid, name)
         else:
@@ -417,7 +417,7 @@ class Canvas(commands.Cog):
             await att.save(data)
             max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
             zoom = max(1, min(zoom, max_zoom))
-            template = await render.gridify(data, color, zoom)
+            template = render.gridify(data, color, zoom)
 
         with io.BytesIO() as bio:
             template.save(bio, format="PNG")
@@ -814,7 +814,7 @@ def dither_argparse(ctx, args):
     return dither_type, threshold, order
 
 
-async def _dither(ctx, palette, type, threshold, order):
+async def _dither(bot, ctx, palette, type, threshold, order):
     """Sends a message containing a dithered version of the image given.
 
     Arguments:
@@ -847,15 +847,15 @@ async def _dither(ctx, palette, type, threshold, order):
 
                     if type == "bayer":
                         too_large(origImg, 1500)
-                        dithered_image = await render.bayer_dither(origImg, palette, threshold, order)
+                        dithered_image = await bot.loop.run_in_executor(None, render.bayer_dither, origImg, palette, threshold, order)
                         option_string = ctx.s("canvas.dither_order_and_threshold_option").format(threshold, order)
                     elif type == "yliluoma":
                         too_large(origImg, 200)
-                        dithered_image = await render.yliluoma_dither(origImg, palette, order)
+                        dithered_image = await bot.loop.run_in_executor(None, render.yliluoma_dither, origImg, palette, order)
                         option_string = ctx.s("canvas.dither_order_option").format(order)
                     elif type == "floyd-steinberg":
-                        too_large(origImg, 100)
-                        dithered_image = await render.floyd_steinberg_dither(origImg, palette, order)
+                        too_large(origImg, 200)
+                        dithered_image = await bot.loop.run_in_executor(None, render.floyd_steinberg_dither, origImg, palette, order)
                         option_string = ctx.s("canvas.dither_order_option").format(order)
 
                     with io.BytesIO() as bio:
