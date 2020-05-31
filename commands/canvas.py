@@ -2,7 +2,7 @@ import aiohttp
 import datetime
 import discord
 from discord.ext import commands
-from discord.ext.commands import BucketType
+from discord.ext.commands import BucketType, BadArgument
 import io
 import itertools
 import logging
@@ -787,7 +787,7 @@ def dither_argparse(ctx, args):
     try:
         a = vars(parser.parse_args(args))
     except TypeError:
-        return
+        raise BadArgument
 
     def default(value, default):
         return value if value is not None else default
