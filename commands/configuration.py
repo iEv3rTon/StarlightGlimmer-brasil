@@ -45,7 +45,7 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @commands.command()
     async def prefix(self, ctx, *prefix):
-        if prefix != []:
+        if prefix:
             if len(prefix[0]) > 5:
                 raise commands.BadArgument
             sql.guild_update(ctx.guild.id, prefix=prefix)
