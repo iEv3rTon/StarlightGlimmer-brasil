@@ -1,3 +1,4 @@
+import asyncio
 import aiohttp
 import datetime
 import discord
@@ -148,15 +149,15 @@ class Canvas(commands.Cog):
 
     @diff.command(name="pixelcanvas", aliases=["pc"])
     async def diff_pixelcanvas(self, ctx, *args):
-        await _diff(self, ctx, args, "pixelcanvas", render.fetch_pixelcanvas, colors.pixelcanvas)
+        await self._diff(ctx, args, "pixelcanvas", render.fetch_pixelcanvas, colors.pixelcanvas)
 
     @diff.command(name="pixelzone", aliases=["pz"])
     async def diff_pixelzone(self, ctx, *args):
-        await _diff(self, ctx, args, "pixelzone", render.fetch_pixelzone, colors.pixelzone)
+        await self._diff(ctx, args, "pixelzone", render.fetch_pixelzone, colors.pixelzone)
 
     @diff.command(name="pxlsspace", aliases=["ps"])
     async def diff_pxlsspace(self, ctx, *args):
-        await _diff(self, ctx, args, "pxlsspace", render.fetch_pxlsspace, colors.pxlsspace)
+        await self._diff(ctx, args, "pxlsspace", render.fetch_pxlsspace, colors.pxlsspace)
 
     # =======================
     #        PREVIEW
@@ -315,7 +316,7 @@ class Canvas(commands.Cog):
         # Calc info + send temp msg
         for canvas, canvas_ts in itertools.groupby(templates, lambda tx: tx.canvas):
             ct = list(canvas_ts)
-            msg = await check_canvas(ctx, ct, canvas, msg=msg)
+            msg = await self.check_canvas(ctx, ct, canvas, msg=msg)
 
         # Delete temp msg and send final report
         await msg.delete()
@@ -468,124 +469,220 @@ class Canvas(commands.Cog):
             ct = await http.fetch_online_pxlsspace()
             await msg.edit(content=ctx.s("canvas.online").format(ct, "Pxls.space"))
 
+    async def check_canvas(self, ctx, templates, canvas, msg=None):
+        """Update the current total errors for a list of templates.
 
-async def _diff(self, ctx, args, canvas, fetch, palette):
-    """Sends a diff on the image provided.
+        Arguments:
+        ctx - commands.Context object.
+        templates - A list of template objects.
+        canvas - The canvas that the above templates are on, string.
+        msg - A discord.Message object, or nothing. This object is used to continually edit the same message.
 
-    Arguments:
-    ctx - commands.Context object.
-    args - A list of arguments from the user, all strings.
-    canvas - The name of the canvas to look at, string.
-    fetch - The fetch function to use, points to a fetch function from render.py.
-    palette - The palette in use on this canvas, a list of rgb tuples.
-    """
-    async with ctx.typing():
-        att = await verify_attachment(ctx)
+        Returns:
+        A discord.Message object.
+        """
+        chunk_classes = {
+            'pixelcanvas': BigChunk,
+            'pixelzone': ChunkPz,
+            'pxlsspace': PxlsBoard
+        }
 
-        # Order Parsing
-        try:
-            x, y = args[0], args[1]
-        except IndexError:
-            await ctx.send("Error: not enough arguments were provided.")
-            return
+        # Find all chunks that have templates on them
+        chunks = set()
+        for t in templates:
+            empty_bcs, _shape = chunk_classes[canvas].get_intersecting(t.x, t.y, t.width, t.height)
+            chunks.update(empty_bcs)
 
-        if re.match(r"-\D+", x) is not None:
-            x, y = args[-2], args[-1]
-            args = args[:-2]
+        if msg is not None:
+            await msg.edit(content=ctx.s("canvas.fetching_data").format(canvases.pretty_print[canvas]))
         else:
-            args = args[2:]
+            msg = await ctx.send(ctx.s("canvas.fetching_data").format(canvases.pretty_print[canvas]))
+        await http.fetch_chunks(chunks)
 
-        # X and Y Cleanup
-        try:
-            # cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
-            x = int(re.sub('[^0-9-]', '', x))
-            y = int(re.sub('[^0-9-]', '', y))
-        except ValueError:
-            await ctx.send(ctx.s("canvas.invalid_input"))
-            return
+        await msg.edit(content=ctx.s("canvas.calculating"))
+        func = partial(process_check, templates, chunks)
+        await self.bot.loop.run_in_executor(None, func)
 
-        # Argument Parsing
-        parser = GlimmerArgumentParser(ctx)
-        parser.add_argument("-e", "--errors", action='store_true')
-        parser.add_argument("-s", "--snapshot", action='store_true')
-        parser.add_argument("-c", "--highlightCorrect", action='store_true')
-        parser.add_argument("-cb", "--colorBlind", action='store_true')
-        parser.add_argument("-z", "--zoom", type=int, default=1)
-        parser.add_argument("-t", "--excludeTarget", action='store_true')
-        colorFilters = parser.add_mutually_exclusive_group()
-        colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
-        colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
-        try:
-            a = parser.parse_args(args)
-        except TypeError:
-            return
+        return msg
 
-        data = io.BytesIO()
-        await att.save(data)
-        max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
-        zoom = max(1, min(a.zoom, max_zoom))
-        temp = Image.open(data)
-        img = await fetch(x, y, temp.width, temp.height)
-        func = partial(
-            render.diff,
-            x,
-            y,
-            data,
-            zoom,
-            img,
-            palette,
-            create_snapshot=a.snapshot,
-            highlight_correct=a.highlightCorrect,
-            color_blind=a.colorBlind)
-        diff_img, tot, err, bad, err_list, bad_list \
-            = await self.bot.loop.run_in_executor(None, func)
+    async def _diff(self, ctx, args, canvas, fetch, palette):
+        """Sends a diff on the image provided.
 
-        done = tot - err
-        perc = done / tot
-        if perc < 0.00005 and done > 0:
-            perc = ">0.00%"
-        elif perc >= 0.99995 and err > 0:
-            perc = "<100.00%"
-        else:
-            perc = "{:.2f}%".format(perc * 100)
-        out = ctx.s("canvas.diff") if bad == 0 else ctx.s("canvas.diff_bad_color")
-        out = out.format(done, tot, err, perc, bad=bad)
+        Arguments:
+        ctx - commands.Context object.
+        args - A list of arguments from the user, all strings.
+        canvas - The name of the canvas to look at, string.
+        fetch - The fetch function to use, points to a fetch function from render.py.
+        palette - The palette in use on this canvas, a list of rgb tuples.
+        """
+        async with ctx.typing():
+            att = await verify_attachment(ctx)
 
-        if bad_list != []:
-            bad_out = [ctx.s("canvas.diff_bad_color_list").format(num, *color) for color, num in bad_list]
-            bad_out = "{0}{1}".format("\n".join(bad_out[:10]), "\n..." if len(bad_out) > 10 else "")
-            embed = discord.Embed()
-            embed.add_field(name=ctx.s("canvas.diff_bad_color_title"), value=bad_out)
-            embed.color = discord.Color.from_rgb(*bad_list[0][0])
-
-        with io.BytesIO() as bio:
-            diff_img.save(bio, format="PNG")
-            bio.seek(0)
-            f = discord.File(bio, "diff.png")
+            # Order Parsing
             try:
-                await ctx.send(content=out, file=f, embed=embed)
-            except UnboundLocalError:
-                await ctx.send(content=out, file=f)
+                x, y = args[0], args[1]
+            except IndexError:
+                await ctx.send("Error: not enough arguments were provided.")
+                return
 
-        if a.errors and len(err_list) > 0:
-            error_list = []
-            for _x, _y, current, target in err_list:
-                # Color Filtering
-                c = current if not a.excludeTarget else target
-                if a.excludeColors:
-                    if c in a.excludeColors:
-                        continue
-                elif a.onlyColors:
-                    if c not in a.onlyColors:
-                        continue
+            if re.match(r"-\D+", x) is not None:
+                x, y = args[-2], args[-1]
+                args = args[:-2]
+            else:
+                args = args[2:]
 
-                # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
-                _x += x
-                _y += y
-                error_list.append(Pixel(current, target, _x, _y))
+            # X and Y Cleanup
+            try:
+                # cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
+                x = int(re.sub('[^0-9-]', '', x))
+                y = int(re.sub('[^0-9-]', '', y))
+            except ValueError:
+                await ctx.send(ctx.s("canvas.invalid_input"))
+                return
 
-            checker = Checker(self.bot, ctx, canvas, error_list)
-            checker.connect_websocket()
+            # Argument Parsing
+            parser = GlimmerArgumentParser(ctx)
+            parser.add_argument("-e", "--errors", action='store_true')
+            parser.add_argument("-s", "--snapshot", action='store_true')
+            parser.add_argument("-c", "--highlightCorrect", action='store_true')
+            parser.add_argument("-cb", "--colorBlind", action='store_true')
+            parser.add_argument("-z", "--zoom", type=int, default=1)
+            parser.add_argument("-t", "--excludeTarget", action='store_true')
+            colorFilters = parser.add_mutually_exclusive_group()
+            colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
+            colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
+            try:
+                a = parser.parse_args(args)
+            except TypeError:
+                return
+
+            data = io.BytesIO()
+            await att.save(data)
+            max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
+            zoom = max(1, min(a.zoom, max_zoom))
+            temp = Image.open(data)
+            img = await fetch(x, y, temp.width, temp.height)
+            func = partial(
+                render.diff,
+                x,
+                y,
+                data,
+                zoom,
+                img,
+                palette,
+                create_snapshot=a.snapshot,
+                highlight_correct=a.highlightCorrect,
+                color_blind=a.colorBlind)
+            diff_img, tot, err, bad, err_list, bad_list \
+                = await self.bot.loop.run_in_executor(None, func)
+
+            done = tot - err
+            perc = done / tot
+            if perc < 0.00005 and done > 0:
+                perc = ">0.00%"
+            elif perc >= 0.99995 and err > 0:
+                perc = "<100.00%"
+            else:
+                perc = "{:.2f}%".format(perc * 100)
+            out = ctx.s("canvas.diff") if bad == 0 else ctx.s("canvas.diff_bad_color")
+            out = out.format(done, tot, err, perc, bad=bad)
+
+            if bad_list != []:
+                bad_out = [ctx.s("canvas.diff_bad_color_list").format(num, *color) for color, num in bad_list]
+                bad_out = "{0}{1}".format("\n".join(bad_out[:10]), "\n..." if len(bad_out) > 10 else "")
+                embed = discord.Embed()
+                embed.add_field(name=ctx.s("canvas.diff_bad_color_title"), value=bad_out)
+                embed.color = discord.Color.from_rgb(*bad_list[0][0])
+
+            with io.BytesIO() as bio:
+                diff_img.save(bio, format="PNG")
+                bio.seek(0)
+                f = discord.File(bio, "diff.png")
+                try:
+                    await ctx.send(content=out, file=f, embed=embed)
+                except UnboundLocalError:
+                    await ctx.send(content=out, file=f)
+
+            if a.errors and len(err_list) > 0:
+                error_list = []
+                for _x, _y, current, target in err_list:
+                    # Color Filtering
+                    c = current if not a.excludeTarget else target
+                    if a.excludeColors:
+                        if c in a.excludeColors:
+                            continue
+                    elif a.onlyColors:
+                        if c not in a.onlyColors:
+                            continue
+
+                    # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
+                    _x += x
+                    _y += y
+                    error_list.append(Pixel(current, target, _x, _y))
+
+                checker = Checker(self.bot, ctx, canvas, error_list)
+                checker.connect_websocket()
+
+    async def _dither(self, ctx, palette, type, threshold, order):
+        """Sends a message containing a dithered version of the image given.
+
+        Arguments:
+        ctx - A commands.Context object.
+        palette - The palette to be used, a list of rgb tuples.
+        type - The dithering algorithm to use, string.
+        threshold - Option for the dithering algorithms
+        order - Option for the dithering algorithms
+
+        Returns:
+        The discord.Message object returned from ctx.send().
+        """
+        start_time = datetime.datetime.now()
+
+        def too_large(img, limit):
+            if img.height > limit or img.width > limit:
+                raise TemplateTooLargeError(limit)
+
+        async with ctx.typing():
+            url = await select_url(ctx, None)
+            if url is None:
+                await ctx.send(ctx.s("error.no_attachment"))
+                return
+
+            try:
+                with await get_dither_image(url, ctx) as data:
+                    with Image.open(data).convert("RGBA") as origImg:
+                        dithered_image = None
+                        option_string = ""
+
+                        if type == "bayer":
+                            too_large(origImg, 1500)
+                            dithered_image = await self.bot.loop.run_in_executor(None, render.bayer_dither, origImg, palette, threshold, order)
+                            option_string = ctx.s("canvas.dither_order_and_threshold_option").format(threshold, order)
+                        elif type == "yliluoma":
+                            too_large(origImg, 200)
+                            dithered_image = await self.bot.loop.run_in_executor(None, render.yliluoma_dither, origImg, palette, order)
+                            option_string = ctx.s("canvas.dither_order_option").format(order)
+                        elif type == "floyd-steinberg":
+                            too_large(origImg, 200)
+                            dithered_image = await self.bot.loop.run_in_executor(None, render.floyd_steinberg_dither, origImg, palette, order)
+                            option_string = ctx.s("canvas.dither_order_option").format(order)
+
+                        with io.BytesIO() as bio:
+                            dithered_image.save(bio, format="PNG")
+                            bio.seek(0)
+                            f = discord.File(bio, "dithered.png")
+
+                            end_time = datetime.datetime.now()
+                            duration = (end_time - start_time).total_seconds()
+
+                            return await ctx.send(
+                                content=ctx.s("canvas.dither").format(duration, type, option_string),
+                                file=f)
+
+            except aiohttp.client_exceptions.InvalidURL:
+                raise UrlError
+            except IOError:
+                raise PilImageError
 
 
 async def _preview(ctx, args, fetch):
@@ -774,68 +871,6 @@ def dither_argparse(ctx, args):
     return dither_type, threshold, order
 
 
-async def _dither(bot, ctx, palette, type, threshold, order):
-    """Sends a message containing a dithered version of the image given.
-
-    Arguments:
-    ctx - A commands.Context object.
-    palette - The palette to be used, a list of rgb tuples.
-    type - The dithering algorithm to use, string.
-    threshold - Option for the dithering algorithms
-    order - Option for the dithering algorithms
-
-    Returns:
-    The discord.Message object returned from ctx.send().
-    """
-    start_time = datetime.datetime.now()
-
-    def too_large(img, limit):
-        if img.height > limit or img.width > limit:
-            raise TemplateTooLargeError(limit)
-
-    with ctx.typing():
-        url = await select_url(ctx, None)
-        if url is None:
-            await ctx.send(ctx.s("error.no_attachment"))
-            return
-
-        try:
-            with await get_dither_image(url, ctx) as data:
-                with Image.open(data).convert("RGBA") as origImg:
-                    dithered_image = None
-                    option_string = ""
-
-                    if type == "bayer":
-                        too_large(origImg, 1500)
-                        dithered_image = await bot.loop.run_in_executor(None, render.bayer_dither, origImg, palette, threshold, order)
-                        option_string = ctx.s("canvas.dither_order_and_threshold_option").format(threshold, order)
-                    elif type == "yliluoma":
-                        too_large(origImg, 200)
-                        dithered_image = await bot.loop.run_in_executor(None, render.yliluoma_dither, origImg, palette, order)
-                        option_string = ctx.s("canvas.dither_order_option").format(order)
-                    elif type == "floyd-steinberg":
-                        too_large(origImg, 200)
-                        dithered_image = await bot.loop.run_in_executor(None, render.floyd_steinberg_dither, origImg, palette, order)
-                        option_string = ctx.s("canvas.dither_order_option").format(order)
-
-                    with io.BytesIO() as bio:
-                        dithered_image.save(bio, format="PNG")
-                        bio.seek(0)
-                        f = discord.File(bio, "dithered.png")
-
-                        end_time = datetime.datetime.now()
-                        duration = (end_time - start_time).total_seconds()
-
-                        return await ctx.send(
-                            content=ctx.s("canvas.dither").format(duration, type, option_string),
-                            file=f)
-
-        except aiohttp.client_exceptions.InvalidURL:
-            raise UrlError
-        except IOError:
-            raise PilImageError
-
-
 async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
     """Builds and sends a template check embed on the set of templates provided.
 
@@ -880,37 +915,7 @@ async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
             await ctx.send(embed=embed)
 
 
-async def check_canvas(ctx, templates, canvas, msg=None):
-    """Update the current total errors for a list of templates.
-
-    Arguments:
-    ctx - commands.Context object.
-    templates - A list of template objects.
-    canvas - The canvas that the above templates are on, string.
-    msg - A discord.Message object, or nothing. This object is used to continually edit the same message.
-
-    Returns:
-    A discord.Message object.
-    """
-    chunk_classes = {
-        'pixelcanvas': BigChunk,
-        'pixelzone': ChunkPz,
-        'pxlsspace': PxlsBoard
-    }
-
-    # Find all chunks that have templates on them
-    chunks = set()
-    for t in templates:
-        empty_bcs, shape = chunk_classes[canvas].get_intersecting(t.x, t.y, t.width, t.height)
-        chunks.update(empty_bcs)
-
-    if msg is not None:
-        await msg.edit(content=ctx.s("canvas.fetching_data").format(canvases.pretty_print[canvas]))
-    else:
-        msg = await ctx.send(ctx.s("canvas.fetching_data").format(canvases.pretty_print[canvas]))
-    await http.fetch_chunks(chunks)
-
-    await msg.edit(content=ctx.s("canvas.calculating"))
+def process_check(templates, chunks):
     example_chunk = next(iter(chunks))
     for t in templates:
         empty_bcs, shape = example_chunk.get_intersecting(t.x, t.y, t.width, t.height)
@@ -922,11 +927,9 @@ async def check_canvas(ctx, templates, canvas, msg=None):
 
         x, y = t.x - empty_bcs[0].p_x, t.y - empty_bcs[0].p_y
         tmp = tmp.crop((x, y, x + t.width, y + t.height))
-        template = Image.open(await http.get_template(t.url, t.name)).convert('RGBA')
+        template = Image.open(http.get_template_blocking(t.url, t.name)).convert('RGBA')
         alpha = Image.new('RGBA', template.size, (255, 255, 255, 0))
         template = Image.composite(template, alpha, template)
         tmp = Image.composite(tmp, alpha, template)
         tmp = ImageChops.difference(tmp.convert('RGB'), template.convert('RGB'))
         t.errors = np.array(tmp).any(axis=-1).sum()
-
-    return msg

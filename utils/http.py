@@ -6,6 +6,7 @@ import logging
 from time import time
 
 import aiohttp
+import requests
 import websockets
 from typing import Iterable
 
@@ -249,6 +250,17 @@ async def get_template(url, name):
             if resp.content_type != "image/png":
                 raise NotPngError
             return io.BytesIO(await resp.read())
+
+
+def get_template_blocking(url, name):
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        raise TemplateHttpError(name)
+    if resp.headers["content-type"] == "image/jpg" or resp.headers["content-type"] == "image/jpeg":
+        raise NoJpegsError
+    if resp.headers["content-type"] != "image/png":
+        raise NotPngError
+    return io.BytesIO(resp.content)
 
 
 # https://stackoverflow.com/a/46255794
