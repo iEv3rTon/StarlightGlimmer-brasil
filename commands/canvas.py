@@ -70,21 +70,11 @@ class Canvas(commands.Cog):
         colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
         colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
         try:
-            a = vars(parser.parse_args(args))
+            a = parser.parse_args(args)
         except TypeError:
             return
 
-        list_pixels = a["errors"]
-        create_snapshot = a["snapshot"]
-        highlight_correct = a["highlightCorrect"]
-        color_blind = a["colorBlind"]
-        faction = a["faction"]
-        zoom = a["zoom"]
-        exclude_target = a["excludeTarget"]
-        exclude_colors = a["excludeColors"]
-        only_colors = a["onlyColors"]
-
-        gid = ctx.guild.id if not faction else faction.id
+        gid = ctx.guild.id if not a.faction else a.faction.id
         t = sql.template_get_by_name(gid, name)
 
         if t:
@@ -92,7 +82,7 @@ class Canvas(commands.Cog):
                 log.info("(T:{} | GID:{})".format(t.name, t.gid))
                 data = await http.get_template(t.url, t.name)
                 max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
-                zoom = max(1, min(zoom, max_zoom))
+                zoom = max(1, min(a.zoom, max_zoom))
 
                 fetch = self.bot.fetchers[t.canvas]
                 img = await fetch(t.x, t.y, t.width, t.height)
@@ -100,9 +90,9 @@ class Canvas(commands.Cog):
                     render.diff, t.x, t.y,
                     data, zoom, img,
                     colors.by_name[t.canvas],
-                    create_snapshot=create_snapshot,
-                    highlight_correct=highlight_correct,
-                    color_blind=color_blind)
+                    create_snapshot=a.snapshot,
+                    highlight_correct=a.highlightCorrect,
+                    color_blind=a.colorBlind)
                 diff_img, tot, err, bad, err_list, bad_list \
                     = await self.bot.loop.run_in_executor(None, func)
 
@@ -133,16 +123,16 @@ class Canvas(commands.Cog):
                     except UnboundLocalError:
                         await ctx.send(content=out, file=f)
 
-                if list_pixels and len(err_list) > 0:
+                if a.errors and len(err_list) > 0:
                     error_list = []
                     for x, y, current, target in err_list:
                         # Color Filtering
-                        c = current if not exclude_target else target
-                        if exclude_colors:
-                            if c in exclude_colors:
+                        c = current if not a.excludeTarget else target
+                        if a.excludeColors:
+                            if c in a.excludeColors:
                                 continue
-                        elif only_colors:
-                            if c not in only_colors:
+                        elif a.onlyColors:
+                            if c not in a.onlyColors:
                                 continue
 
                         # The current x,y are in terms of the template area, add template start coords so they're in terms of canvas
@@ -204,24 +194,20 @@ class Canvas(commands.Cog):
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         parser.add_argument("-z", "--zoom", type=int, default=1)
         try:
-            a = vars(parser.parse_args(args))
+            a = parser.parse_args(args)
         except TypeError:
             return
 
-        preview_template_region = a["templateRegion"]
-        faction = a["faction"]
-        zoom = a["zoom"]
-
-        gid = ctx.guild.id if not faction else faction.id
+        gid = ctx.guild.id if not a.faction else a.faction.id
         t = sql.template_get_by_name(gid, name)
 
         if t:
             async with ctx.typing():
                 log.info("(T:{} | GID:{})".format(t.name, t.gid))
                 max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
-                zoom = max(-8, min(zoom, max_zoom))
+                zoom = max(-8, min(a.zoom, max_zoom))
 
-                if preview_template_region:
+                if a.templateRegion:
                     preview_img = await render.preview(*t.center(), zoom, self.bot.fetchers[t.canvas])
                 else:
                     preview_img = await render.preview_template(t, zoom, self.bot.fetchers[t.canvas])
@@ -311,16 +297,12 @@ class Canvas(commands.Cog):
         parser.add_argument("-s", "--sort", default="name_az", choices=[
             "name_az", "name_za", "errors_az", "errors_za", "percent_az", "percent_za"])
         try:
-            a = vars(parser.parse_args(args))
+            a = parser.parse_args(args)
         except TypeError:
             return
 
-        only_errors = a["onlyErrors"]
-        faction = a["faction"]
-        sort = a["sort"]
-
-        if faction:
-            templates = sql.template_get_all_by_guild_id(faction.id)
+        if a.faction:
+            templates = sql.template_get_all_by_guild_id(a.faction.id)
         else:
             templates = sql.template_get_all_by_guild_id(ctx.guild.id)
 
@@ -338,14 +320,14 @@ class Canvas(commands.Cog):
         # Delete temp msg and send final report
         await msg.delete()
 
-        ts = [t for t in templates if t.errors != 0] if only_errors else templates
+        ts = [t for t in templates if t.errors != 0] if a.onlyErrors else templates
 
-        if sort == "name_az" or sort == "name_za":
-            ts = sorted(ts, key=lambda t: t.name, reverse=(sort == "name_za"))
-        elif sort == "errors_az" or sort == "errors_za":
-            ts = sorted(ts, key=lambda t: t.errors, reverse=(sort == "errors_za"))
-        elif sort == "percent_az" or sort == "percent_za":
-            ts = sorted(ts, key=lambda t: (t.size - t.errors) / t.size, reverse=(sort == "percent_za"))
+        if a.sort == "name_az" or a.sort == "name_za":
+            ts = sorted(ts, key=lambda t: t.name, reverse=(a.sort == "name_za"))
+        elif a.sort == "errors_az" or a.sort == "errors_za":
+            ts = sorted(ts, key=lambda t: t.errors, reverse=(a.sort == "errors_za"))
+        elif a.sort == "percent_az" or a.sort == "percent_za":
+            ts = sorted(ts, key=lambda t: (t.size - t.errors) / t.size, reverse=(a.sort == "percent_za"))
 
         ts = sorted(ts, key=lambda t: t.canvas)
 
@@ -380,15 +362,11 @@ class Canvas(commands.Cog):
             a = args
 
         try:
-            a = vars(parser.parse_args(a))
+            a = parser.parse_args(a)
         except TypeError:
             return
 
-        faction = a["faction"]
-        color = a["color"]
-        zoom = a["zoom"]
-
-        gid = ctx.guild.id if not faction else faction.id
+        gid = ctx.guild.id if not a.faction else a.faction.id
         t = sql.template_get_by_name(gid, name)
 
         if name:
@@ -396,8 +374,8 @@ class Canvas(commands.Cog):
                 log.info("(T:{} | GID:{})".format(t.name, t.gid))
                 data = await http.get_template(t.url, t.name)
                 max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
-                zoom = max(1, min(zoom, max_zoom))
-                template = render.gridify(data, color, zoom)
+                zoom = max(1, min(a.zoom, max_zoom))
+                template = render.gridify(data, a.color, zoom)
             else:
                 raise TemplateNotFoundError(gid, name)
         else:
@@ -405,8 +383,8 @@ class Canvas(commands.Cog):
             data = io.BytesIO()
             await att.save(data)
             max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
-            zoom = max(1, min(zoom, max_zoom))
-            template = render.gridify(data, color, zoom)
+            zoom = max(1, min(a.zoom, max_zoom))
+            template = render.gridify(data, a.color, zoom)
 
         with io.BytesIO() as bio:
             template.save(bio, format="PNG")
@@ -538,23 +516,14 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
         colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
         colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
         try:
-            a = vars(parser.parse_args(args))
+            a = parser.parse_args(args)
         except TypeError:
             return
-
-        list_pixels = a["errors"]
-        create_snapshot = a["snapshot"]
-        highlight_correct = a["highlightCorrect"]
-        color_blind = a["colorBlind"]
-        zoom = a["zoom"]
-        exclude_target = a["excludeTarget"]
-        exclude_colors = a["excludeColors"]
-        only_colors = a["onlyColors"]
 
         data = io.BytesIO()
         await att.save(data)
         max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
-        zoom = max(1, min(zoom, max_zoom))
+        zoom = max(1, min(a.zoom, max_zoom))
         temp = Image.open(data)
         img = await fetch(x, y, temp.width, temp.height)
         func = partial(
@@ -565,9 +534,9 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
             zoom,
             img,
             palette,
-            create_snapshot=create_snapshot,
-            highlight_correct=highlight_correct,
-            color_blind=color_blind)
+            create_snapshot=a.snapshot,
+            highlight_correct=a.highlightCorrect,
+            color_blind=a.colorBlind)
         diff_img, tot, err, bad, err_list, bad_list \
             = await self.bot.loop.run_in_executor(None, func)
 
@@ -598,16 +567,16 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
             except UnboundLocalError:
                 await ctx.send(content=out, file=f)
 
-        if list_pixels and len(err_list) > 0:
+        if a.errors and len(err_list) > 0:
             error_list = []
             for _x, _y, current, target in err_list:
                 # Color Filtering
-                c = current if not exclude_target else target
-                if exclude_colors:
-                    if c in exclude_colors:
+                c = current if not a.excludeTarget else target
+                if a.excludeColors:
+                    if c in a.excludeColors:
                         continue
-                elif only_colors:
-                    if c not in only_colors:
+                elif a.onlyColors:
+                    if c not in a.onlyColors:
                         continue
 
                 # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
@@ -654,12 +623,11 @@ async def _preview(ctx, args, fetch):
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-z", "--zoom", type=int, default=1)
         try:
-            a = vars(parser.parse_args(args))
+            a = parser.parse_args(args)
         except TypeError:
             return
 
-        zoom = a["zoom"]
-        zoom = max(min(zoom, 16), -8)
+        zoom = max(min(a.zoom, 16), -8)
 
         preview_img = await render.preview(x, y, zoom, fetch)
 
@@ -696,13 +664,11 @@ async def _quantize(ctx, args, canvas, palette):
         name = None
 
     try:
-        args = vars(parser.parse_args(args))
+        args = parser.parse_args(args)
     except TypeError:
         return
 
-    faction = args["faction"]
-
-    gid = ctx.guild.id if not faction else faction.id
+    gid = ctx.guild.id if not a.faction else a.faction.id
     t = sql.template_get_by_name(gid, name)
 
     data = None
@@ -779,7 +745,7 @@ def dither_argparse(ctx, args):
         "-o", "--order", type=int,
         choices=[2, 4, 8, 16])
     try:
-        a = vars(parser.parse_args(args))
+        a = parser.parse_args(args)
     except TypeError:
         raise BadArgument
 
@@ -800,10 +766,10 @@ def dither_argparse(ctx, args):
         "floyd-steinberg": 2
     }
 
-    dither_type = default(names.get(a["ditherType"], None), a["ditherType"])
+    dither_type = default(names.get(a.ditherType, None), a.ditherType)
     dither_type = dither_type if dither_type is not None else "bayer"  # Incase they select an invalid option for this
-    threshold = default(a["threshold"], default_thresholds.get(dither_type))
-    order = order = default(a["order"], default_orders.get(dither_type))
+    threshold = default(a.threshold, default_thresholds.get(dither_type))
+    order = order = default(a.order, default_orders.get(dither_type))
 
     return dither_type, threshold, order
 

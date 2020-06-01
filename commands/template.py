@@ -35,16 +35,13 @@ class Template(commands.Cog):
         parser.add_argument("-p", "--page", type=int, default=1)
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         try:
-            args = vars(parser.parse_args(args))
+            args = parser.parse_args(args)
         except TypeError:
             return
 
-        page = args["page"]
-        faction = args["faction"]
-
         gid = ctx.guild.id
-        if faction is not None:
-            gid = faction.id
+        if args.faction is not None:
+            gid = args.faction.id
 
         templates = sql.template_get_all_by_guild_id(gid)
         if len(templates) < 1:
@@ -53,7 +50,7 @@ class Template(commands.Cog):
         # Find number of pages given there are 25 templates per page.
         pages = int(math.ceil(len(templates) / 25))
         # Makes sure page is in the range (1 <= page <= pages).
-        page = min(max(page, 0), pages)
+        page = min(max(args.page, 0), pages)
         page_index = page - 1
 
         embed = Template.build_table(ctx, page_index, pages, templates)
@@ -201,24 +198,19 @@ class Template(commands.Cog):
         # if value after -i, capture
         parser.add_argument("-i", "--image", nargs="?", const=True, default=None)
         try:
-            args = vars(parser.parse_args(args))
+            args = parser.parse_args(args)
         except TypeError:
             return
-
-        new_name = args["newName"]
-        x = args["x"]
-        y = args["y"]
-        image = args["image"]
 
         out = []
 
         # Image is done first since I'm using the build_template method to update stuff,
         # and I don't want anything to have changed in orig_template before I use it
-        if image:
+        if args.image:
             # Update image
             url = None
-            if not isinstance(image, bool):
-                url = image
+            if not isinstance(args.image, bool):
+                url = args.image
             url = await Template.select_url_update(ctx, url, out)
             if url is None:
                 return  # Sending the end is handled in select_url_update if it fails
@@ -254,9 +246,9 @@ class Template(commands.Cog):
                 date_modified=int(time.time()))
             out.append("File updated.")
 
-        if x:
+        if args.x:
             try:
-                x = int(re.sub('[^0-9-]', '', x))
+                x = int(re.sub('[^0-9-]', '', args.x))
             except ValueError:
                 out.append("Updating x failed, value provided was not a number.")
                 return await Template.send_end(ctx, out)
@@ -264,9 +256,9 @@ class Template(commands.Cog):
             sql.template_kwarg_update(ctx.guild.id, orig_template.name, x=x, date_modified=int(time.time()))
             out.append(f"X coordinate changed from {orig_template.x} to {x}.")
 
-        if y:
+        if args.y:
             try:
-                y = int(re.sub('[^0-9-]', '', y))
+                y = int(re.sub('[^0-9-]', '', args.y))
             except ValueError:
                 out.append("Updating y failed, value provided was not a number.")
                 return await Template.send_end(ctx, out)
@@ -274,26 +266,26 @@ class Template(commands.Cog):
             sql.template_kwarg_update(ctx.guild.id, orig_template.name, y=y, date_modified=int(time.time()))
             out.append(f"Y coordinate changed from {orig_template.y} to {y}.")
 
-        if new_name:
-            dup_check = sql.template_get_by_name(ctx.guild.id, new_name)
+        if args.newName:
+            dup_check = sql.template_get_by_name(ctx.guild.id, args.newName)
             if dup_check is not None:
-                out.append(f"Updating name failed, the name {new_name} is already in use.")
+                out.append(f"Updating name failed, the name {args.newName} is already in use.")
                 return await Template.send_end(ctx, out)
-            if len(new_name) > config.MAX_TEMPLATE_NAME_LENGTH:
+            if len(args.newName) > config.MAX_TEMPLATE_NAME_LENGTH:
                 out.append("Updating name failed: {}".format(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH)))
                 return await Template.send_end(ctx, out)
-            if new_name[0] == "-":
+            if args.newName[0] == "-":
                 out.append("Updating name failed: Names cannot begin with hyphens.")
                 return await Template.send_end(ctx, out)
             try:
-                _ = int(new_name)
+                _ = int(args.newName)
                 out.append("Updating name failed: Names cannot be numbers.")
                 return await Template.send_end(ctx, out)
             except ValueError:
                 pass
 
-            sql.template_kwarg_update(ctx.guild.id, orig_template.name, new_name=new_name, date_modified=int(time.time()))
-            out.append(f"Nickname changed from {name} to {new_name}.")
+            sql.template_kwarg_update(ctx.guild.id, orig_template.name, new_name=args.newName, date_modified=int(time.time()))
+            out.append(f"Nickname changed from {name} to {args.newName}.")
 
         await Template.send_end(ctx, out)
 
@@ -319,25 +311,22 @@ class Template(commands.Cog):
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         parser.add_argument("-z", "--zoom", default=1)
         try:
-            args = vars(parser.parse_args(args))
+            args = parser.parse_args(args)
         except TypeError:
             return
 
-        image_only = args["raw"]
-        f = args["faction"]
         try:
-            gid, faction = f.id, f
+            gid, faction = args.faction.id, args.faction
         except AttributeError:
             gid, faction = ctx.guild.id, sql.guild_get_by_id(ctx.guild.id)
-        zoom = args["zoom"]
 
         t = sql.template_get_by_name(gid, name)
         if not t:
             raise TemplateNotFoundError(gid, name)
 
-        if image_only:
+        if args.raw:
             try:
-                zoom = int(zoom)
+                zoom = int(args.zoom)
             except ValueError:
                 zoom = 1
             max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
