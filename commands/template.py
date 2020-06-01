@@ -66,27 +66,25 @@ class Template(commands.Cog):
         _5_minutes_in_future = (datetime.datetime.today() + datetime.timedelta(minutes=5.0))
         try:
             while _5_minutes_in_future > datetime.datetime.today():
-                add_future = asyncio.ensure_future(self.bot.wait_for("reaction_add", timeout=300.0, check=is_valid))
-                remove_future = asyncio.ensure_future(self.bot.wait_for("reaction_remove", timeout=300.0, check=is_valid))
-                reaction, _user = None, None
-                while True:
-                    if remove_future.done() == True:
-                        reaction, _user = remove_future.result()
-                        break
-                    if add_future.done() == True:
-                        reaction, _user = add_future.result()
-                        break
-                    await asyncio.sleep(0.1)
+                pending_tasks = [self.bot.wait_for('reaction_add', timeout=300.0, check=is_valid),
+                                 self.bot.wait_for('reaction_remove', timeout=300.0, check=is_valid)]
+                done_tasks, pending_tasks = await asyncio.wait(pending_tasks, return_when=asyncio.FIRST_COMPLETED)
+
+                for task in pending_tasks:
+                    task.cancel()
+
+                for task in done_tasks:
+                    reaction, _user = task.result()
 
                 if reaction.emoji == '◀':
                     if page_index != 0:
-                        #not on first page, scroll left
+                        # not on first page, scroll left
                         page_index -= 1
                         embed = Template.build_table(ctx, page_index, pages, templates)
                         await message.edit(embed=embed)
                 elif reaction.emoji == '▶':
-                    if page_index != pages-1:
-                        #not on last page, scroll right
+                    if page_index != pages - 1:
+                        # not on last page, scroll right
                         page_index += 1
                         embed = Template.build_table(ctx, page_index, pages, templates)
                         await message.edit(embed=embed)
@@ -186,7 +184,7 @@ class Template(commands.Cog):
             await ctx.send("Template not updated as no arguments were provided.")
             return
 
-        if re.match("-\D+", name) != None:
+        if re.match(r"-\D+", name) is not None:
             name = args[-1]
             args = args[:-1]
         else:

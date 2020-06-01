@@ -59,7 +59,7 @@ class General(commands.Cog):
         bot_uptime = datetime.timedelta(seconds=time() - self.bot.start_time)
         disk = psutil.disk_usage('/')
         mem = psutil.virtual_memory()
-        func = partial(psutil.cpu_percent, interval=0.5, percpu=True)
+        func = partial(psutil.cpu_percent, interval=2, percpu=True)
         cpu = await self.bot.loop.run_in_executor(None, func)
 
         embed = discord.Embed(description="System statistics")
