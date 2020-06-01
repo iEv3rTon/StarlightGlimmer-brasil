@@ -24,6 +24,11 @@ class glimmer(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.start_time = time.time()
+        self.fetchers = {
+            'pixelcanvas': render.fetch_pixelcanvas,
+            'pixelzone': render.fetch_pixelzone,
+            'pxlsspace': render.fetch_pxlsspace
+        }
 
 log = logging.getLogger(__name__)
 bot = glimmer(

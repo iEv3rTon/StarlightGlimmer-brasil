@@ -427,12 +427,7 @@ class Template(commands.Cog):
         for i, (base, target) in enumerate(snapshots):
             await ctx.send(f"Checking {target.name} for errors...")
             data = await http.get_template(target.url, target.name)
-            fetchers = {
-                'pixelcanvas': render.fetch_pixelcanvas,
-                'pixelzone': render.fetch_pixelzone,
-                'pxlsspace': render.fetch_pxlsspace
-            }
-            fetch = fetchers[target.canvas]
+            fetch = self.bot.fetchers[target.canvas]
             img = await fetch(target.x, target.y, target.width, target.height)
             func = partial(render.diff, target.x, target.y, data, 1, img, colors.by_name[target.canvas])
             diff_img, tot, err, bad, _err, _bad = await self.bot.loop.run_in_executor(None, func)
@@ -473,12 +468,7 @@ class Template(commands.Cog):
 
             await ctx.send(f"Generating snapshot from {base.name}...")
             data = await http.get_template(base.url, base.name)
-            fetchers = {
-                'pixelcanvas': render.fetch_pixelcanvas,
-                'pixelzone': render.fetch_pixelzone,
-                'pxlsspace': render.fetch_pxlsspace
-            }
-            fetch = fetchers[base.canvas]
+            fetch = self.bot.fetchers[base.canvas]
             img = await fetch(base.x, base.y, base.width, base.height)
             func = partial(
                 render.diff, base.x, base.y, data, 1,
@@ -781,12 +771,12 @@ class Template(commands.Cog):
         A list or nothing.
         """
         dups = sql.template_get_by_hash(ctx.guild.id, template.md5)
-        return dups if len(dups) > 0 else None      
+        return dups if len(dups) > 0 else None
 
     @staticmethod
     async def check_for_duplicate_by_name(ctx, template):
         """Checks for duplicates by name, returns a that template if one exists and the user has
-        permission to overwrite, False if they do not. None is returned if no other templates share 
+        permission to overwrite, False if they do not. None is returned if no other templates share
         this name.
 
         Arguments:

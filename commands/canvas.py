@@ -94,13 +94,7 @@ class Canvas(commands.Cog):
                 max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
                 zoom = max(1, min(zoom, max_zoom))
 
-                fetchers = {
-                    'pixelcanvas': render.fetch_pixelcanvas,
-                    'pixelzone': render.fetch_pixelzone,
-                    'pxlsspace': render.fetch_pxlsspace
-                }
-
-                fetch = fetchers[t.canvas]
+                fetch = self.bot.fetchers[t.canvas]
                 img = await fetch(t.x, t.y, t.width, t.height)
                 func = partial(
                     render.diff, t.x, t.y,
@@ -227,16 +221,10 @@ class Canvas(commands.Cog):
                 max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
                 zoom = max(-8, min(zoom, max_zoom))
 
-                fetchers = {
-                    'pixelcanvas': render.fetch_pixelcanvas,
-                    'pixelzone': render.fetch_pixelzone,
-                    'pxlsspace': render.fetch_pxlsspace
-                }
-
                 if preview_template_region:
-                    preview_img = await render.preview(*t.center(), zoom, fetchers[t.canvas])
+                    preview_img = await render.preview(*t.center(), zoom, self.bot.fetchers[t.canvas])
                 else:
-                    preview_img = await render.preview_template(t, zoom, fetchers[t.canvas])
+                    preview_img = await render.preview_template(t, zoom, self.bot.fetchers[t.canvas])
 
                 with io.BytesIO() as bio:
                     preview_img.save(bio, format="PNG")
@@ -813,7 +801,7 @@ def dither_argparse(ctx, args):
     }
 
     dither_type = default(names.get(a["ditherType"], None), a["ditherType"])
-    dither_type = dither_type if dither_type is not None else "bayer" # Incase they select an invalid option for this
+    dither_type = dither_type if dither_type is not None else "bayer"  # Incase they select an invalid option for this
     threshold = default(a["threshold"], default_thresholds.get(dither_type))
     order = order = default(a["order"], default_orders.get(dither_type))
 
