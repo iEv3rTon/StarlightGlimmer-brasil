@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 class General(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        bot.help_command = GlimmerHelpCommand()
+        bot.help_command = GlimmerHelpCommand(command_attrs={"aliases": ["h"]})
         bot.help_command.cog = self
 
     @commands.command()
@@ -33,7 +33,7 @@ class General(commands.Cog):
         e = discord.Embed(title=data['name'], url=data['url'], color=13594340, description=data['body']) \
             .set_author(name=data['author']['login']) \
             .set_thumbnail(url=data['author']['avatar_url']) \
-            .set_footer(text="Released " + data['published_at'])
+            .set_footer(text="Released {}".format(data['published_at']))
         await ctx.send(embed=e)
 
     @commands.command()
@@ -48,9 +48,7 @@ class General(commands.Cog):
     async def ping(self, ctx):
         ping_start = time()
         ping_msg = await ctx.send(ctx.s("general.ping"))
-        ping_time = time() - ping_start
-        log.info("(Ping:{0}ms)".format(int(ping_time * 1000)))
-        await ping_msg.edit(content=ctx.s("general.pong").format(int(ping_time * 1000)))
+        await ping_msg.edit(content=ctx.s("general.pong").format(int(time() - ping_start * 1000)))
 
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.command(name="stats")
@@ -86,13 +84,14 @@ class General(commands.Cog):
     async def suggest(self, ctx, *, suggestion: str):
         log.info("Suggestion: {0}".format(suggestion))
         await utils.channel_log(self.bot, "New suggestion from **{0.name}#{0.discriminator}** (ID: `{0.id}`) in guild "
-                              "**{1.name}** (ID: `{1.id}`):".format(ctx.author, ctx.guild))
+                                          "**{1.name}** (ID: `{1.id}`):".format(ctx.author, ctx.guild))
         await utils.channel_log(self.bot, "> `{}`".format(suggestion))
         await ctx.send(ctx.s("general.suggest"))
 
     @commands.command()
     async def version(self, ctx):
         await ctx.send(ctx.s("general.version").format(VERSION))
+
 
 class GlimmerHelpCommand(HelpCommand):
 
