@@ -3,6 +3,7 @@ import inspect
 import logging
 from time import time
 import datetime
+from functools import partial
 from fuzzywuzzy import fuzz
 import psutil
 
@@ -58,6 +59,8 @@ class General(commands.Cog):
         bot_uptime = datetime.timedelta(seconds=time() - self.bot.start_time)
         disk = psutil.disk_usage('/')
         mem = psutil.virtual_memory()
+        func = partial(psutil.cpu_percent, interval=0.5, percpu=True)
+        cpu = await self.bot.loop.run_in_executor(None, func)
 
         embed = discord.Embed(description="System statistics")
         embed.add_field(
@@ -72,6 +75,9 @@ class General(commands.Cog):
         embed.add_field(
             name="Disk usage",
             value=f"{disk.used/disk.total*100:.0f}% - {disk.used/1000000:.0f}/{disk.total/1000000:.0f} MB")
+        embed.add_field(
+            name="CPU usage (per core)",
+            value=" - ".join([f"{core}%" for core in cpu]))
 
         await ctx.send(embed=embed)
 
