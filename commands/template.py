@@ -21,6 +21,7 @@ from utils import canvases, checks, colors, config, http, render, GlimmerArgumen
 
 log = logging.getLogger(__name__)
 
+
 class Template(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -42,7 +43,7 @@ class Template(commands.Cog):
         faction = args["faction"]
 
         gid = ctx.guild.id
-        if faction != None:
+        if faction is not None:
             gid = faction.id
 
         templates = sql.template_get_all_by_guild_id(gid)
@@ -76,18 +77,14 @@ class Template(commands.Cog):
                 for task in done_tasks:
                     reaction, _user = task.result()
 
-                if reaction.emoji == '◀':
-                    if page_index != 0:
-                        # not on first page, scroll left
-                        page_index -= 1
-                        embed = Template.build_table(ctx, page_index, pages, templates)
-                        await message.edit(embed=embed)
-                elif reaction.emoji == '▶':
-                    if page_index != pages - 1:
-                        # not on last page, scroll right
-                        page_index += 1
-                        embed = Template.build_table(ctx, page_index, pages, templates)
-                        await message.edit(embed=embed)
+                if reaction.emoji == '◀' and page_index != 0:
+                    page_index -= 1
+                    embed = Template.build_table(ctx, page_index, pages, templates)
+                    await message.edit(embed=embed)
+                elif reaction.emoji == '▶' and page_index != pages - 1:
+                    page_index += 1
+                    embed = Template.build_table(ctx, page_index, pages, templates)
+                    await message.edit(embed=embed)
         except asyncio.TimeoutError:
             pass
         await message.edit(content=ctx.s("bot.timeout"), embed=embed)
@@ -224,33 +221,28 @@ class Template(commands.Cog):
                 url = image
             url = await Template.select_url_update(ctx, url, out)
             if url is None:
-                return # Sending the end is handled in select_url_update if it fails
+                return  # Sending the end is handled in select_url_update if it fails
 
             try:
                 t = await Template.build_template(ctx, orig_template.name, orig_template.x, orig_template.y, url, "pixelcanvas")
             except TemplateHttpError:
-                out.append(f"Updating file failed: Could not access URL for template.")
-                await Template.send_end(ctx, out)
-                return
+                out.append("Updating file failed: Could not access URL for template.")
+                return await Template.send_end(ctx, out)
             except NoJpegsError:
-                out.append(f"Updating file failed: Seriously? A JPEG? Gross! Please create a PNG template instead.")
-                await Template.send_end(ctx, out)
-                return
+                out.append("Updating file failed: Seriously? A JPEG? Gross! Please create a PNG template instead.")
+                return await Template.send_end(ctx, out)
             except NotPngError:
-                out.append(f"Updating file failed: That command requires a PNG image.")
-                await Template.send_end(ctx, out)
-                return
+                out.append("Updating file failed: That command requires a PNG image.")
+                return await Template.send_end(ctx, out)
             except (PilImageError, UrlError):
-                out.append(f"Updating file failed.")
-                await Template.send_end(ctx, out)
-                return
+                out.append("Updating file failed.")
+                return await Template.send_end(ctx, out)
 
             if t is None:
-                out.append(f"Updating file failed.")
-                await Template.send_end(ctx, out)
-                return
+                out.append("Updating file failed.")
+                return await Template.send_end(ctx, out)
 
-            # Could check for md5 duplicates here, maybe implement that later
+            # TODO: Could check for md5 duplicates here
             sql.template_kwarg_update(
                 ctx.guild.id,
                 orig_template.name,
@@ -260,59 +252,46 @@ class Template(commands.Cog):
                 h=t.height,
                 size=t.size,
                 date_modified=int(time.time()))
-            out.append(f"File updated.")
+            out.append("File updated.")
 
         if x:
-            # Update x coord
             try:
-                x = int(re.sub('[^0-9-]','', x))
+                x = int(re.sub('[^0-9-]', '', x))
             except ValueError:
                 out.append("Updating x failed, value provided was not a number.")
-                await Template.send_end(ctx, out)
-                return
+                return await Template.send_end(ctx, out)
 
             sql.template_kwarg_update(ctx.guild.id, orig_template.name, x=x, date_modified=int(time.time()))
             out.append(f"X coordinate changed from {orig_template.x} to {x}.")
 
         if y:
-            # Update y coord
             try:
-                y = int(re.sub('[^0-9-]','', y))
+                y = int(re.sub('[^0-9-]', '', y))
             except ValueError:
                 out.append("Updating y failed, value provided was not a number.")
-                await Template.send_end(ctx, out)
-                return
+                return await Template.send_end(ctx, out)
 
             sql.template_kwarg_update(ctx.guild.id, orig_template.name, y=y, date_modified=int(time.time()))
             out.append(f"Y coordinate changed from {orig_template.y} to {y}.")
 
         if new_name:
-            # Check if new name is already in use
             dup_check = sql.template_get_by_name(ctx.guild.id, new_name)
-            if dup_check != None:
+            if dup_check is not None:
                 out.append(f"Updating name failed, the name {new_name} is already in use.")
-                await Template.send_end(ctx, out)
-                return
-            # Check if new name is too long
+                return await Template.send_end(ctx, out)
             if len(new_name) > config.MAX_TEMPLATE_NAME_LENGTH:
-                out.append("Updating name failed: "+ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
-                await Template.send_end(ctx, out)
-                return
-            # Check if new name begins with a '-'
+                out.append("Updating name failed: {}".format(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH)))
+                return await Template.send_end(ctx, out)
             if new_name[0] == "-":
                 out.append("Updating name failed: Names cannot begin with hyphens.")
-                await Template.send_end(ctx, out)
-                return
-            # Make sure the name isn't a number
+                return await Template.send_end(ctx, out)
             try:
-                c = int(new_name)
+                _ = int(new_name)
                 out.append("Updating name failed: Names cannot be numbers.")
-                await Template.send_end(ctx, out)
-                return
+                return await Template.send_end(ctx, out)
             except ValueError:
                 pass
 
-            # None with new nick, update template
             sql.template_kwarg_update(ctx.guild.id, orig_template.name, new_name=new_name, date_modified=int(time.time()))
             out.append(f"Nickname changed from {name} to {new_name}.")
 
@@ -326,10 +305,9 @@ class Template(commands.Cog):
         try:
             name = args[0]
         except IndexError:
-            await ctx.send("Error: not enough arguments were provided.")
-            return
+            return await ctx.send("Error: not enough arguments were provided.")
 
-        if re.match("-\D+", name) != None:
+        if re.match(r"-\D+", name) is not None:
             name = args[-1]
             args = args[:-1]
         else:
@@ -359,10 +337,7 @@ class Template(commands.Cog):
 
         if image_only:
             try:
-                if type(zoom) is not int:
-                    if zoom.startswith("#"):
-                        zoom = zoom[1:]
-                    zoom = int(zoom)
+                zoom = int(zoom)
             except ValueError:
                 zoom = 1
             max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
@@ -421,7 +396,7 @@ class Template(commands.Cog):
         t = sql.template_get_by_name(ctx.guild.id, name)
         if not t:
             raise TemplateNotFoundError(ctx.guild.id, name)
-        log.info("(T:{})".format(t.name, t.gid))
+        log.info("(T:{} G:{})".format(t.name, t.gid))
         if t.owner_id != ctx.author.id and not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             await ctx.send(ctx.s("template.err.not_owner"))
             return
@@ -434,13 +409,11 @@ class Template(commands.Cog):
     @template.group(name='snapshot', aliases=['s'], invoke_without_command=True, case_insensitive=True)
     async def template_snapshot(self, ctx, *filter):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
-            await ctx.send(ctx.s("template.err.not_owner"))
-            return
+            return await ctx.send(ctx.s("template.err.not_owner"))
 
         snapshots = sql.snapshots_get_all_by_guild(ctx.guild.id)
         if snapshots == []:
-            await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
-            return
+            return await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
 
         if filter != ():
             for i, snapshot in enumerate(snapshots):
@@ -490,7 +463,7 @@ class Template(commands.Cog):
                     f = discord.File(bio, "diff.png")
                     msg = await ctx.send(content=out, file=f)
                 query = await self.yes_no_cancel(ctx, "There are errors on the snapshot, do you want to update it? You will loose track of progress if you do this.")
-                if query == False:
+                if query is False:
                     not_updated.append([base, "err"])
                     continue
                 elif query == "cancel":
@@ -528,14 +501,15 @@ class Template(commands.Cog):
         if not_updated != []:
             out = []
             for t, reason in not_updated:
-                if reason == "err":
-                    out.append(f"The snapshot of {t.name} was not updated, as there were errors on the current snapshot.")
-                if reason == "bad":
-                    out.append(f"The snapshot of {t.name} was not updated, as there were unquantised pixels detected.")
-                if reason == "cancel":
-                    out.append(f"The snapshot of {t.name} was not updated, as the command was cancelled.")
-                if reason == "skip":
-                    out.append(f"The snapshot of {t.name} was not updated, as the template was skipped.")
+                reasons = {
+                    "err": f"The snapshot of {t.name} was not updated, as there were errors on the current snapshot.",
+                    "bad": f"The snapshot of {t.name} was not updated, as there were unquantised pixels detected.",
+                    "cancel": f"The snapshot of {t.name} was not updated, as the command was cancelled.",
+                    "skip": f"The snapshot of {t.name} was not updated, as the template was skipped."
+                }
+                text = reasons.get(reason)
+                if text:
+                    out.append(text)
 
             await ctx.send("```{}```".format("\n".join(out)))
 
@@ -551,12 +525,10 @@ class Template(commands.Cog):
         base = sql.template_get_by_name(ctx.guild.id, base_template)
         target = sql.template_get_by_name(ctx.guild.id, snapshot_template)
 
-        if base == None:
-            await ctx.send("The base template does not exist.")
-            return
-        if target == None:
-            await ctx.send("The snapshot template does not exist.")
-            return
+        if base is None:
+            return await ctx.send("The base template does not exist.")
+        if target is None:
+            return await ctx.send("The snapshot template does not exist.")
 
         sql.snapshot_add(ctx.guild.id, base_template, snapshot_template)
         await ctx.send("Snapshot added!")
@@ -567,13 +539,11 @@ class Template(commands.Cog):
     @template_snapshot.command(name='remove', aliases=['r'])
     async def template_snapshot_remove(self, ctx, base_template, snapshot_template):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
-            await ctx.send(ctx.s("template.err.not_owner"))
-            return
+            return await ctx.send(ctx.s("template.err.not_owner"))
 
         s = sql.snapshot_get_by_names(ctx.guild.id, base_template, snapshot_template)
         if s is None:
-            await ctx.send("That snapshot does not exist.")
-            return
+            return await ctx.send("That snapshot does not exist.")
 
         sql.snapshot_delete(ctx.guild.id, base_template, snapshot_template)
         await ctx.send("Snapshot removed!")
@@ -585,8 +555,7 @@ class Template(commands.Cog):
     async def template_snapshot_list(self, ctx):
         snapshots = sql.snapshots_get_all_by_guild(ctx.guild.id)
         if snapshots == []:
-            await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
-            return
+            return await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
 
         out = [f"Base Template Name:{base.name} Snapshot Template Name:{target.name}" for base, target in snapshots]
         await ctx.send("Snapshots:```{}```".format("\n".join(out)))
@@ -630,36 +599,29 @@ class Template(commands.Cog):
         url - The url of the template's image, string.
         """
         if len(name) > config.MAX_TEMPLATE_NAME_LENGTH:
-            await ctx.send(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
-            return
+            return await ctx.send(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
         if name[0] == "-":
-            await ctx.send("Template names cannot begin with hyphens.")
-            return
+            return await ctx.send("Template names cannot begin with hyphens.")
         try:
             _ = int(name)
-            await ctx.send("Template names cannot be numbers.")
-            return
+            return await ctx.send("Template names cannot be numbers.")
         except ValueError:
             pass
         if sql.template_count_by_guild_id(ctx.guild.id) >= config.MAX_TEMPLATES_PER_GUILD:
-            await ctx.send(ctx.s("template.err.max_templates"))
-            return
+            return await ctx.send(ctx.s("template.err.max_templates"))
         url = await Template.select_url(ctx, url)
         if url is None:
-            await ctx.send(ctx.s("template.err.no_image"))
-            return
+            return await ctx.send(ctx.s("template.err.no_image"))
         try:
-            # cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex. Then makes em ints
+            # Removes all spaces and chars that aren't 0-9 or the minus sign.
             x = int(re.sub('[^0-9-]', '', x))
             y = int(re.sub('[^0-9-]', '', y))
         except ValueError:
-            await ctx.send(ctx.s("template.err.invalid_coords"))
-            return
+            return await ctx.send(ctx.s("template.err.invalid_coords"))
 
         t = await Template.build_template(ctx, name, x, y, url, canvas)
         if not t:
-            await ctx.send(ctx.s("template.err.template_gen_error"))
-            return
+            return await ctx.send(ctx.s("template.err.template_gen_error"))
         log.info("(T:{} | X:{} | Y:{} | Dim:{})".format(t.name, t.x, t.y, t.size))
         name_chk = await Template.check_for_duplicate_by_name(ctx, t)
         md5_chk = await Template.check_for_duplicates_by_md5(ctx, t)
@@ -692,14 +654,14 @@ class Template(commands.Cog):
                 return await ctx.send(ctx.s("template.menuclose"))
 
             sql.template_update(t)
-            await ctx.send(ctx.s("template.updated").format(name))
-            return
+            return await ctx.send(ctx.s("template.updated").format(name))
 
         if md5_chk is not None:
             dup_msg.insert(0, ctx.s("template.duplicate_list_open"))
             dup_msg.append(ctx.s("template.duplicate_list_close"))
             if await utils.yes_no(ctx, "\n".join(dup_msg)) is False:
                 return await ctx.send(ctx.s("template.menuclose"))
+
         sql.template_add(t)
         await ctx.send(ctx.s("template.added").format(name))
 
@@ -719,21 +681,23 @@ class Template(commands.Cog):
         embed = discord.Embed(
             title=ctx.s("template.list_header"),
             description=f"Page {page_index+1} of {pages}")
-        embed.set_footer(text=f"Do {ctx.gprefix}t check <page_number> to see other pages, or scroll using the reactions below.")
+        embed.set_footer(
+            text=f"Do {ctx.gprefix}t check <page_number> to see other pages, or scroll using the reactions below.")
 
         # Go through pages until the page requested is equal to the current page.
-        for p in range(pages):
-            if p == page_index:
+        for page in range(pages):
+            if page == page_index:
                 # Try to pop 25 template objects from t into the embed.
                 for template in range(25):
-                    # Use calculation (page*25) to find the position to iterate from in list.
+                    # Use calculation ((page * 25) + offset) to find the position to iterate from in list.
                     try:
-                        row = t[(p*25)+template]
+                        row = t[(page * 25) + template]
                         embed.add_field(
                             name=row.name,
-                            value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})".format(row.x, row.y, row.url),
+                            value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})"
+                                  .format(row.x, row.y, row.url),
                             inline=False)
-                    except:
+                    except IndexError:
                         pass
         return embed
 
@@ -817,8 +781,7 @@ class Template(commands.Cog):
         A list or nothing.
         """
         dups = sql.template_get_by_hash(ctx.guild.id, template.md5)
-        return dups if len(dups) > 0 else None
-            
+        return dups if len(dups) > 0 else None      
 
     @staticmethod
     async def check_for_duplicate_by_name(ctx, template):
@@ -854,20 +817,20 @@ class Template(commands.Cog):
         """
         # some text was sent in the url section of the parameters, check if it's a valid discord url
         if input_url:
-            if re.search('^(?:https?://)cdn\.discordapp\.com/', input_url):
+            if re.search(r"^(?:https?://)cdn\.discordapp\.com/", input_url):
                 return input_url
 
             out.append("Updating image failed, invalid url, it must be a discord attachment.")
             await Template.send_end(ctx, out)
-            return None
+            return
 
-        # there was no url in the text of the message, is there an attachment
+        # there was no url in the text of the message, is there an attachment?
         if len(ctx.message.attachments) > 0:
             return ctx.message.attachments[0].url
 
         out.append("Updating image failed, no attachments could be detected.")
         await Template.send_end(ctx, out)
-        return None
+        return
 
     @staticmethod
     async def send_end(ctx, out):
@@ -888,7 +851,7 @@ class Template(commands.Cog):
         Nothing or a discord url, string.
         """
         if input_url:
-            if re.search('^(?:https?://)cdn\.discordapp\.com/', input_url):
+            if re.search(r"^(?:https?://)cdn\.discordapp\.com/", input_url):
                 return input_url
             raise UrlError
         if len(ctx.message.attachments) > 0:
