@@ -3,6 +3,7 @@ import datetime
 import discord
 from discord.ext import commands
 from discord.ext.commands import BucketType, BadArgument
+from functools import partial
 import io
 import itertools
 import logging
@@ -99,17 +100,17 @@ class Canvas(commands.Cog):
                     'pxlsspace': render.fetch_pxlsspace
                 }
 
+                fetch = fetchers[t.canvas]
+                img = await fetch(t.x, t.y, t.width, t.height)
+                func = partial(
+                    render.diff, t.x, t.y,
+                    data, zoom, img,
+                    colors.by_name[t.canvas],
+                    create_snapshot=create_snapshot,
+                    highlight_correct=highlight_correct,
+                    color_blind=color_blind)
                 diff_img, tot, err, bad, err_list, bad_list \
-                    = await render.diff(
-                        t.x,
-                        t.y,
-                        data,
-                        zoom,
-                        fetchers[t.canvas],
-                        colors.by_name[t.canvas],
-                        create_snapshot=create_snapshot,
-                        highlight_correct=highlight_correct,
-                        color_blind=color_blind)
+                    = await self.bot.loop.run_in_executor(None, func)
 
                 done = tot - err
                 perc = done / tot
@@ -566,16 +567,21 @@ async def _diff(self, ctx, args, canvas, fetch, palette):
         await att.save(data)
         max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
         zoom = max(1, min(zoom, max_zoom))
-        diff_img, tot, err, bad, err_list, bad_list = await render.diff(
+        temp = Image.open(data)
+        img = await fetch(x, y, temp.width, temp.height)
+        func = partial(
+            render.diff,
             x,
             y,
             data,
             zoom,
-            fetch,
+            img,
             palette,
             create_snapshot=create_snapshot,
             highlight_correct=highlight_correct,
             color_blind=color_blind)
+        diff_img, tot, err, bad, err_list, bad_list \
+            = await self.bot.loop.run_in_executor(None, func)
 
         done = tot - err
         perc = done / tot

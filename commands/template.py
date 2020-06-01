@@ -4,6 +4,7 @@ import datetime
 import discord
 from discord.ext import commands
 from discord.ext.commands import BucketType
+from functools import partial
 import hashlib
 import io
 import itertools
@@ -460,11 +461,13 @@ class Template(commands.Cog):
                 'pixelzone': render.fetch_pixelzone,
                 'pxlsspace': render.fetch_pxlsspace
             }
-            diff_img, tot, err, bad, _err, _bad \
-                = await render.diff(target.x, target.y, data, 1, fetchers[target.canvas], colors.by_name[target.canvas])
+            fetch = fetchers[target.canvas]
+            img = await fetch(target.x, target.y, target.width, target.height)
+            func = partial(render.diff, target.x, target.y, data, 1, img, colors.by_name[target.canvas])
+            diff_img, tot, err, bad, _err, _bad = await self.bot.loop.run_in_executor(None, func)
             if err == 0:
                 query = await self.yes_no_cancel(ctx, "There are no errors on the snapshot, do you want to update it?")
-                if query == False:
+                if query is False:
                     not_updated.append([base, "skip"])
                     continue
                 elif query == "cancel":
@@ -504,8 +507,12 @@ class Template(commands.Cog):
                 'pixelzone': render.fetch_pixelzone,
                 'pxlsspace': render.fetch_pxlsspace
             }
-            diff_img, tot, err, bad, _err, _bad \
-                = await render.diff(base.x, base.y, data, 1, fetchers[base.canvas], colors.by_name[base.canvas], create_snapshot=True)
+            fetch = fetchers[base.canvas]
+            img = await fetch(base.x, base.y, base.width, base.height)
+            func = partial(
+                render.diff, base.x, base.y, data, 1,
+                img, colors.by_name[base.canvas], create_snapshot=True)
+            diff_img, tot, err, bad, _err, _bad = await self.bot.loop.run_in_executor(None, func)
 
             if bad == 0:
                 with io.BytesIO() as bio:

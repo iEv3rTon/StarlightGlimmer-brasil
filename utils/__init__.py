@@ -151,7 +151,7 @@ class GlimmerArgumentParser(argparse.ArgumentParser):
 class FactionAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         faction = sql.guild_get_by_faction_name_or_alias(values)
-        if faction == None:
+        if faction is None:
             raise FactionNotFoundError
         setattr(namespace, self.dest, faction)
 

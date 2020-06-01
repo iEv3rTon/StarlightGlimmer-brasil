@@ -243,7 +243,7 @@ async def on_command_error(ctx, error):
         name = ctx.command.qualified_name if ctx.command else "None"
         await utils.channel_log(bot,
             "An error occurred executing `{0}` in server **{1.name}** (ID: `{1.id}`):".format(name, ctx.guild))
-        await utils.channel_log(bot, "```{}```".format(error))
+        await utils.channel_log(bot, "```{}\n{}```".format(error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
         log.error("An error occurred executing '{}': {}\n{}"
                   .format(name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
         await ctx.send(ctx.s("error.unknown"))

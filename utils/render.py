@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageOps
@@ -64,8 +65,12 @@ def floyd_steinberg_dither(origImg, canvas_palette, order):
 
     return dithered_image
 
+"""
+diff_img = await fetch(x, y, template.width, template.height)
+"""
 
-async def diff(x, y, data, zoom, fetch, palette, **kwargs):
+
+def diff(x, y, data, zoom, diff_img, palette, **kwargs):
     """Calculates and renders a diff image.
 
     Arguments:
@@ -73,10 +78,10 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
     y - The y coord, integer.
     data - The image, a bytestream.
     zoom - The factor to zoom by, integer.
-    fetch - A fetching function.
+    diff_img - A PIL Image object of the area of canvas needed.
     palette - The palette to use, a list of rgb tuples.
     Kwargs:
-    create_snapshot - If a "finished template" should be made, where the only non-transparent pixels are those that are correct on canvas right now, boolean.
+    create_snapshot - If a "finished template" should be made, where the only non-transparent pixels are those that are correct on canvas right now, bool
     highlight_correct - If correct pixels should be highlighted in green, bool
     color_blind - If the renders should be color blind friendly, bool
 
@@ -102,7 +107,6 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
 
     with template:
         log.info("(X:{0} | Y:{1} | Dim:{2}x{3} | Z:{4})".format(x, y, template.width, template.height, zoom))
-        diff_img = await fetch(x, y, template.width, template.height)
 
         black = Image.new('1', template.size, 0)
         white = Image.new('1', template.size, 1)
