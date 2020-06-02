@@ -5,6 +5,7 @@ import time
 
 import discord
 from discord import TextChannel
+from discord.ext import menus
 
 from commands import *
 from objects.bot_objects import GlimContext
@@ -191,6 +192,10 @@ async def on_command_error(ctx, error):
         await ctx.send(ctx.s("error.no_dm"))
     elif isinstance(error, commands.MaxConcurrencyReached):
         await ctx.send(ctx.s("error.max_concurrency").format(error.number))
+
+    # Menu errors
+    if isinstance(error, menus.CannotAddReactions):
+        await ctx.send(error)
 
     # Check errors
     elif isinstance(error, BadArgumentErrorWithMessage):

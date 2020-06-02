@@ -3,6 +3,7 @@ STRINGS = {
     "bot.added_by": "Added By",
     "bot.alias": "Alias",
     "bot.aliases": "Aliases",
+    "bot.cancel": "Cancel",
     "bot.canvas": "Canvas",
     "bot.canvases": "Canvases",
     "bot.coordinates": "Coordinates",
