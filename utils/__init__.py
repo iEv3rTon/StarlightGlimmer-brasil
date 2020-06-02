@@ -141,13 +141,15 @@ class YesNoMenu(menus.Menu):
 
     @menus.button('✅')
     async def do_yes(self, payload):
-        self.result = True
-        self.stop()
+        if payload.user_id == self.ctx.author.id:
+            self.result = True
+            self.stop()
 
     @menus.button('❌')
     async def do_no(self, payload):
-        self.result = False
-        self.stop()
+        if payload.user_id == self.ctx.author.id:
+            self.result = False
+            self.stop()
 
     async def prompt(self, ctx):
         await self.start(ctx, wait=True)
@@ -157,7 +159,8 @@ class YesNoMenu(menus.Menu):
 class YesNoCancelMenu(YesNoMenu):
     @menus.button('🆘')
     async def do_cancel(self, payload):
-        self.stop()
+        if payload.user_id == self.ctx.author.id:
+            self.stop()
 
 
 async def yes_no(ctx, question, cancel=False):
