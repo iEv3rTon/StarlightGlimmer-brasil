@@ -1,18 +1,19 @@
 import asyncio
-import aiohttp
 import datetime
-import discord
-from discord.ext import commands
-from discord.ext.commands import BucketType
 from functools import partial
 import hashlib
 import io
 import itertools
 import logging
 import math
-from PIL import Image
 import re
 import time
+
+import aiohttp
+import discord
+from discord.ext import commands, menus
+from discord.ext.commands import BucketType
+from PIL import Image
 
 from objects import DbTemplate
 from objects.errors import NoTemplatesError, PilImageError, TemplateNotFoundError, UrlError, TemplateHttpError, NoJpegsError, NotPngError
@@ -20,6 +21,32 @@ import utils
 from utils import canvases, checks, colors, config, http, render, GlimmerArgumentParser, FactionAction, sqlite as sql
 
 log = logging.getLogger(__name__)
+
+
+class TemplateSource(menus.ListPageSource):
+    def __init__(self, data):
+        super().__init__(data, per_page=25)
+
+    async def format_page(self, menu, entries):
+        embed = discord.Embed(
+            title=menu.ctx.s("template.list_header"),
+            description=f"Page {menu.current_page + 1} of {self.get_max_pages()}")
+        embed.set_footer(
+            text="Scroll using the reactions below to see other pages.")
+
+        offset = menu.current_page * self.per_page
+        for i, template in enumerate(entries, start=offset):
+            if i == offset + self.per_page:
+                break
+            try:
+                embed.add_field(
+                    name=template.name,
+                    value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})"
+                          .format(template.x, template.y, template.url),
+                    inline=False)
+            except IndexError:
+                pass
+        return embed
 
 
 class Template(commands.Cog):
@@ -47,44 +74,12 @@ class Template(commands.Cog):
         if len(templates) < 1:
             raise NoTemplatesError()
 
-        # Find number of pages given there are 25 templates per page.
-        pages = int(math.ceil(len(templates) / 25))
-        # Makes sure page is in the range (1 <= page <= pages).
-        page = min(max(args.page, 0), pages)
-        page_index = page - 1
-
-        embed = Template.build_table(ctx, page_index, pages, templates)
-        message = await ctx.send(embed=embed)
-        await message.add_reaction('◀')
-        await message.add_reaction('▶')
-
-        def is_valid(reaction, user):
-            return reaction.message.id == message.id and (reaction.emoji == '◀' or reaction.emoji == '▶') and user.id != self.bot.user.id
-
-        _5_minutes_in_future = (datetime.datetime.today() + datetime.timedelta(minutes=5.0))
-        try:
-            while _5_minutes_in_future > datetime.datetime.today():
-                pending_tasks = [self.bot.wait_for('reaction_add', timeout=300.0, check=is_valid),
-                                 self.bot.wait_for('reaction_remove', timeout=300.0, check=is_valid)]
-                done_tasks, pending_tasks = await asyncio.wait(pending_tasks, return_when=asyncio.FIRST_COMPLETED)
-
-                for task in pending_tasks:
-                    task.cancel()
-
-                for task in done_tasks:
-                    reaction, _user = task.result()
-
-                if reaction.emoji == '◀' and page_index != 0:
-                    page_index -= 1
-                    embed = Template.build_table(ctx, page_index, pages, templates)
-                    await message.edit(embed=embed)
-                elif reaction.emoji == '▶' and page_index != pages - 1:
-                    page_index += 1
-                    embed = Template.build_table(ctx, page_index, pages, templates)
-                    await message.edit(embed=embed)
-        except asyncio.TimeoutError:
-            pass
-        await message.edit(content=ctx.s("bot.timeout"), embed=embed)
+        template_menu = menus.MenuPages(
+            source=TemplateSource(templates),
+            clear_reactions_after=True,
+            timeout=300.0)
+        template_menu.current_page = max(min(args.page - 1, template_menu.source.get_max_pages()), 0)
+        await template_menu.start(ctx)
 
     @commands.guild_only()
     @commands.cooldown(2, 5, BucketType.guild)
@@ -643,42 +638,6 @@ class Template(commands.Cog):
 
         sql.template_add(t)
         await ctx.send(ctx.s("template.added").format(name))
-
-    @staticmethod
-    def build_table(ctx, page_index, pages, t):
-        """Builds a template embed page.
-
-        Arguments:
-        ctx - commands.Context object.
-        page_index - The index of the page you wish to fetch an embed for, counts from 0, integer.
-        pages - The total number of pages there are for the set of templates you are building an embed for, integer.
-        t - A list of template objects.
-
-        Returns:
-        A fully formatted discord.Embed object.
-        """
-        embed = discord.Embed(
-            title=ctx.s("template.list_header"),
-            description=f"Page {page_index+1} of {pages}")
-        embed.set_footer(
-            text=f"Do {ctx.gprefix}t check <page_number> to see other pages, or scroll using the reactions below.")
-
-        # Go through pages until the page requested is equal to the current page.
-        for page in range(pages):
-            if page == page_index:
-                # Try to pop 25 template objects from t into the embed.
-                for template in range(25):
-                    # Use calculation ((page * 25) + offset) to find the position to iterate from in list.
-                    try:
-                        row = t[(page * 25) + template]
-                        embed.add_field(
-                            name=row.name,
-                            value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})"
-                                  .format(row.x, row.y, row.url),
-                            inline=False)
-                    except IndexError:
-                        pass
-        return embed
 
     @staticmethod
     async def build_template(ctx, name, x, y, url, canvas):

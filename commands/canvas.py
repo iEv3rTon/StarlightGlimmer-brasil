@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 import datetime
 import discord
-from discord.ext import commands
+from discord.ext import commands, menus
 from discord.ext.commands import BucketType, BadArgument
 from functools import partial
 import io
@@ -297,6 +297,7 @@ class Canvas(commands.Cog):
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
         parser.add_argument("-s", "--sort", default="name_az", choices=[
             "name_az", "name_za", "errors_az", "errors_za", "percent_az", "percent_za"])
+        parser.add_argument("-p", "--page", default=1, type=int)
         try:
             a = parser.parse_args(args)
         except TypeError:
@@ -332,9 +333,12 @@ class Canvas(commands.Cog):
 
         ts = sorted(ts, key=lambda t: t.canvas)
 
-        # Find number of pages given there are 25 templates per page.
-        pages = int(math.ceil(len(ts) / 25))
-        await build_template_report(ctx, ts, None, pages)
+        check_menu = menus.MenuPages(
+            source=CheckSource(ts),
+            clear_reactions_after=True,
+            timeout=300.0)
+        check_menu.current_page = max(min(a.page - 1, check_menu.source.get_max_pages()), 0)
+        await check_menu.start(ctx)
 
     # =======================
     #         GRIDIFY
@@ -685,6 +689,38 @@ class Canvas(commands.Cog):
                 raise PilImageError
 
 
+class CheckSource(menus.ListPageSource):
+    def __init__(self, data):
+        super().__init__(data, per_page=25)
+
+    async def format_page(self, menu, entries):
+        embed = discord.Embed(
+            title=menu.ctx.s("canvas.template_report_header"),
+            description=f"Page {menu.current_page + 1} of {self.get_max_pages()}")
+        embed.set_footer(
+            text="Scroll using the reactions below to see other pages.")
+
+        offset = menu.current_page * self.per_page
+        for i, template in enumerate(entries, start=offset):
+            if i == offset + self.per_page:
+                break
+            try:
+                embed.add_field(
+                    name=template.name,
+                    value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
+                        e=menu.ctx.s("bot.errors"),
+                        e_val=template.errors,
+                        t_val=template.size,
+                        p=menu.ctx.s("bot.percent"),
+                        p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
+                        x=template.x,
+                        y=template.y),
+                    inline=False)
+            except IndexError:
+                pass
+        return embed
+
+
 async def _preview(ctx, args, fetch):
     """Sends a preview of the image provided.
 
@@ -869,50 +905,6 @@ def dither_argparse(ctx, args):
     order = order = default(a.order, default_orders.get(dither_type))
 
     return dither_type, threshold, order
-
-
-async def build_template_report(ctx, templates: List[DbTemplate], page, pages):
-    """Builds and sends a template check embed on the set of templates provided.
-
-    Arguments:
-    ctx - commands.Context object.
-    templates - A list of template objects.
-    page - An integer specifying the page that the user is on, or nothing.
-    pages - The total number of pages for the current set of templates, integer.
-    """
-    def create_embed(templates, page, pages):
-        embed = discord.Embed(
-            title=ctx.s("canvas.template_report_header"),
-            description=f"Page {page} of {pages}")
-
-        for template in templates:
-            embed.add_field(
-                name=template.name,
-                value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
-                    e=ctx.s("bot.errors"),
-                    e_val=template.errors,
-                    t_val=template.size,
-                    p=ctx.s("bot.percent"),
-                    p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
-                    x=template.x,
-                    y=template.y),
-                inline=False)
-
-        return embed
-
-    if page is not None:  # Sending one page
-        embed = create_embed(templates, page, pages)
-        embed.set_footer(text=f"Do {ctx.gprefix}t check <page_number> to see other pages")
-        await ctx.send(embed=embed)
-    else:  # Sending *all* pages
-        for page in range(pages):
-            page += 1
-            # Slice so templates only contains the page we want
-            start = (page - 1) * 25
-            end = page * 25
-            templates_copy = templates[start:end]
-            embed = create_embed(templates_copy, page, pages)
-            await ctx.send(embed=embed)
 
 
 def process_check(templates, chunks):
