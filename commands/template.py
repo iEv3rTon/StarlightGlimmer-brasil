@@ -38,14 +38,11 @@ class TemplateSource(menus.ListPageSource):
         for i, template in enumerate(entries, start=offset):
             if i == offset + self.per_page:
                 break
-            try:
-                embed.add_field(
-                    name=template.name,
-                    value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})"
-                          .format(template.x, template.y, template.url),
-                    inline=False)
-            except IndexError:
-                pass
+            embed.add_field(
+                name=template.name,
+                value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})"
+                        .format(template.x, template.y, template.url),
+                inline=False)
         return embed
 
 

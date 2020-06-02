@@ -704,20 +704,17 @@ class CheckSource(menus.ListPageSource):
         for i, template in enumerate(entries, start=offset):
             if i == offset + self.per_page:
                 break
-            try:
-                embed.add_field(
-                    name=template.name,
-                    value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
-                        e=menu.ctx.s("bot.errors"),
-                        e_val=template.errors,
-                        t_val=template.size,
-                        p=menu.ctx.s("bot.percent"),
-                        p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
-                        x=template.x,
-                        y=template.y),
-                    inline=False)
-            except IndexError:
-                pass
+            embed.add_field(
+                name=template.name,
+                value="[{e}: {e_val}/{t_val} | {p}: {p_val}](https://pixelcanvas.io/@{x},{y})".format(
+                    e=menu.ctx.s("bot.errors"),
+                    e_val=template.errors,
+                    t_val=template.size,
+                    p=menu.ctx.s("bot.percent"),
+                    p_val="{:>6.2f}%".format(100 * (template.size - template.errors) / template.size),
+                    x=template.x,
+                    y=template.y),
+                inline=False)
         return embed
 
 
