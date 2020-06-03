@@ -1,20 +1,18 @@
-import asyncio
-import aiohttp
 import datetime
-import discord
-from discord.ext import commands, menus
-from discord.ext.commands import BucketType, BadArgument
 from functools import partial
 import io
 import itertools
 import logging
 import math
+import re
+
+import aiohttp
+import discord
+from discord.ext import commands, menus
+from discord.ext.commands import BucketType, BadArgument
 import numpy as np
 from PIL import Image, ImageChops
-import re
-from typing import List
 
-from objects import DbTemplate
 from objects.bot_objects import GlimContext
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
 from objects.errors import IdempotentActionError, NoTemplatesError, TemplateNotFoundError, TemplateHttpError, UrlError, PilImageError, TemplateTooLargeError
