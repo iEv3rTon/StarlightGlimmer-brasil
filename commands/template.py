@@ -40,8 +40,8 @@ class TemplateSource(menus.ListPageSource):
                 break
             embed.add_field(
                 name=template.name,
-                value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})"
-                        .format(template.x, template.y, template.url),
+                value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})".format(
+                    template.x, template.y, template.url),
                 inline=False)
         return embed
 

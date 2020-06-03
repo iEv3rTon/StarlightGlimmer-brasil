@@ -58,106 +58,19 @@ class Canvas(commands.Cog):
             await ctx.invoke_default("diff")
             return
 
-        # Argument Parsing
-        parser = GlimmerArgumentParser(ctx)
-        parser.add_argument("-e", "--errors", action='store_true')
-        parser.add_argument("-s", "--snapshot", action='store_true')
-        parser.add_argument("-c", "--highlightCorrect", action='store_true')
-        parser.add_argument("-cb", "--colorBlind", action='store_true')
-        parser.add_argument("-f", "--faction", default=None, action=FactionAction)
-        parser.add_argument("-z", "--zoom", type=int, default=1)
-        parser.add_argument("-t", "--excludeTarget", action='store_true')
-        colorFilters = parser.add_mutually_exclusive_group()
-        colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
-        colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
-        try:
-            a = parser.parse_args(args)
-        except TypeError:
-            return
-
-        gid = ctx.guild.id if not a.faction else a.faction.id
-        t = sql.template_get_by_name(gid, name)
-
-        if t:
-            async with ctx.typing():
-                log.info("(T:{} | GID:{})".format(t.name, t.gid))
-                data = await http.get_template(t.url, t.name)
-                max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
-                zoom = max(1, min(a.zoom, max_zoom))
-
-                fetch = self.bot.fetchers[t.canvas]
-                img = await fetch(t.x, t.y, t.width, t.height)
-                func = partial(
-                    render.diff, t.x, t.y,
-                    data, zoom, img,
-                    colors.by_name[t.canvas],
-                    create_snapshot=a.snapshot,
-                    highlight_correct=a.highlightCorrect,
-                    color_blind=a.colorBlind)
-                diff_img, tot, err, bad, err_list, bad_list \
-                    = await self.bot.loop.run_in_executor(None, func)
-
-                done = tot - err
-                perc = done / tot
-                if perc < 0.00005 and done > 0:
-                    perc = ">0.00%"
-                elif perc >= 0.99995 and err > 0:
-                    perc = "<100.00%"
-                else:
-                    perc = "{:.2f}%".format(perc * 100)
-                out = ctx.s("canvas.diff") if bad == 0 else ctx.s("canvas.diff_bad_color")
-                out = out.format(done, tot, err, perc, bad=bad)
-
-                if bad_list != []:
-                    bad_out = [ctx.s("canvas.diff_bad_color_list").format(num, *color) for color, num in bad_list]
-                    bad_out = "{0}{1}".format("\n".join(bad_out[:10]), "\n..." if len(bad_out) > 10 else "")
-                    embed = discord.Embed()
-                    embed.add_field(name=ctx.s("canvas.diff_bad_color_title"), value=bad_out)
-                    embed.color = discord.Color.from_rgb(*bad_list[0][0])
-
-                with io.BytesIO() as bio:
-                    diff_img.save(bio, format="PNG")
-                    bio.seek(0)
-                    f = discord.File(bio, "diff.png")
-                    try:
-                        await ctx.send(content=out, file=f, embed=embed)
-                    except UnboundLocalError:
-                        await ctx.send(content=out, file=f)
-
-                if a.errors and len(err_list) > 0:
-                    error_list = []
-                    for x, y, current, target in err_list:
-                        # Color Filtering
-                        c = current if not a.excludeTarget else target
-                        if a.excludeColors:
-                            if c in a.excludeColors:
-                                continue
-                        elif a.onlyColors:
-                            if c not in a.onlyColors:
-                                continue
-
-                        # The current x,y are in terms of the template area, add template start coords so they're in terms of canvas
-                        x += t.x
-                        y += t.y
-                        error_list.append(Pixel(current, target, x, y))
-
-                    checker = Checker(self.bot, ctx, t.canvas, error_list)
-                    checker.connect_websocket()
-        else:
-            # No template found
-            raise TemplateNotFoundError(gid, name)
+        await self._pre_diff(ctx, args, name=name)
 
     @diff.command(name="pixelcanvas", aliases=["pc"])
     async def diff_pixelcanvas(self, ctx, *args):
-        await self._diff(ctx, args, "pixelcanvas", render.fetch_pixelcanvas, colors.pixelcanvas)
+        await self._pre_diff(ctx, args, canvas="pixelcanvas", fetch=render.fetch_pixelcanvas, palette=colors.pixelcanvas)
 
     @diff.command(name="pixelzone", aliases=["pz"])
     async def diff_pixelzone(self, ctx, *args):
-        await self._diff(ctx, args, "pixelzone", render.fetch_pixelzone, colors.pixelzone)
+        await self._pre_diff(ctx, args, canvas="pixelzone", fetch=render.fetch_pixelzone, palette=colors.pixelzone)
 
     @diff.command(name="pxlsspace", aliases=["ps"])
     async def diff_pxlsspace(self, ctx, *args):
-        await self._diff(ctx, args, "pxlsspace", render.fetch_pxlsspace, colors.pxlsspace)
+        await self._pre_diff(ctx, args, canvas="pxlsspace", fetch=render.fetch_pxlsspace, palette=colors.pxlsspace)
 
     # =======================
     #        PREVIEW
@@ -509,17 +422,8 @@ class Canvas(commands.Cog):
 
         return msg
 
-    async def _diff(self, ctx, args, canvas, fetch, palette):
-        """Sends a diff on the image provided.
-
-        Arguments:
-        ctx - commands.Context object.
-        args - A list of arguments from the user, all strings.
-        canvas - The name of the canvas to look at, string.
-        fetch - The fetch function to use, points to a fetch function from render.py.
-        palette - The palette in use on this canvas, a list of rgb tuples.
-        """
-        async with ctx.typing():
+    async def _pre_diff(self, ctx, args, name=None, canvas=None, fetch=None, palette=None):
+        if not name:
             att = await verify_attachment(ctx)
 
             # Order Parsing
@@ -544,39 +448,69 @@ class Canvas(commands.Cog):
                 await ctx.send(ctx.s("canvas.invalid_input"))
                 return
 
-            # Argument Parsing
-            parser = GlimmerArgumentParser(ctx)
-            parser.add_argument("-e", "--errors", action='store_true')
-            parser.add_argument("-s", "--snapshot", action='store_true')
-            parser.add_argument("-c", "--highlightCorrect", action='store_true')
-            parser.add_argument("-cb", "--colorBlind", action='store_true')
-            parser.add_argument("-z", "--zoom", type=int, default=1)
-            parser.add_argument("-t", "--excludeTarget", action='store_true')
-            colorFilters = parser.add_mutually_exclusive_group()
-            colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
-            colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
-            try:
-                a = parser.parse_args(args)
-            except TypeError:
-                return
+        # Argument Parsing
+        parser = GlimmerArgumentParser(ctx)
+        parser.add_argument("-e", "--errors", action='store_true')
+        parser.add_argument("-s", "--snapshot", action='store_true')
+        parser.add_argument("-c", "--highlightCorrect", action='store_true')
+        parser.add_argument("-cb", "--colorBlind", action='store_true')
+        parser.add_argument("-z", "--zoom", type=int, default=1)
+        parser.add_argument("-t", "--excludeTarget", action='store_true')
+        colorFilters = parser.add_mutually_exclusive_group()
+        colorFilters.add_argument("-ec", "--excludeColors", nargs="+", type=int, default=None)
+        colorFilters.add_argument("-oc", "--onlyColors", nargs="+", type=int, default=None)
 
+        if name:
+            parser.add_argument("-f", "--faction", default=None, action=FactionAction)
+
+        try:
+            args = parser.parse_args(args)
+        except TypeError:
+            return
+
+        if name:
+            gid = ctx.guild.id if not args.faction else args.faction.id
+            t = sql.template_get_by_name(gid, name)
+            if t:
+                data = await http.get_template(t.url, t.name)
+                await self._diff(
+                    ctx, args, t.x, t.y, t.width, t.height,
+                    t.canvas, self.bot.fetchers[t.canvas],
+                    colors.by_name[t.canvas], data)
+            else:
+                raise TemplateNotFoundError(gid, name)
+        else:
             data = io.BytesIO()
             await att.save(data)
-            max_zoom = int(math.sqrt(4000000 // (att.width * att.height)))
-            zoom = max(1, min(a.zoom, max_zoom))
-            temp = Image.open(data)
-            img = await fetch(x, y, temp.width, temp.height)
+            await self._diff(
+                ctx, args, x, y, att.width, att.height,
+                canvas, fetch, palette, data)
+
+    async def _diff(self, ctx, args, x, y, w, h, canvas, fetch, palette, data):
+        """Sends a diff.
+
+        Arguments:
+        ctx - commands.Context object.
+        args - A namespace object from argparse.
+        x - X coord.
+        y - Y coord.
+        w - Width.
+        h - Height.
+        canvas - The name of the canvas to look at, string.
+        fetch - The fetch function to use, points to a fetch function from render.py.
+        palette - The palette in use on this canvas, a list of rgb tuples.
+        data - An io.BytesIO object containing the image to diff.
+        """
+        async with ctx.typing():
+            max_zoom = int(math.sqrt(4000000 // (w * h)))
+            zoom = max(1, min(args.zoom, max_zoom))
+            img = await fetch(x, y, w, h)
             func = partial(
-                render.diff,
-                x,
-                y,
-                data,
-                zoom,
-                img,
-                palette,
-                create_snapshot=a.snapshot,
-                highlight_correct=a.highlightCorrect,
-                color_blind=a.colorBlind)
+                render.diff, x, y,
+                data, zoom, img, palette,
+                create_snapshot=args.snapshot,
+                highlight_correct=args.highlightCorrect,
+                color_blind=args.colorBlind)
             diff_img, tot, err, bad, err_list, bad_list \
                 = await self.bot.loop.run_in_executor(None, func)
 
@@ -594,9 +528,8 @@ class Canvas(commands.Cog):
             if bad_list != []:
                 bad_out = [ctx.s("canvas.diff_bad_color_list").format(num, *color) for color, num in bad_list]
                 bad_out = "{0}{1}".format("\n".join(bad_out[:10]), "\n..." if len(bad_out) > 10 else "")
-                embed = discord.Embed()
+                embed = discord.Embed(color=discord.Color.from_rgb(*bad_list[0][0]))
                 embed.add_field(name=ctx.s("canvas.diff_bad_color_title"), value=bad_out)
-                embed.color = discord.Color.from_rgb(*bad_list[0][0])
 
             with io.BytesIO() as bio:
                 diff_img.save(bio, format="PNG")
@@ -607,16 +540,16 @@ class Canvas(commands.Cog):
                 except UnboundLocalError:
                     await ctx.send(content=out, file=f)
 
-            if a.errors and len(err_list) > 0:
+            if args.errors and len(err_list) > 0:
                 error_list = []
                 for _x, _y, current, target in err_list:
                     # Color Filtering
-                    c = current if not a.excludeTarget else target
-                    if a.excludeColors:
-                        if c in a.excludeColors:
+                    c = current if not args.excludeTarget else target
+                    if args.excludeColors:
+                        if c in args.excludeColors:
                             continue
-                    elif a.onlyColors:
-                        if c not in a.onlyColors:
+                    elif args.onlyColors:
+                        if c not in args.onlyColors:
                             continue
 
                     # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
