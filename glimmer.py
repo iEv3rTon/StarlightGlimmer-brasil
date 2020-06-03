@@ -31,6 +31,7 @@ class glimmer(commands.Bot):
             'pxlsspace': render.fetch_pxlsspace
         }
 
+
 log = logging.getLogger(__name__)
 bot = glimmer(
     command_prefix=get_prefix,
@@ -106,7 +107,7 @@ async def on_ready():
         else:
             j = g.me.joined_at
             if config.CHANNEL_LOG_GUILD_JOINS:
-                await utils.channel_log(bot, "Joined guild **{0.name}** (ID: `{0.id}`)".format(g, j.isoformat(' ')))
+                await utils.channel_log(bot, "Joined guild **{0.name}** (ID: `{0.id}`)".format(g))
             log.info("Joined guild '{0.name}' (ID: {0.id}) between sessions at {1}".format(g, j.timestamp()))
             sql.guild_add(g.id, g.name, int(j.timestamp()))
             await print_welcome_message(g)
@@ -251,11 +252,14 @@ async def on_command_error(ctx, error):
     # Uncaught error
     else:
         name = ctx.command.qualified_name if ctx.command else "None"
-        await utils.channel_log(bot,
-            "An error occurred executing `{0}` in server **{1.name}** (ID: `{1.id}`):".format(name, ctx.guild))
-        await utils.channel_log(bot, "```{}\n{}```".format(error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
-        log.error("An error occurred executing '{}': {}\n{}"
-                  .format(name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
+        await utils.channel_log(
+            bot, "An error occurred executing `{0}` in server **{1.name}** (ID: `{1.id}`):".format(name, ctx.guild))
+        tb_text = "{}\n{}".format(error, ''.join(traceback.format_exception(None, error, error.__traceback__)))
+        tb_text = [tb_text[i:i + 1500] for i in range(0, len(tb_text), 1500)]
+        for chunk in tb_text:
+            await utils.channel_log(bot, f"```{chunk}```")
+        log.error("An error occurred executing '{}': {}\n{}".format(
+            name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
         await ctx.send(ctx.s("error.unknown"))
 
 @bot.event
