@@ -100,51 +100,19 @@ class Canvas(commands.Cog):
             await ctx.invoke_default("preview")
             return
 
-        # Argument Parsing
-        parser = GlimmerArgumentParser(ctx)
-        parser.add_argument("-t", "--templateRegion", action='store_true')
-        parser.add_argument("-f", "--faction", default=None, action=FactionAction)
-        parser.add_argument("-z", "--zoom", type=int, default=1)
-        try:
-            a = parser.parse_args(args)
-        except TypeError:
-            return
-
-        gid = ctx.guild.id if not a.faction else a.faction.id
-        t = sql.template_get_by_name(gid, name)
-
-        if t:
-            async with ctx.typing():
-                log.info("(T:{} | GID:{})".format(t.name, t.gid))
-                max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
-                zoom = max(-8, min(a.zoom, max_zoom))
-
-                if a.templateRegion:
-                    preview_img = await render.preview(*t.center(), zoom, self.bot.fetchers[t.canvas])
-                else:
-                    preview_img = await render.preview_template(t, zoom, self.bot.fetchers[t.canvas])
-
-                with io.BytesIO() as bio:
-                    preview_img.save(bio, format="PNG")
-                    bio.seek(0)
-                    f = discord.File(bio, "preview.png")
-                    await ctx.send(file=f)
-                return
-
-        # No template found
-        raise TemplateNotFoundError(gid, name)
+        await self._preview(ctx, args, name=name)
 
     @preview.command(name="pixelcanvas", aliases=["pc"])
     async def preview_pixelcanvas(self, ctx, *args):
-        await _preview(ctx, args, render.fetch_pixelcanvas)
+        await self._preview(ctx, args, fetch=render.fetch_pixelcanvas)
 
     @preview.command(name="pixelzone", aliases=["pz"])
     async def preview_pixelzone(self, ctx, *args):
-        await _preview(ctx, args, render.fetch_pixelzone)
+        await self._preview(ctx, args, fetch=render.fetch_pixelzone)
 
     @preview.command(name="pxlsspace", aliases=["ps"])
     async def preview_pxlsspace(self, ctx, *args):
-        await _preview(ctx, args, render.fetch_pxlsspace)
+        await self._preview(ctx, args, fetch=render.fetch_pxlsspace)
 
     # =======================
     #        QUANTIZE
@@ -619,6 +587,79 @@ class Canvas(commands.Cog):
             except IOError:
                 raise PilImageError
 
+    async def _preview(self, ctx, args, name=None, fetch=None):
+        """Sends a preview of the image or template provided.
+
+        Arguments:
+        ctx - A commands.Context object.
+        args - A list of arguments from the user, all strings.
+
+        Keyword Arguments:
+        name - The name of the template to preview.
+        fetch - A function to fetch from a specific canvas.
+        """
+        if not name:
+            # Order Parsing
+            try:
+                x, y = args[0], args[1]
+            except IndexError:
+                await ctx.send("Error: no arguments were provided.")
+                return
+
+            if re.match(r"-\D+", x) is not None:
+                x, y = args[-2], args[-1]
+                args = args[:-2]
+            else:
+                args = args[2:]
+
+            # X and Y Cleanup
+            try:
+                # Remove all spaces and chars that aren't 0-9 or the minus sign.
+                x = int(re.sub('[^0-9-]', '', x))
+                y = int(re.sub('[^0-9-]', '', y))
+            except ValueError:
+                await ctx.send(ctx.s("canvas.invalid_input"))
+                return
+
+        # Argument Parsing
+        parser = GlimmerArgumentParser(ctx)
+        parser.add_argument("-z", "--zoom", type=int, default=1)
+
+        if name:
+            parser.add_argument("-t", "--templateRegion", action='store_true')
+            parser.add_argument("-f", "--faction", default=None, action=FactionAction)
+
+        try:
+            args = parser.parse_args(args)
+        except TypeError:
+            return
+
+        t = None
+        if name:
+            gid = ctx.guild.id if not args.faction else args.faction.id
+            t = sql.template_get_by_name(gid, name)
+
+            if not t:
+                raise TemplateNotFoundError(gid, name)
+
+            fetch = self.bot.fetchers[t.canvas]
+            if args.templateRegion:
+                x, y = t.center()
+
+        async with ctx.typing():
+            zoom = max(min(args.zoom, 16), -8)
+
+            if t:
+                preview_img = await render.preview_template(t, zoom, fetch)
+            else:
+                preview_img = await render.preview(x, y, zoom, fetch)
+
+            with io.BytesIO() as bio:
+                preview_img.save(bio, format="PNG")
+                bio.seek(0)
+                f = discord.File(bio, "preview.png")
+                await ctx.send(file=f)
+
 
 class CheckSource(menus.ListPageSource):
     def __init__(self, data):
@@ -647,56 +688,6 @@ class CheckSource(menus.ListPageSource):
                     y=template.y),
                 inline=False)
         return embed
-
-
-async def _preview(ctx, args, fetch):
-    """Sends a preview of the image provided.
-
-    Arguments:
-    ctx - A commands.Context object.
-    args - A list of arguments from the user, all strings.
-    fetch - The current state of all pixels that the template/specified area covers, PIL Image object.
-    """
-    async with ctx.typing():
-        # Order Parsing
-        try:
-            x, y = args[0], args[1]
-        except IndexError:
-            await ctx.send("Error: no arguments were provided.")
-            return
-
-        if re.match(r"-\D+", x) is not None:
-            x, y = args[-2], args[-1]
-            args = args[:-2]
-        else:
-            args = args[2:]
-
-        # X and Y Cleanup
-        try:
-            # cleans up x and y by removing all spaces and chars that aren't 0-9 or the minus sign using regex.
-            x = int(re.sub('[^0-9-]', '', x))
-            y = int(re.sub('[^0-9-]', '', y))
-        except ValueError:
-            await ctx.send(ctx.s("canvas.invalid_input"))
-            return
-
-        # Argument Parsing
-        parser = GlimmerArgumentParser(ctx)
-        parser.add_argument("-z", "--zoom", type=int, default=1)
-        try:
-            a = parser.parse_args(args)
-        except TypeError:
-            return
-
-        zoom = max(min(a.zoom, 16), -8)
-
-        preview_img = await render.preview(x, y, zoom, fetch)
-
-        with io.BytesIO() as bio:
-            preview_img.save(bio, format="PNG")
-            bio.seek(0)
-            f = discord.File(bio, "preview.png")
-            await ctx.send(file=f)
 
 
 async def _quantize(ctx, args, canvas, palette):
