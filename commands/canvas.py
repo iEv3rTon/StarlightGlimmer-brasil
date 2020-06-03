@@ -720,7 +720,7 @@ async def _quantize(ctx, args, canvas, palette):
     except TypeError:
         return
 
-    gid = ctx.guild.id if not a.faction else a.faction.id
+    gid = ctx.guild.id if not args.faction else args.faction.id
     t = sql.template_get_by_name(gid, name)
 
     data = None
