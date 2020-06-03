@@ -27,47 +27,22 @@ async def calculate_size(data):
     return int(np.array(white).any(axis=-1).sum())
 
 
-def dither_setup(origImg):
+def dither(origImg, canvas_palette, type=None, threshold=None, order=None):
     # find all fully transparent pixels
     alpha_mask = origImg.split()[3]
     alpha_mask = Image.eval(alpha_mask, lambda a: 255 if a == 0 else 0)
     origImg = origImg.convert('RGB')
-    return origImg, alpha_mask
-
-
-def bayer_dither(origImg, canvas_palette, threshold, order):
-    origImg, alpha_mask = dither_setup(origImg)
 
     palette = hitherdither.palette.Palette(canvas_palette)
-    threshold = [threshold / 4]
-    dithered_image = hitherdither.ordered.bayer.bayer_dithering(origImg, palette, threshold, order)
+    dithers = {
+        "yliluoma": yliluoma2.Yliluoma(order, canvas_palette, 4).dither(origImg),
+        "bayer": hitherdither.ordered.bayer.bayer_dithering(origImg, palette, [threshold / 4], order),
+        "floyd-steinberg": hitherdither.diffusion.error_diffusion_dithering(origImg, palette, "floyd-steinberg", order)
+    }
+
+    dithered_image = dithers.get(type)
     dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
-
     return dithered_image
-
-
-def yliluoma_dither(origImg, canvas_palette, order):
-    origImg, alpha_mask = dither_setup(origImg)
-
-    yliluoma = yliluoma2.Yliluoma(order, canvas_palette, 4)
-    dithered_image = yliluoma.dither(origImg)
-    dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
-
-    return dithered_image
-
-
-def floyd_steinberg_dither(origImg, canvas_palette, order):
-    origImg, alpha_mask = dither_setup(origImg)
-
-    palette = hitherdither.palette.Palette(canvas_palette)
-    dithered_image = hitherdither.diffusion.error_diffusion_dithering(origImg, palette, "floyd-steinberg", order)
-    dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
-
-    return dithered_image
-
-"""
-diff_img = await fetch(x, y, template.width, template.height)
-"""
 
 
 def diff(x, y, data, zoom, diff_img, palette, **kwargs):

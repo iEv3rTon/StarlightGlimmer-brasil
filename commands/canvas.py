@@ -154,12 +154,12 @@ class Canvas(commands.Cog):
     @dither.command(name="geo32")
     async def dither_geo32(self, ctx, *args):
         dither_type, threshold, order = dither_argparse(ctx, args)
-        await _dither(self.bot, ctx, colors.geo32, dither_type, threshold, order)
+        await self._dither(ctx, colors.geo32, dither_type, threshold, order)
 
     @dither.command(name="pixelcanvas", aliases=["pc"])
     async def dither_pixelcanvas(self, ctx, *args):
         dither_type, threshold, order = dither_argparse(ctx, args)
-        await _dither(self.bot, ctx, colors.pixelcanvas, dither_type, threshold, order)
+        await self._dither(ctx, colors.pixelcanvas, dither_type, threshold, order)
 
     # =======================
     #          CHECK
@@ -559,16 +559,15 @@ class Canvas(commands.Cog):
 
                         if type == "bayer":
                             too_large(origImg, 1500)
-                            dithered_image = await self.bot.loop.run_in_executor(None, render.bayer_dither, origImg, palette, threshold, order)
                             option_string = ctx.s("canvas.dither_order_and_threshold_option").format(threshold, order)
-                        elif type == "yliluoma":
+                        elif type == "yliluoma" or type == "floyd-steinberg":
                             too_large(origImg, 200)
-                            dithered_image = await self.bot.loop.run_in_executor(None, render.yliluoma_dither, origImg, palette, order)
                             option_string = ctx.s("canvas.dither_order_option").format(order)
-                        elif type == "floyd-steinberg":
-                            too_large(origImg, 200)
-                            dithered_image = await self.bot.loop.run_in_executor(None, render.floyd_steinberg_dither, origImg, palette, order)
-                            option_string = ctx.s("canvas.dither_order_option").format(order)
+
+                        func = partial(
+                            render.dither, origImg, palette, type=type,
+                            threshold=threshold, order=order)
+                        dithered_image = await self.bot.loop.run_in_executor(None, func)
 
                         with io.BytesIO() as bio:
                             dithered_image.save(bio, format="PNG")
