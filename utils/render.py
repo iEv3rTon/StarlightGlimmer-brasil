@@ -45,7 +45,7 @@ def dither(origImg, canvas_palette, type=None, threshold=None, order=None):
     return dithered_image
 
 
-def diff(x, y, data, zoom, diff_img, palette, **kwargs):
+def diff(x, y, data, zoom, diff_img, palette, create_snapshot=False, highlight_correct=False, color_blind=False):
     """Calculates and renders a diff image.
 
     Arguments:
@@ -68,15 +68,6 @@ def diff(x, y, data, zoom, diff_img, palette, **kwargs):
     error_list - A list of errors, each error being a tuple like (pixel, is_colour, should_be_colour).
     bad_list - A list of bad-pixel colours, each being a list like [(r, g, b), number_of_occurances].
     """
-    create_snapshot = False
-    highlight_correct = False
-    color_blind = False
-
-    for key, value in kwargs.items():
-        create_snapshot = True if key == "create_snapshot" and value is True else create_snapshot
-        highlight_correct = True if key == "highlight_correct" and value is True else highlight_correct
-        color_blind = True if key == "color_blind" and value is True else color_blind
-
     with data:
         template = Image.open(data).convert('RGBA')
 
