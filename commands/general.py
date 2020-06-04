@@ -100,34 +100,65 @@ class General(commands.Cog):
     async def quickstart(self, ctx):
         sql.menu_locks_add(ctx.channel.id, ctx.author.id)
 
-        language = sql.guild_get_language_by_id(ctx.guild.id).lower()
-        if language == "en-us":
-            tour_steps = [s for s in en_US.STRINGS if s.split(".")[:2] == ["tour", "command"]]
-        elif language == "pt-br":
-            tour_steps = [s for s in pt_BR.STRINGS if s.split(".")[:2] == ["tour", "command"]]
-        elif language == "tr-tr":
-            tour_steps = [s for s in tr_TR.STRINGS if s.split(".")[:2] == ["tour", "command"]]
+        need_images = {
+            3: "https://cdn.discordapp.com/attachments/561977353283174404/701066183927136296/cen_diamond.png"
+        }
 
-        await ctx.send(ctx.s("tour.intro"))
+        try:
+            language = sql.guild_get_language_by_id(ctx.guild.id).lower()
+            if language == "en-us":
+                tour_steps = [s for s in en_US.STRINGS if s.split(".")[:2] == ["tour", "command"]]
+            elif language == "pt-br":
+                tour_steps = [s for s in pt_BR.STRINGS if s.split(".")[:2] == ["tour", "command"]]
+            elif language == "tr-tr":
+                tour_steps = [s for s in tr_TR.STRINGS if s.split(".")[:2] == ["tour", "command"]]
 
-        for i, _ in enumerate(tour_steps):
-            await ctx.send(ctx.s("tour.request").format(ctx.s(f"tour.command.{i}").format(ctx.gprefix)))
-            msg = await quickstart_wait(self.bot, ctx, ctx.s(f"tour.command.{i}").format(ctx.gprefix))
+            # Find two templates that fulfill the needs of the guide. If you can't, use these defaults:
+            templates = {
+                "tl": {"name": "cen_diamond", "faction": "test"},
+                "tl_e": {"name": "cen_diamond", "faction": "test"}
+            }
+            # TODO: <Insert code to find templates here haha>
 
-            if msg is not False:
-                # invoke the command, ensure that it finishes before sending explaination
-                new_ctx = await self.bot.get_context(msg, cls=GlimContext)
-                await self.bot.invoke(new_ctx)
+            await ctx.send(ctx.s("tour.intro"))
 
-                await ctx.send(ctx.s(f"tour.explain.{i}").format(ctx.gprefix))
-            else:
-                break
+            for i, _ in enumerate(tour_steps):
+                command = ctx.s(f"tour.command.{i}").format(p=ctx.gprefix, tl=templates["tl"]["name"], tl_e=templates["tl_e"]["name"])
+                request = ctx.s("tour.request").format(command)
 
-        await ctx.send(ctx.s("tour.exit"))
-        sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
+                img = need_images.get(i)
+                if img:
+                    request = ctx.s("tour.image").format(request, img)
+
+                await ctx.send(request)
+                msg = await quickstart_wait(self.bot, ctx, command, image=img)
+
+                if msg is not False:
+                    # invoke the command, ensure that it finishes before sending explaination
+                    for _key, value in templates.items():
+                        if value["name"] in msg.content:
+                            msg.content = f"{msg.content} -f {value['faction']}"
+                            break
+
+                    new_ctx = await self.bot.get_context(msg, cls=GlimContext)
+                    await self.bot.invoke(new_ctx)
+
+                    await asyncio.sleep(0.5)
+
+                    await ctx.send(embed=discord.Embed().add_field(
+                        name=ctx.s("tour.explain"),
+                        value=ctx.s(f"tour.explain.{i}").format(ctx.gprefix)))
+                else:
+                    break
+        except Exception as e:
+            raise(e)  # Propogate the error to the right handler
+        finally:
+            # Always cleanup the menu-lock on exit
+            await ctx.send(ctx.s("tour.exit"))
+            sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
 
 
-async def quickstart_wait(bot, ctx, next):
+async def quickstart_wait(bot, ctx, next, image=None):
     valid = ["exit", "cancel"]
 
     def check(m):
@@ -136,11 +167,15 @@ async def quickstart_wait(bot, ctx, next):
     try:
         while True:
             msg = await bot.wait_for("message", check=check)
+            if image and len(msg.attachments) == 0:
+                await ctx.send(ctx.s("tour.invalid").format(next))
+                continue
             if msg.content == next:
                 return msg
             elif msg.content in valid:
                 return False
             await ctx.send(ctx.s("tour.invalid").format(next))
+
     except asyncio.TimeoutError:
         pass
     return False
