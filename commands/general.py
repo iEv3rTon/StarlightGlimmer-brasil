@@ -13,6 +13,7 @@ from discord.ext import commands
 from discord.ext.commands import BucketType, Command, HelpCommand, Group
 
 from lang import en_US, pt_BR, tr_TR
+from objects.bot_objects import GlimContext
 import utils
 from utils import config, http, sqlite as sql
 from utils.version import VERSION
@@ -86,11 +87,7 @@ class General(commands.Cog):
     async def suggest(self, ctx, *, suggestion: str):
         log.info("Suggestion: {0}".format(suggestion))
         await utils.channel_log(self.bot, "New suggestion from **{0.name}#{0.discriminator}** (ID: `{0.id}`) in guild "
-<<<<<<< HEAD
-                                "**{1.name}** (ID: `{1.id}`):".format(ctx.author, ctx.guild))
-=======
                                           "**{1.name}** (ID: `{1.id}`):".format(ctx.author, ctx.guild))
->>>>>>> master
         await utils.channel_log(self.bot, "> `{}`".format(suggestion))
         await ctx.send(ctx.s("general.suggest"))
 
@@ -98,13 +95,12 @@ class General(commands.Cog):
     async def version(self, ctx):
         await ctx.send(ctx.s("general.version").format(VERSION))
 
-<<<<<<< HEAD
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.command(name="quickstart")
     async def quickstart(self, ctx):
-        # Put lock on user
+        sql.menu_locks_add(ctx.channel.id, ctx.author.id)
 
-        language = sql.guild_get_language_by_id(self.bot.guild.id).lower()
+        language = sql.guild_get_language_by_id(ctx.guild.id).lower()
         if language == "en-us":
             tour_steps = [s for s in en_US.STRINGS if s.split(".")[:2] == ["tour", "command"]]
         elif language == "pt-br":
@@ -115,17 +111,20 @@ class General(commands.Cog):
         await ctx.send(ctx.s("tour.intro"))
 
         for i, _ in enumerate(tour_steps):
-            await ctx.send(ctx.s("tour.request").format(ctx.s(f"tour.command.{i}")))
-            msg = await quickstart_wait(self.bot, ctx, ctx.s(f"tour.command.{i}"))
+            await ctx.send(ctx.s("tour.request").format(ctx.s(f"tour.command.{i}").format(ctx.gprefix)))
+            msg = await quickstart_wait(self.bot, ctx, ctx.s(f"tour.command.{i}").format(ctx.gprefix))
 
             if msg is not False:
                 # invoke the command, ensure that it finishes before sending explaination
+                new_ctx = await self.bot.get_context(msg, cls=GlimContext)
+                await self.bot.invoke(new_ctx)
 
-                await ctx.send(ctx.s(f"tour.explain.{i}"))
+                await ctx.send(ctx.s(f"tour.explain.{i}").format(ctx.gprefix))
             else:
-                await ctx.send(ctx.s("tour.exit"))
-                # Remove lock on user
-                return
+                break
+
+        await ctx.send(ctx.s("tour.exit"))
+        sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
 
 
 async def quickstart_wait(bot, ctx, next):
@@ -146,8 +145,6 @@ async def quickstart_wait(bot, ctx, next):
         pass
     return False
 
-=======
->>>>>>> master
 
 class GlimmerHelpCommand(HelpCommand):
 

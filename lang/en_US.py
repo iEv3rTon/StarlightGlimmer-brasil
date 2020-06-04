@@ -685,13 +685,13 @@ STRINGS = {
     "color.pxlssapce.23": "Purple",
 
     # Quickstart tour text
-    "tour.intro": "",
+    "tour.intro": "Welcome to my quickstart tour, say `cancel` at any time to exit. Hope you enjoy!",
     "tour.exit": "Thank you for taking my tour, exiting.",
     "tour.invalid": "Invalid, please type: `{0}`",
     "tour.request": "Please send `{0}`",
 
-    "tour.command.0": "",
+    "tour.command.0": "{}template",
 
-    "tour.explain.0": ""
+    "tour.explain.0": "The {}template command lists all of the templates that a guild (discord server) has. You can use the reactions underneath to see other pages, if there are more than 10 templates to display."
 
 }
