@@ -170,8 +170,8 @@ async def yes_no(ctx, question, cancel=False):
         answer = await YesNoMenu(question).prompt(ctx)
 
     if cancel:
-        return answer if answer else "cancel"
-    return answer if answer else False
+        return answer if answer is not None else "cancel"
+    return answer if answer is not None else False
 
 
 class GlimmerArgumentParser(argparse.ArgumentParser):
