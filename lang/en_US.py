@@ -267,6 +267,7 @@ STRINGS = {
     "brief.quantize.pixelcanvas": "Quantizes colors using the palette of Pixelcanvas.io.",
     "brief.quantize.pixelzone": "Quantizes colors using the palette of Pixelzone.io.",
     "brief.quantize.pxlsspace": "Quantizes colors using the palette of Pxls.space.",
+    "brief.quickstart": "Gives a guided tour to the bot.",
     "brief.register": "Opt-in to animated emoji replacement.",
     "brief.repeat": "Repeats the last used canvas command.",
     "brief.role": "Assign bot privileges to a role.",
@@ -682,6 +683,37 @@ STRINGS = {
     "color.pxlssapce.20": "Blue",
     "color.pxlssapce.21": "Lavender",
     "color.pxlssapce.22": "Magenta",
-    "color.pxlssapce.23": "Purple"
+    "color.pxlssapce.23": "Purple",
 
+    # Quickstart tour text
+    "tour.intro": "Welcome to my quickstart tour, say `cancel` at any time to exit. Hope you enjoy!",
+    "tour.exit": "Thank you for taking my tour, exiting.",
+    "tour.invalid": "Invalid, please type: `{0}`",
+    "tour.request": "Please send `{0}`",
+    "tour.image": "{0} and also attach this image: {1}",
+    "tour.explain": "Explanation:",
+
+    "tour.command.0": "{p}preview 0 0",
+    "tour.explain.0": "The preview command renders an image of a canvas, centered at the coordinates you specify. So this is capturing an image from the default canvas for this guild, at (0,0).",
+
+    "tour.command.1": "{p}preview {tl}",
+    "tour.explain.1": "Preview can also render images using templates. I will create an image of the area of the canvas that the template you specify covers. I'll explain more about templates in a second.",
+
+    "tour.command.2": "{p}preview {tl} --zoom 8",
+    "tour.explain.2": "So far we have only used preview with it's non-optional arguments. Many of my commands also have optional keyword arguments which you can use to change the behaviour of the command. This argument, `-z <factor>` or `--zoom <factor>`, will zoom in the image by a factor you provide, here it is 8.",
+
+    "tour.command.3": "{p}diff -109 -107",
+    "tour.explain.3": "The diff command compares an image you provide it with against what is on canvas, and highlights any errors in red. When diffing, you need to provide the canvas coordinates for where you want the top leftmost corner of the image to lie.",
+
+    "tour.command.4": "{p}diff {tl_e}",
+    "tour.explain.4": "You can also diff using a template.",
+
+    "tour.command.5": "{p}diff {tl_e} --zoom 8 --errors --highlightCorrect",
+    "tour.explain.5": "Diff also has a lot of helpful optional arguments. Zoom works the same as it does on preview. `--errors` or `-e` will make the embed you can see above that lists the exact location of errors appear. `--highlightCorrect` or `-c` makes the different sections of the diff appear in different colors: green for correct, red for incorrect, greyscale for off-template, and blue for off-palette colors.",
+
+    "tour.command.6": "{p}template",
+    "tour.explain.6": "The template command lists all of the templates that a guild (discord server) has. Templates are just a way of storing an image and the canvas coordinates for it's top left corner under a name. They make it easier to diff, preview etc repeatedly, as you saw earlier.",
+
+    "tour.command.7": "{p}template info {tl}",
+    "tour.explain.7": "Template has a subcommand called info, which allows you to see information on a specific template."
 }

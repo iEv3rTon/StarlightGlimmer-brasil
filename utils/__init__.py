@@ -164,12 +164,10 @@ class YesNoCancelMenu(YesNoMenu):
 
 
 async def yes_no(ctx, question, cancel=False):
-    sql.menu_locks_add(ctx.channel.id, ctx.author.id)
     if cancel:
         answer = await YesNoCancelMenu(question).prompt(ctx)
     else:
         answer = await YesNoMenu(question).prompt(ctx)
-    sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
 
     if cancel:
         return answer if answer else "cancel"

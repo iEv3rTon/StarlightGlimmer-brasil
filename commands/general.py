@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import inspect
 import logging
@@ -11,8 +12,10 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import BucketType, Command, HelpCommand, Group
 
+from lang import en_US, pt_BR, tr_TR
+from objects.bot_objects import GlimContext
 import utils
-from utils import config, http
+from utils import config, http, sqlite as sql
 from utils.version import VERSION
 
 log = logging.getLogger(__name__)
@@ -80,7 +83,7 @@ class General(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.cooldown(1, 5, BucketType.guild)
-    @commands.command()
+    @commands.command(name="suggest")
     async def suggest(self, ctx, *, suggestion: str):
         log.info("Suggestion: {0}".format(suggestion))
         await utils.channel_log(self.bot, "New suggestion from **{0.name}#{0.discriminator}** (ID: `{0.id}`) in guild "
@@ -88,9 +91,94 @@ class General(commands.Cog):
         await utils.channel_log(self.bot, "> `{}`".format(suggestion))
         await ctx.send(ctx.s("general.suggest"))
 
-    @commands.command()
+    @commands.command(name="version")
     async def version(self, ctx):
         await ctx.send(ctx.s("general.version").format(VERSION))
+
+    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.command(name="quickstart")
+    async def quickstart(self, ctx):
+        sql.menu_locks_add(ctx.channel.id, ctx.author.id)
+
+        need_images = {
+            3: "https://cdn.discordapp.com/attachments/561977353283174404/701066183927136296/cen_diamond.png"
+        }
+
+        try:
+            language = sql.guild_get_language_by_id(ctx.guild.id).lower()
+            if language == "en-us":
+                tour_steps = [s for s in en_US.STRINGS if s.split(".")[:2] == ["tour", "command"]]
+            elif language == "pt-br":
+                tour_steps = [s for s in pt_BR.STRINGS if s.split(".")[:2] == ["tour", "command"]]
+            elif language == "tr-tr":
+                tour_steps = [s for s in tr_TR.STRINGS if s.split(".")[:2] == ["tour", "command"]]
+
+            # Find two templates that fulfill the needs of the guide. If you can't, use these defaults:
+            templates = {
+                "tl": {"name": "cen_diamond", "faction": "test"},
+                "tl_e": {"name": "cen_diamond", "faction": "test"}
+            }
+            # TODO: <Insert code to find templates here haha>
+
+            await ctx.send(ctx.s("tour.intro"))
+
+            for i, _ in enumerate(tour_steps):
+                command = ctx.s(f"tour.command.{i}").format(p=ctx.gprefix, tl=templates["tl"]["name"], tl_e=templates["tl_e"]["name"])
+                request = ctx.s("tour.request").format(command)
+
+                img = need_images.get(i)
+                if img:
+                    request = ctx.s("tour.image").format(request, img)
+
+                await ctx.send(request)
+                msg = await quickstart_wait(self.bot, ctx, command, image=img)
+
+                if msg is not False:
+                    # invoke the command, ensure that it finishes before sending explaination
+                    for _key, value in templates.items():
+                        if value["name"] in msg.content:
+                            msg.content = f"{msg.content} -f {value['faction']}"
+                            break
+
+                    new_ctx = await self.bot.get_context(msg, cls=GlimContext)
+                    await self.bot.invoke(new_ctx)
+
+                    await asyncio.sleep(0.5)
+
+                    await ctx.send(embed=discord.Embed().add_field(
+                        name=ctx.s("tour.explain"),
+                        value=ctx.s(f"tour.explain.{i}").format(ctx.gprefix)))
+                else:
+                    break
+        except Exception as e:
+            raise(e)  # Propogate the error to the right handler
+        finally:
+            # Always cleanup the menu-lock on exit
+            await ctx.send(ctx.s("tour.exit"))
+            sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
+
+
+async def quickstart_wait(bot, ctx, next, image=None):
+    valid = ["exit", "cancel"]
+
+    def check(m):
+        return m.channel == ctx.channel and m.author == ctx.author
+
+    try:
+        while True:
+            msg = await bot.wait_for("message", check=check)
+            if image and len(msg.attachments) == 0:
+                await ctx.send(ctx.s("tour.invalid").format(next))
+                continue
+            if msg.content == next:
+                return msg
+            elif msg.content in valid:
+                return False
+            await ctx.send(ctx.s("tour.invalid").format(next))
+
+    except asyncio.TimeoutError:
+        pass
+    return False
 
 
 class GlimmerHelpCommand(HelpCommand):
