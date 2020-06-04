@@ -460,7 +460,7 @@ class Template(commands.Cog):
                 with io.BytesIO() as bio:
                     diff_img.save(bio, format="PNG")
                     bio.seek(0)
-                    f = discord.File(bio, "diff.png")
+                    f = discord.File(bio, f"{base.name}.png")
                     msg = await ctx.send(file=f)
 
                 url = msg.attachments[0].url
