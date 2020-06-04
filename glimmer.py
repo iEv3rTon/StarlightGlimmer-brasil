@@ -284,7 +284,7 @@ async def on_message(message):
             return
 
     # Ignore messages with any spoilered text
-    if re.match(".*\|\|.*\|\|.*", message.content):
+    if re.match(r".*\|\|.*\|\|.*", message.content):
         return
 
     # Invoke a command if there is one
