@@ -48,7 +48,7 @@ class General(commands.Cog):
     async def ping(self, ctx):
         ping_start = time()
         ping_msg = await ctx.send(ctx.s("general.ping"))
-        await ping_msg.edit(content=ctx.s("general.pong").format(int(time() - ping_start * 1000)))
+        await ping_msg.edit(content=ctx.s("general.pong").format(int((time() - ping_start) * 1000)))
 
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.command(name="stats")
