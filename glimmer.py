@@ -302,8 +302,9 @@ async def print_welcome_message(guild):
     c = next((x for x in channels if x.name == "general"), next(channels, None))
     if c:
         await c.send("Hi! I'm {0}. For a full list of commands, pull up my help page with `{1}help`. "
+                     "You could also take a quick guided tour of my main features with `{1}quickstart`. "
                      "Happy pixel painting!".format(config.NAME, config.PREFIX))
-        log.info(" - Printed welcome message".format(guild))
+        log.info(" - Printed welcome message""".format(guild))
     else:
         log.info("- Could not print welcome message: no default channel found".format(guild))
 
