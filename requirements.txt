@@ -7,3 +7,4 @@ git+https://www.github.com/hbldh/hitherdither
 fuzzywuzzy
 python-Levenshtein
 psutil
+git+https://github.com/Rapptz/discord-ext-menus

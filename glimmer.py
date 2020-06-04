@@ -5,6 +5,7 @@ import time
 
 import discord
 from discord import TextChannel
+from discord.ext import menus
 
 from commands import *
 from objects.bot_objects import GlimContext
@@ -24,6 +25,12 @@ class glimmer(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.start_time = time.time()
+        self.fetchers = {
+            'pixelcanvas': render.fetch_pixelcanvas,
+            'pixelzone': render.fetch_pixelzone,
+            'pxlsspace': render.fetch_pxlsspace
+        }
+
 
 log = logging.getLogger(__name__)
 bot = glimmer(
@@ -100,7 +107,7 @@ async def on_ready():
         else:
             j = g.me.joined_at
             if config.CHANNEL_LOG_GUILD_JOINS:
-                await utils.channel_log(bot, "Joined guild **{0.name}** (ID: `{0.id}`)".format(g, j.isoformat(' ')))
+                await utils.channel_log(bot, "Joined guild **{0.name}** (ID: `{0.id}`)".format(g))
             log.info("Joined guild '{0.name}' (ID: {0.id}) between sessions at {1}".format(g, j.timestamp()))
             sql.guild_add(g.id, g.name, int(j.timestamp()))
             await print_welcome_message(g)
@@ -184,6 +191,12 @@ async def on_command_error(ctx, error):
         await ctx.send(ctx.s("error.missing_argument"))
     elif isinstance(error, commands.NoPrivateMessage):
         await ctx.send(ctx.s("error.no_dm"))
+    elif isinstance(error, commands.MaxConcurrencyReached):
+        await ctx.send(ctx.s("error.max_concurrency").format(error.number))
+
+    # Menu errors
+    if isinstance(error, menus.CannotAddReactions):
+        await ctx.send(error)
 
     # Check errors
     elif isinstance(error, BadArgumentErrorWithMessage):
@@ -239,11 +252,14 @@ async def on_command_error(ctx, error):
     # Uncaught error
     else:
         name = ctx.command.qualified_name if ctx.command else "None"
-        await utils.channel_log(bot,
-            "An error occurred executing `{0}` in server **{1.name}** (ID: `{1.id}`):".format(name, ctx.guild))
-        await utils.channel_log(bot, "```{}```".format(error))
-        log.error("An error occurred executing '{}': {}\n{}"
-                  .format(name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
+        await utils.channel_log(
+            bot, "An error occurred executing `{0}` in server **{1.name}** (ID: `{1.id}`):".format(name, ctx.guild))
+        tb_text = "{}\n{}".format(error, ''.join(traceback.format_exception(None, error, error.__traceback__)))
+        tb_text = [tb_text[i:i + 1500] for i in range(0, len(tb_text), 1500)]
+        for chunk in tb_text:
+            await utils.channel_log(bot, f"```{chunk}```")
+        log.error("An error occurred executing '{}': {}\n{}".format(
+            name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
         await ctx.send(ctx.s("error.unknown"))
 
 @bot.event
@@ -268,7 +284,7 @@ async def on_message(message):
             return
 
     # Ignore messages with any spoilered text
-    if re.match(".*\|\|.*\|\|.*", message.content):
+    if re.match(r".*\|\|.*\|\|.*", message.content):
         return
 
     # Invoke a command if there is one

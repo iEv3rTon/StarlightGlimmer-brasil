@@ -5,6 +5,7 @@ import time
 import argparse
 
 import discord
+from discord.ext import menus
 from discord.ext.commands.view import StringView
 from discord.utils import get as dget
 
@@ -118,24 +119,61 @@ async def verify_attachment(ctx):
     return att
 
 
-async def yes_no(ctx, question):
+class YesNoMenu(menus.Menu):
+    def __init__(self, msg):
+        super().__init__(timeout=480, delete_message_after=True)
+        self.msg = msg
+        self.result = None
+
+    async def send_initial_message(self, ctx, channel):
+        emoji_text = {
+            "🆘": ctx.s("bot.cancel"),
+            "❌": ctx.s("bot.no"),
+            "✅": ctx.s("bot.yes")
+        }
+
+        out = [f"{emoji.name} - {emoji_text.get(emoji.name)}" for emoji, _ in self.buttons.items()]
+
+        self.embed = discord.Embed()
+        self.embed.add_field(name="Question", value=self.msg, inline=False)
+        self.embed.add_field(name="Options", value="\n".join(out), inline=False)
+        return await channel.send(embed=self.embed)
+
+    @menus.button('✅')
+    async def do_yes(self, payload):
+        if payload.user_id == self.ctx.author.id:
+            self.result = True
+            self.stop()
+
+    @menus.button('❌')
+    async def do_no(self, payload):
+        if payload.user_id == self.ctx.author.id:
+            self.result = False
+            self.stop()
+
+    async def prompt(self, ctx):
+        await self.start(ctx, wait=True)
+        return self.result
+
+
+class YesNoCancelMenu(YesNoMenu):
+    @menus.button('🆘')
+    async def do_cancel(self, payload):
+        if payload.user_id == self.ctx.author.id:
+            self.stop()
+
+
+async def yes_no(ctx, question, cancel=False):
     sql.menu_locks_add(ctx.channel.id, ctx.author.id)
-    query_msg = await ctx.send("{}\n  `0` - {}\n  `1` - {}".format(question, ctx.s("bot.no"), ctx.s("bot.yes")))
+    if cancel:
+        answer = await YesNoCancelMenu(question).prompt(ctx)
+    else:
+        answer = await YesNoMenu(question).prompt(ctx)
+    sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
 
-    def check(m):
-        return ctx.channel.id == m.channel.id and ctx.author.id == m.author.id
-
-    try:
-        resp_msg = await ctx.bot.wait_for('message', timeout=480.0, check=check)
-        while not (resp_msg.content == "0" or resp_msg.content == "1"):
-            await ctx.send(ctx.s("error.invalid_option"))
-            resp_msg = await ctx.bot.wait_for('message', timeout=480.0, check=check)
-    except asyncio.TimeoutError:
-        await query_msg.edit(content=ctx.s("error.timed_out"))
-        return False
-    finally:
-        sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
-    return resp_msg.content == "1"
+    if cancel:
+        return answer if answer else "cancel"
+    return answer if answer else False
 
 
 class GlimmerArgumentParser(argparse.ArgumentParser):
@@ -151,7 +189,7 @@ class GlimmerArgumentParser(argparse.ArgumentParser):
 class FactionAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         faction = sql.guild_get_by_faction_name_or_alias(values)
-        if faction == None:
+        if faction is None:
             raise FactionNotFoundError
         setattr(namespace, self.dest, faction)
 

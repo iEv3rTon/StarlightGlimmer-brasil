@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageOps
@@ -5,7 +6,7 @@ import hitherdither
 
 from objects import Coords
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
-from utils import colors, http, config
+from utils import colors, http, config, yliluoma2
 
 log = logging.getLogger(__name__)
 
@@ -26,56 +27,25 @@ async def calculate_size(data):
     return int(np.array(white).any(axis=-1).sum())
 
 
-async def bayer_dither(origImg, canvas_palette, threshold, order):
+def dither(origImg, canvas_palette, type=None, threshold=None, order=None):
     # find all fully transparent pixels
     alpha_mask = origImg.split()[3]
     alpha_mask = Image.eval(alpha_mask, lambda a: 255 if a == 0 else 0)
-
-    # convert from RGBA to RGB and dither
     origImg = origImg.convert('RGB')
+
     palette = hitherdither.palette.Palette(canvas_palette)
-    threshold = [threshold / 4]
-    dithered_image = hitherdither.ordered.bayer.bayer_dithering(origImg, palette, threshold, order)
+    dithers = {
+        "yliluoma": yliluoma2.Yliluoma(order, canvas_palette, 4).dither(origImg),
+        "bayer": hitherdither.ordered.bayer.bayer_dithering(origImg, palette, [threshold / 4], order),
+        "floyd-steinberg": hitherdither.diffusion.error_diffusion_dithering(origImg, palette, "floyd-steinberg", order)
+    }
 
-    # put transparency back in
+    dithered_image = dithers.get(type)
     dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
-
     return dithered_image
 
 
-async def yliluoma_dither(origImg, canvas_palette, order):
-    # find all fully transparent pixels
-    alpha_mask = origImg.split()[3]
-    alpha_mask = Image.eval(alpha_mask, lambda a: 255 if a == 0 else 0)
-
-    # convert from RGBA to RGB and dither
-    origImg = origImg.convert('RGB')
-    palette = hitherdither.palette.Palette(canvas_palette)
-    dithered_image = hitherdither.ordered.yliluoma.yliluomas_1_ordered_dithering(origImg, palette, order)
-
-    # put transparency back in
-    dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
-
-    return dithered_image
-
-
-async def floyd_steinberg_dither(origImg, canvas_palette, order):
-    # find all fully transparent pixels
-    alpha_mask = origImg.split()[3]
-    alpha_mask = Image.eval(alpha_mask, lambda a: 255 if a == 0 else 0)
-
-    # convert from RGBA to RGB and dither
-    origImg = origImg.convert('RGB')
-    palette = hitherdither.palette.Palette(canvas_palette)
-    dithered_image = hitherdither.diffusion.error_diffusion_dithering(origImg, palette, "floyd-steinberg", order)
-
-    # put transparency back in
-    dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
-
-    return dithered_image
-
-
-async def diff(x, y, data, zoom, fetch, palette, **kwargs):
+def diff(x, y, data, zoom, diff_img, palette, create_snapshot=False, highlight_correct=False, color_blind=False):
     """Calculates and renders a diff image.
 
     Arguments:
@@ -83,10 +53,10 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
     y - The y coord, integer.
     data - The image, a bytestream.
     zoom - The factor to zoom by, integer.
-    fetch - A fetching function.
+    diff_img - A PIL Image object of the area of canvas needed.
     palette - The palette to use, a list of rgb tuples.
     Kwargs:
-    create_snapshot - If a "finished template" should be made, where the only non-transparent pixels are those that are correct on canvas right now, boolean.
+    create_snapshot - If a "finished template" should be made, where the only non-transparent pixels are those that are correct on canvas right now, bool
     highlight_correct - If correct pixels should be highlighted in green, bool
     color_blind - If the renders should be color blind friendly, bool
 
@@ -98,21 +68,11 @@ async def diff(x, y, data, zoom, fetch, palette, **kwargs):
     error_list - A list of errors, each error being a tuple like (pixel, is_colour, should_be_colour).
     bad_list - A list of bad-pixel colours, each being a list like [(r, g, b), number_of_occurances].
     """
-    create_snapshot = False
-    highlight_correct = False
-    color_blind = False
-
-    for key, value in kwargs.items():
-        create_snapshot = True if key == "create_snapshot" and value is True else create_snapshot
-        highlight_correct = True if key == "highlight_correct" and value is True else highlight_correct
-        color_blind = True if key == "color_blind" and value is True else color_blind
-
     with data:
         template = Image.open(data).convert('RGBA')
 
     with template:
         log.info("(X:{0} | Y:{1} | Dim:{2}x{3} | Z:{4})".format(x, y, template.width, template.height, zoom))
-        diff_img = await fetch(x, y, template.width, template.height)
 
         black = Image.new('1', template.size, 0)
         white = Image.new('1', template.size, 1)
@@ -266,7 +226,7 @@ async def preview_template(t, zoom, fetch):
     return preview_img
 
 
-async def quantize(data, palette):
+def quantize(data, palette):
     """Quantizes an image.
 
     Arguments:
@@ -302,7 +262,7 @@ async def quantize(data, palette):
     return q, bad_pixels
 
 
-async def gridify(data, color, zoom):
+def gridify(data, color, zoom):
     """Make a gridified version of an image.
 
     Arguments:

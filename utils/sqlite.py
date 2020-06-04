@@ -412,6 +412,7 @@ def guild_update(gid, name=None, prefix=None, alert_channel=None, autoscan=None,
 #      Menu Locks queries
 # ============================
 
+
 def menu_locks_add(cid, uid):
     c.execute('INSERT INTO menu_locks(channel_id, user_id, date_added) VALUES(?, ?, ?)', (cid, uid, int(time.time())))
     conn.commit()
@@ -435,6 +436,7 @@ def menu_locks_get_all():
 # ===========================
 #      Templates queries
 # ===========================
+
 
 def template_add(template):
     c.execute('INSERT INTO templates(guild_id, name, url, canvas, x, y, w, h, size, date_added, date_modified, md5, '
@@ -499,37 +501,40 @@ def template_update(template):
               'WHERE guild_id=? AND name=?', template.to_tuple()[2:] + (template.gid, template.name))
     conn.commit()
 
-def template_kwarg_update(gid, name, **kwargs):
-    for key, value in kwargs.items():
-        if key == "new_name":
-            c.execute("UPDATE templates SET name=? WHERE guild_id=? AND name=?", (value, gid, name))
-        if key == "x":
-            c.execute("UPDATE templates SET x=? WHERE guild_id=? AND name=?", (value, gid, name))
-        if key == "y":
-            c.execute("UPDATE templates SET y=? WHERE guild_id=? AND name=?", (value, gid, name))
-        if key == "url":
-            c.execute("UPDATE templates SET url=? WHERE guild_id=? AND name=?", (value, gid, name))
-        if key == "md5":
-            c.execute("UPDATE templates SET md5=? WHERE guild_id=? AND name=?", (value, gid, name))
-        if key == "w":
-            c.execute("UPDATE templates SET w=? WHERE guild_id=? AND name=?", (value, gid, name))
-        if key == "h":
-            c.execute("UPDATE templates SET h=? WHERE guild_id=? AND name=?", (value, gid, name))
-        if key == "size":
-            c.execute("UPDATE templates SET size=? WHERE guild_id=? AND name=?", (value, gid, name))
-        if key == "date_modified":
-            c.execute("UPDATE templates SET date_modified=? WHERE guild_id=? AND name=?", (value, gid, name))
+
+def template_kwarg_update(gid, name, new_name=None, x=None, y=None, url=None, md5=None, 
+                          w=None, h=None, size=None, date_modified=None):
+    if new_name:
+        c.execute("UPDATE templates SET name=? WHERE guild_id=? AND name=?", (new_name, gid, name))
+    if x:
+        c.execute("UPDATE templates SET x=? WHERE guild_id=? AND name=?", (x, gid, name))
+    if y:
+        c.execute("UPDATE templates SET y=? WHERE guild_id=? AND name=?", (y, gid, name))
+    if url:
+        c.execute("UPDATE templates SET url=? WHERE guild_id=? AND name=?", (url, gid, name))
+    if md5:
+        c.execute("UPDATE templates SET md5=? WHERE guild_id=? AND name=?", (md5, gid, name))
+    if w:
+        c.execute("UPDATE templates SET w=? WHERE guild_id=? AND name=?", (w, gid, name))
+    if h:
+        c.execute("UPDATE templates SET h=? WHERE guild_id=? AND name=?", (h, gid, name))
+    if size:
+        c.execute("UPDATE templates SET size=? WHERE guild_id=? AND name=?", (size, gid, name))
+    if date_modified:
+        c.execute("UPDATE templates SET date_modified=? WHERE guild_id=? AND name=?", (date_modified, gid, name))
     conn.commit()
 
 # ================================
 #       Snapshot queries
 # ================================
 
+
 def snapshot_add(gid, base_name, target_name):
     c.execute(
         'INSERT INTO snapshots(guild_id, base_template_name, target_template_name) VALUES(?,?,?)',
         (gid, base_name, target_name))
     conn.commit()
+
 
 def snapshot_delete(gid, base_name, target_name):
     c.execute(
@@ -543,6 +548,7 @@ def snapshot_get_by_names(gid, base_name, target_name):
         (gid, base_name, target_name))
     s = c.fetchone()
     return s
+
 
 def snapshots_get_all_by_guild(gid):
     c.execute('SELECT base_template_name, target_template_name FROM snapshots WHERE guild_id=?', (gid,))
@@ -561,6 +567,7 @@ def snapshots_get_all_by_guild(gid):
 # =========================
 #      Version queries
 # =========================
+
 
 def version_get():
     c.execute("""SELECT version FROM version""")

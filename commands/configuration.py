@@ -45,14 +45,14 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @commands.command()
     async def prefix(self, ctx, *prefix):
-        if prefix != []:
+        if prefix:
             if len(prefix[0]) > 5:
                 raise commands.BadArgument
             sql.guild_update(ctx.guild.id, prefix=prefix)
             log.info("Prefix for {0.name} set to {1} (GID: {0.id})".format(ctx.guild, prefix))
             await ctx.send(ctx.s("configuration.prefix_set").format(prefix))
         else:
-            prefix = guild_get_prefix_by_id(ctx.guild.id)
+            prefix = sql.guild_get_prefix_by_id(ctx.guild.id)
             await ctx.send(ctx.s("configuration.prefix_current").format(prefix))
 
     @checks.admin_only()
@@ -60,7 +60,7 @@ class Configuration(commands.Cog):
     @commands.command()
     async def autoscan(self, ctx):
         # Guild does not have autoscan enabled, enable it
-        if sql.guild_is_autoscan(ctx.guild.id) == False:
+        if sql.guild_is_autoscan(ctx.guild.id) is False:
             sql.guild_update(ctx.guild.id, autoscan=1)
             log.info("Autoscan enabled for {0.name} (GID: {0.id})".format(ctx.guild))
             await ctx.send(ctx.s("configuration.autoscan_enabled"))
@@ -150,7 +150,7 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @role_botadmin.command(name="set")
     async def role_botadmin_set(self, ctx, role=None):
-        m = re.match('<@&(\d+)>', role)
+        m = re.match(r"<@&(\d+)>", role)
         r = dget(ctx.guild.roles, id=int(m.group(1))) if m else dget(ctx.guild.roles, name=role)
         if r:
             sql.guild_update(ctx.guild.id, bot_admin=r.id)
@@ -179,7 +179,7 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @role_templateadder.command(name="set")
     async def role_templateadder_set(self, ctx, role=None):
-        m = re.match('<@&(\d+)>', role)
+        m = re.match(r"<@&(\d+)>", role)
         r = dget(ctx.guild.roles, id=int(m.group(1))) if m else dget(ctx.guild.roles, name=role)
         if r:
             sql.guild_update(ctx.guild.id, template_adder=r.id)
@@ -208,7 +208,7 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @role_templateadmin.command(name="set")
     async def role_templateadmin_set(self, ctx, role=None):
-        m = re.match('<@&(\d+)>', role)
+        m = re.match(r"<@&(\d+)>", role)
         r = dget(ctx.guild.roles, id=int(m.group(1))) if m else dget(ctx.guild.roles, name=role)
         if r:
             sql.guild_update(ctx.guild.id, template_admin=r.id)
