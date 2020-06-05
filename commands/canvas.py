@@ -129,15 +129,15 @@ class Canvas(commands.Cog):
 
     @quantize.command(name="pixelcanvas", aliases=["pc"])
     async def quantize_pixelcanvas(self, ctx, *args):
-        await _quantize(ctx, args, "pixelcanvas", colors.pixelcanvas)
+        await self._quantize(ctx, args, "pixelcanvas", colors.pixelcanvas)
 
     @quantize.command(name="pixelzone", aliases=["pz"])
     async def quantize_pixelzone(self, ctx, *args):
-        await _quantize(ctx, args, "pixelzone", colors.pixelzone)
+        await self._quantize(ctx, args, "pixelzone", colors.pixelzone)
 
     @quantize.command(name="pxlsspace", aliases=["ps"])
     async def quantize_pxlsspace(self, ctx, *args):
-        await _quantize(ctx, args, "pxlsspace", colors.pxlsspace)
+        await self._quantize(ctx, args, "pxlsspace", colors.pxlsspace)
 
     # =======================
     #         DITHER
@@ -658,6 +658,63 @@ class Canvas(commands.Cog):
                 bio.seek(0)
                 f = discord.File(bio, "preview.png")
                 await ctx.send(file=f)
+    
+    async def _quantize(self, ctx, args, canvas, palette):
+        """Sends a message containing a quantised version of the image given.
+
+        Arguments:
+        ctx - A commands.Context object.
+        args - A list of arguments from the user, all strings.
+        canvas - The canvas to use, string.
+        palette - The palette to quantise to, a list of rgb tuples.
+
+        Returns:
+        The discord.Message object returned when ctx.send() is called to send the quantised image.
+        """
+        # Argument Parsing
+        parser = GlimmerArgumentParser(ctx)
+        parser.add_argument("-f", "--faction", default=None, action=FactionAction)
+
+        # Pre-Parsing
+        if len(args) == 0:
+            name = None
+        elif args[0][0] != "-":
+            name = args[0]
+            args = args[1:]
+        else:
+            name = None
+
+        try:
+            args = parser.parse_args(args)
+        except TypeError:
+            return
+
+        gid = ctx.guild.id if not args.faction else args.faction.id
+        t = sql.template_get_by_name(gid, name)
+
+        data = None
+        if name:
+            if t:
+                log.info("(T:{} | GID:{})".format(t.name, t.gid))
+                if t.canvas == canvas:
+                    raise IdempotentActionError
+                data = await http.get_template(t.url, t.name)
+            else:
+                raise TemplateNotFoundError(gid, name)
+        else:
+            att = await verify_attachment(ctx)
+            if att:
+                data = io.BytesIO()
+                await att.save(data)
+
+        if data:
+            template, bad_pixels = await self.bot.loop.run_in_executor(None, render.quantize, data, palette)
+
+            with io.BytesIO() as bio:
+                template.save(bio, format="PNG")
+                bio.seek(0)
+                f = discord.File(bio, "template.png")
+                return await ctx.send(ctx.s("canvas.quantize").format(bad_pixels), file=f)
 
 
 class CheckSource(menus.ListPageSource):
@@ -687,64 +744,6 @@ class CheckSource(menus.ListPageSource):
                     y=template.y),
                 inline=False)
         return embed
-
-
-async def _quantize(ctx, args, canvas, palette):
-    """Sends a message containing a quantised version of the image given.
-
-    Arguments:
-    ctx - A commands.Context object.
-    args - A list of arguments from the user, all strings.
-    canvas - The canvas to use, string.
-    palette - The palette to quantise to, a list of rgb tuples.
-
-    Returns:
-    The discord.Message object returned when ctx.send() is called to send the quantised image.
-    """
-    # Argument Parsing
-    parser = GlimmerArgumentParser(ctx)
-    parser.add_argument("-f", "--faction", default=None, action=FactionAction)
-
-    # Pre-Parsing
-    if len(args) == 0:
-        name = None
-    elif args[0][0] != "-":
-        name = args[0]
-        args = args[1:]
-    else:
-        name = None
-
-    try:
-        args = parser.parse_args(args)
-    except TypeError:
-        return
-
-    gid = ctx.guild.id if not args.faction else args.faction.id
-    t = sql.template_get_by_name(gid, name)
-
-    data = None
-    if name:
-        if t:
-            log.info("(T:{} | GID:{})".format(t.name, t.gid))
-            if t.canvas == canvas:
-                raise IdempotentActionError
-            data = await http.get_template(t.url, t.name)
-        else:
-            raise TemplateNotFoundError(gid, name)
-    else:
-        att = await verify_attachment(ctx)
-        if att:
-            data = io.BytesIO()
-            await att.save(data)
-
-    if data:
-        template, bad_pixels = await render.quantize(data, palette)
-
-        with io.BytesIO() as bio:
-            template.save(bio, format="PNG")
-            bio.seek(0)
-            f = discord.File(bio, "template.png")
-            return await ctx.send(ctx.s("canvas.quantize").format(bad_pixels), file=f)
 
 
 async def select_url(ctx, input_url):
