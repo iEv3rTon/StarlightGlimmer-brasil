@@ -412,12 +412,12 @@ class Template(commands.Cog):
                 query = await utils.yes_no(ctx, "There are no errors on the snapshot, do you want to update it?", cancel=True)
                 if query is False:
                     not_updated.append([base, "skip"])
-                    await snap_msg.delete()
+                    await snap_msg.delete(delay=1)
                     continue
                 elif query == "cancel":
                     for (b, t) in snapshots[i:]:
                         not_updated.append([b, "cancel"])
-                    await snap_msg.delete()
+                    await snap_msg.delete(delay=1)
                     break
 
             else:
@@ -439,12 +439,12 @@ class Template(commands.Cog):
                 query = await utils.yes_no(ctx, "There are errors on the snapshot, do you want to update it? You will loose track of progress if you do this.", cancel=True)
                 if query is False:
                     not_updated.append([base, "err"])
-                    await snap_msg.delete()
+                    await snap_msg.delete(delay=1)
                     continue
                 elif query == "cancel":
                     for (b, t) in snapshots[i:]:
                         not_updated.append([b, "cancel"])
-                    await snap_msg.delete()
+                    await snap_msg.delete(delay=1)
                     break
 
             await snap_msg.edit(content=f"Generating snapshot from {base.name}...")
@@ -462,7 +462,7 @@ class Template(commands.Cog):
                     diff_img.save(bio, format="PNG")
                     bio.seek(0)
                     f = discord.File(bio, f"{target.name}.png")
-                    await snap_msg.delete()
+                    await snap_msg.delete(delay=1)
                     msg = await ctx.send(file=f)
 
                 url = msg.attachments[0].url
