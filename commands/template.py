@@ -477,17 +477,20 @@ class Template(commands.Cog):
             out = []
             for t, reason in not_updated:
                 reasons = {
-                    "err": f"The snapshot of {t.name} was not updated, as there were errors on the current snapshot.",
-                    "bad": f"The snapshot of {t.name} was not updated, as there were unquantised pixels detected.",
-                    "cancel": f"The snapshot of {t.name} was not updated, as the command was cancelled.",
-                    "skip": f"The snapshot of {t.name} was not updated, as the template was skipped.",
-                    "gen": f"The snapshot of {t.name} was not updated, as template generation was halted."
+                    "err": f"`{t.name}`: errors on the current snapshot.",
+                    "bad": f"`{t.name}`: unquantised pixels detected.",
+                    "cancel": f"`{t.name}`: the command was cancelled.",
+                    "skip": f"`{t.name}`: the template was skipped.",
+                    "gen": f"`{t.name}`: template generation was halted."
                 }
                 text = reasons.get(reason)
                 if text:
                     out.append(text)
 
-            await ctx.send("```{}```".format("\n".join(out)))
+            await ctx.send(
+                embed=discord.Embed(description="Unupdated Snapshots").add_field(
+                    name="name | reason",
+                    value="\n".join(out)))
 
     @commands.guild_only()
     @commands.cooldown(2, 5, BucketType.guild)
