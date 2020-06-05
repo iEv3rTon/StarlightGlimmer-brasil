@@ -393,20 +393,16 @@ class Template(commands.Cog):
             return await ctx.send(ctx.s("template.err.not_owner"))
 
         snapshots = sql.snapshots_get_all_by_guild(ctx.guild.id)
-        if snapshots == []:
+        if not snapshots:
             return await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
 
-        if filter != ():
-            for i, snapshot in enumerate(snapshots):
-                if snapshot[0].name not in filter:
-                    snapshots[i] = None
-
-        snapshots = [s for s in snapshots if s is not None]
+        if filter:
+            snapshots = [snapshot for i, snapshot in enumerate(snapshots) if snapshot[0].name in filter]
 
         not_updated = []
 
         for i, (base, target) in enumerate(snapshots):
-            await ctx.send(f"Checking {target.name} for errors...")
+            snap_msg = await ctx.send(f"Checking {target.name} for errors...")
             data = await http.get_template(target.url, target.name)
             fetch = self.bot.fetchers[target.canvas]
             img = await fetch(target.x, target.y, target.width, target.height)
@@ -416,10 +412,12 @@ class Template(commands.Cog):
                 query = await utils.yes_no(ctx, "There are no errors on the snapshot, do you want to update it?", cancel=True)
                 if query is False:
                     not_updated.append([base, "skip"])
+                    await snap_msg.delete()
                     continue
                 elif query == "cancel":
                     for (b, t) in snapshots[i:]:
                         not_updated.append([b, "cancel"])
+                    await snap_msg.delete()
                     break
 
             else:
@@ -441,13 +439,16 @@ class Template(commands.Cog):
                 query = await utils.yes_no(ctx, "There are errors on the snapshot, do you want to update it? You will loose track of progress if you do this.", cancel=True)
                 if query is False:
                     not_updated.append([base, "err"])
+                    await snap_msg.delete()
                     continue
                 elif query == "cancel":
                     for (b, t) in snapshots[i:]:
                         not_updated.append([b, "cancel"])
+                    await snap_msg.delete()
                     break
 
-            await ctx.send(f"Generating snapshot from {base.name}...")
+            await snap_msg.edit(content=f"Generating snapshot from {base.name}...")
+
             data = await http.get_template(base.url, base.name)
             fetch = self.bot.fetchers[base.canvas]
             img = await fetch(base.x, base.y, base.width, base.height)
@@ -456,15 +457,18 @@ class Template(commands.Cog):
                 img, colors.by_name[base.canvas], create_snapshot=True)
             diff_img, tot, err, bad, _err, _bad = await self.bot.loop.run_in_executor(None, func)
 
-            if bad == 0:
+            if not bad:
                 with io.BytesIO() as bio:
                     diff_img.save(bio, format="PNG")
                     bio.seek(0)
                     f = discord.File(bio, f"{target.name}.png")
+                    await snap_msg.delete()
                     msg = await ctx.send(file=f)
 
                 url = msg.attachments[0].url
-                await Template.add_template(ctx, base.canvas, target.name, str(base.x), str(base.y), url)
+                result = await Template.add_template(ctx, base.canvas, target.name, str(base.x), str(base.y), url)
+                if result is None:
+                    not_updated.append([base, "gen"])
             else:
                 not_updated.append([base, "bad"])
                 continue
@@ -476,7 +480,8 @@ class Template(commands.Cog):
                     "err": f"The snapshot of {t.name} was not updated, as there were errors on the current snapshot.",
                     "bad": f"The snapshot of {t.name} was not updated, as there were unquantised pixels detected.",
                     "cancel": f"The snapshot of {t.name} was not updated, as the command was cancelled.",
-                    "skip": f"The snapshot of {t.name} was not updated, as the template was skipped."
+                    "skip": f"The snapshot of {t.name} was not updated, as the template was skipped.",
+                    "gen": f"The snapshot of {t.name} was not updated, as template generation was halted."
                 }
                 text = reasons.get(reason)
                 if text:
@@ -544,29 +549,36 @@ class Template(commands.Cog):
         url - The url of the template's image, string.
         """
         if len(name) > config.MAX_TEMPLATE_NAME_LENGTH:
-            return await ctx.send(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
+            await ctx.send(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
+            return
         if name[0] == "-":
-            return await ctx.send("Template names cannot begin with hyphens.")
+            await ctx.send("Template names cannot begin with hyphens.")
+            return
         try:
             _ = int(name)
-            return await ctx.send("Template names cannot be numbers.")
+            await ctx.send("Template names cannot be numbers.")
+            return
         except ValueError:
             pass
         if sql.template_count_by_guild_id(ctx.guild.id) >= config.MAX_TEMPLATES_PER_GUILD:
-            return await ctx.send(ctx.s("template.err.max_templates"))
+            await ctx.send(ctx.s("template.err.max_templates"))
+            return
         url = await Template.select_url(ctx, url)
         if url is None:
-            return await ctx.send(ctx.s("template.err.no_image"))
+            await ctx.send(ctx.s("template.err.no_image"))
+            return
         try:
             # Removes all spaces and chars that aren't 0-9 or the minus sign.
             x = int(re.sub('[^0-9-]', '', x))
             y = int(re.sub('[^0-9-]', '', y))
         except ValueError:
-            return await ctx.send(ctx.s("template.err.invalid_coords"))
+            await ctx.send(ctx.s("template.err.invalid_coords"))
+            return
 
         t = await Template.build_template(ctx, name, x, y, url, canvas)
         if not t:
-            return await ctx.send(ctx.s("template.err.template_gen_error"))
+            await ctx.send(ctx.s("template.err.template_gen_error"))
+            return
         log.info("(T:{} | X:{} | Y:{} | Dim:{})".format(t.name, t.x, t.y, t.size))
         name_chk = await Template.check_for_duplicate_by_name(ctx, t)
         md5_chk = await Template.check_for_duplicates_by_md5(ctx, t)
@@ -596,7 +608,8 @@ class Template(commands.Cog):
                 msg = ["{} {}".format(msg[0], ctx.s("template.replace"))]
 
             if await utils.yes_no(ctx, "\n".join(msg)) is False:
-                return await ctx.send(ctx.s("template.menuclose"))
+                await ctx.send(ctx.s("template.menuclose"))
+                return
 
             sql.template_update(t)
             return await ctx.send(ctx.s("template.updated").format(name))
@@ -605,10 +618,11 @@ class Template(commands.Cog):
             dup_msg.insert(0, ctx.s("template.duplicate_list_open"))
             dup_msg.append(ctx.s("template.duplicate_list_close"))
             if await utils.yes_no(ctx, "\n".join(dup_msg)) is False:
-                return await ctx.send(ctx.s("template.menuclose"))
+                await ctx.send(ctx.s("template.menuclose"))
+                return
 
         sql.template_add(t)
-        await ctx.send(ctx.s("template.added").format(name))
+        return await ctx.send(ctx.s("template.added").format(name))
 
     @staticmethod
     async def build_template(ctx, name, x, y, url, canvas):
