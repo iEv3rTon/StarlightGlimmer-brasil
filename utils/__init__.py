@@ -170,7 +170,7 @@ async def yes_no(ctx, question, cancel=False):
         answer = await YesNoMenu(question).prompt(ctx)
 
     if cancel:
-        return answer if answer is not None else "cancel"
+        return answer
     return answer if answer is not None else False
 
 

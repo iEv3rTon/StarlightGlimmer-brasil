@@ -392,31 +392,37 @@ class Template(commands.Cog):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             return await ctx.send(ctx.s("template.err.not_owner"))
 
-        snapshots = sql.snapshots_get_all_by_guild(ctx.guild.id)
+        class Snapshot():
+            def __init__(self, base, target):
+                self.base = base
+                self.target = target
+                self.result = None
+
+        snapshots = [Snapshot(base, target) for base, target in sql.snapshots_get_all_by_guild(ctx.guild.id)]
         if not snapshots:
             return await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
 
         if filter:
-            snapshots = [snapshot for i, snapshot in enumerate(snapshots) if snapshot[0].name in filter]
+            snapshots = [snapshot for i, snapshot in enumerate(snapshots) if snapshot.base.name in filter]
 
-        not_updated = []
+        for i, snap in enumerate(snapshots):
+            snap_msg = await ctx.send(f"Checking {snap.target.name} for errors...")
 
-        for i, (base, target) in enumerate(snapshots):
-            snap_msg = await ctx.send(f"Checking {target.name} for errors...")
-            data = await http.get_template(target.url, target.name)
-            fetch = self.bot.fetchers[target.canvas]
-            img = await fetch(target.x, target.y, target.width, target.height)
-            func = partial(render.diff, target.x, target.y, data, 1, img, colors.by_name[target.canvas])
+            data = await http.get_template(snap.target.url, snap.target.name)
+            fetch = self.bot.fetchers[snap.target.canvas]
+            img = await fetch(snap.target.x, snap.target.y, snap.target.width, snap.target.height)
+            func = partial(render.diff, snap.target.x, snap.target.y, data, 1, img, colors.by_name[snap.target.canvas])
             diff_img, tot, err, bad, _err, _bad = await self.bot.loop.run_in_executor(None, func)
-            if err == 0:
+
+            if not err:
                 query = await utils.yes_no(ctx, "There are no errors on the snapshot, do you want to update it?", cancel=True)
                 if query is False:
-                    not_updated.append([base, "skip"])
+                    snap.result = "skip"
                     await snap_msg.delete(delay=1)
                     continue
-                elif query == "cancel":
-                    for (b, t) in snapshots[i:]:
-                        not_updated.append([b, "cancel"])
+                elif query is None:
+                    for snap in snapshots[i:]:
+                        snap.result = "cancel"
                     await snap_msg.delete(delay=1)
                     break
 
@@ -431,59 +437,62 @@ class Template(commands.Cog):
                     perc = "{:.2f}%".format(perc * 100)
                 out = ctx.s("canvas.diff") if bad == 0 else ctx.s("canvas.diff_bad_color")
                 out = out.format(done, tot, err, perc, bad=bad)
+
                 with io.BytesIO() as bio:
                     diff_img.save(bio, format="PNG")
                     bio.seek(0)
                     f = discord.File(bio, "diff.png")
                     msg = await ctx.send(content=out, file=f)
+
                 query = await utils.yes_no(ctx, "There are errors on the snapshot, do you want to update it? You will loose track of progress if you do this.", cancel=True)
                 if query is False:
-                    not_updated.append([base, "err"])
+                    snap.result = "err"
                     await snap_msg.delete(delay=1)
                     continue
-                elif query == "cancel":
-                    for (b, t) in snapshots[i:]:
-                        not_updated.append([b, "cancel"])
+                elif query is None:
+                    for snap in snapshots[i:]:
+                        snap.result = "cancel"
                     await snap_msg.delete(delay=1)
                     break
 
-            await snap_msg.edit(content=f"Generating snapshot from {base.name}...")
+            await snap_msg.edit(content=f"Generating snapshot from {snap.base.name}...")
 
-            data = await http.get_template(base.url, base.name)
-            fetch = self.bot.fetchers[base.canvas]
-            img = await fetch(base.x, base.y, base.width, base.height)
+            data = await http.get_template(snap.base.url, snap.base.name)
+            fetch = self.bot.fetchers[snap.base.canvas]
+            img = await fetch(snap.base.x, snap.base.y, snap.base.width, snap.base.height)
             func = partial(
-                render.diff, base.x, base.y, data, 1,
-                img, colors.by_name[base.canvas], create_snapshot=True)
+                render.diff, snap.base.x, snap.base.y, data, 1,
+                img, colors.by_name[snap.base.canvas], create_snapshot=True)
             diff_img, tot, err, bad, _err, _bad = await self.bot.loop.run_in_executor(None, func)
 
             if not bad:
                 with io.BytesIO() as bio:
                     diff_img.save(bio, format="PNG")
                     bio.seek(0)
-                    f = discord.File(bio, f"{target.name}.png")
+                    f = discord.File(bio, f"{snap.target.name}.png")
                     await snap_msg.delete(delay=1)
                     msg = await ctx.send(file=f)
 
                 url = msg.attachments[0].url
-                result = await Template.add_template(ctx, base.canvas, target.name, str(base.x), str(base.y), url)
+                result = await Template.add_template(ctx, snap.base.canvas, snap.target.name, str(snap.base.x), str(snap.base.y), url)
                 if result is None:
-                    not_updated.append([base, "gen"])
+                    snap.result = "gen"
             else:
-                not_updated.append([base, "bad"])
-                continue
+                snap.result = "bad"
 
-        if not_updated != []:
+        not_updated = [snap for snap in snapshots if snap.result is not None]
+
+        if not_updated:
             out = []
-            for t, reason in not_updated:
+            for snap in not_updated:
                 reasons = {
-                    "err": f"`{t.name}`: errors on the current snapshot.",
-                    "bad": f"`{t.name}`: unquantised pixels detected.",
-                    "cancel": f"`{t.name}`: the command was cancelled.",
-                    "skip": f"`{t.name}`: the template was skipped.",
-                    "gen": f"`{t.name}`: template generation was halted."
+                    "err": f"`{snap.base.name}`: errors on the current snapshot.",
+                    "bad": f"`{snap.base.name}`: unquantised pixels detected.",
+                    "cancel": f"`{snap.base.name}`: the command was cancelled.",
+                    "skip": f"`{snap.base.name}`: the template was skipped.",
+                    "gen": f"`{snap.base.name}`: template generation was halted."
                 }
-                text = reasons.get(reason)
+                text = reasons.get(snap.result)
                 if text:
                     out.append(text)
 
@@ -650,7 +659,7 @@ class Template(commands.Cog):
                     w, h = tmp.size
                     quantized = await Template.check_colors(tmp, colors.by_name[canvas])
                 if not quantized:
-                    if not await utils.yes_no(ctx, ctx.s("template.not_quantized")):
+                    if await utils.yes_no(ctx, ctx.s("template.not_quantized")) is False:
                         ctx.send(ctx.s("template.menuclose"))
                         return
 
