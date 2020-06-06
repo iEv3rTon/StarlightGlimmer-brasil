@@ -26,6 +26,7 @@ log = logging.getLogger(__name__)
 class TemplateSource(menus.ListPageSource):
     def __init__(self, data):
         super().__init__(data, per_page=10)
+        self.embed = None
 
     async def format_page(self, menu, entries):
         embed = discord.Embed(
@@ -43,7 +44,9 @@ class TemplateSource(menus.ListPageSource):
                 value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})".format(
                     template.x, template.y, template.url),
                 inline=False)
+        self.embed = embed
         return embed
+
 
 
 class SnapshotSource(menus.ListPageSource):
@@ -494,7 +497,7 @@ class Template(commands.Cog):
                     msg = await ctx.send(file=f)
 
                 url = msg.attachments[0].url
-                result = await Template.add_template(ctx, snap.base.canvas, snap.target.name, snap.base.x, snap.base.y, url)
+                result = await Template.add_template(ctx, snap.base.canvas, snap.target.name, str(snap.base.x), str(snap.base.y), url)
                 if result is None:
                     snap.result = "gen"
             else:
