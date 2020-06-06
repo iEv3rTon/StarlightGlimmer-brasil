@@ -761,7 +761,9 @@ class Template(commands.Cog):
     @staticmethod
     async def send_end(ctx, out):
         if out != []:
-            await ctx.send("Template updated!```{}```".format("\n".join(out)))
+            await ctx.send(embed=discord.Embed(description="Template updated!").add_field(
+                name="Summary of changes",
+                value="```{}```".format("\n".join(out))))
         else:
             await ctx.send("Template not updated as no arguments were provided.")
 
