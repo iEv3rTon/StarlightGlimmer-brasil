@@ -46,6 +46,32 @@ class TemplateSource(menus.ListPageSource):
         return embed
 
 
+class SnapshotSource(menus.ListPageSource):
+    def __init__(self, data):
+        super().__init__(data, per_page=10)
+
+    async def format_page(self, menu, entries):
+        embed = discord.Embed(
+            description=f"Page {menu.current_page + 1} of {self.get_max_pages()}")
+        embed.set_footer(
+            text="Scroll using the reactions below to see other pages.")
+
+        offset = menu.current_page * self.per_page
+        w1 = max(max(map(lambda snap: len(snap.base.name), entries[offset:offset + self.per_page])) + 2, len("Base Template"))
+        out = ["{0:<{w1}}  {1}".format("Base Template", "Snapshot Template", w1=w1)]
+
+        for i, snap in enumerate(entries, start=offset):
+            if i == offset + self.per_page:
+                break
+            out.append("{0.base.name:<{w1}}  {0.target.name}".format(snap, w1=w1))
+
+        embed.add_field(
+            name="Snapshots",
+            value="```{0}``````{1}```".format(out[0], "\n".join(out[1:])),
+            inline=False)
+        return embed
+
+
 class Template(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -392,12 +418,6 @@ class Template(commands.Cog):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             return await ctx.send(ctx.s("template.err.not_owner"))
 
-        class Snapshot():
-            def __init__(self, base, target):
-                self.base = base
-                self.target = target
-                self.result = None
-
         snapshots = [Snapshot(base, target) for base, target in sql.snapshots_get_all_by_guild(ctx.guild.id)]
         if not snapshots:
             return await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
@@ -474,7 +494,7 @@ class Template(commands.Cog):
                     msg = await ctx.send(file=f)
 
                 url = msg.attachments[0].url
-                result = await Template.add_template(ctx, snap.base.canvas, snap.target.name, str(snap.base.x), str(snap.base.y), url)
+                result = await Template.add_template(ctx, snap.base.canvas, snap.target.name, snap.base.x, snap.base.y, url)
                 if result is None:
                     snap.result = "gen"
             else:
@@ -541,12 +561,15 @@ class Template(commands.Cog):
     @checks.template_adder_only()
     @template_snapshot.command(name='list', aliases=['l'])
     async def template_snapshot_list(self, ctx):
-        snapshots = sql.snapshots_get_all_by_guild(ctx.guild.id)
-        if snapshots == []:
+        snapshots = [Snapshot(base, target) for base, target in sql.snapshots_get_all_by_guild(ctx.guild.id)]
+        if not snapshots:
             return await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
 
-        out = [f"Base Template Name:{base.name} Snapshot Template Name:{target.name}" for base, target in snapshots]
-        await ctx.send("Snapshots:```{}```".format("\n".join(out)))
+        snapshot_menu = menus.MenuPages(
+            source=SnapshotSource(snapshots),
+            clear_reactions_after=True,
+            timeout=300.0)
+        await snapshot_menu.start(ctx)
 
     @staticmethod
     async def add_template(ctx, canvas, name, x, y, url):
@@ -793,3 +816,10 @@ class Template(commands.Cog):
             raise UrlError
         if len(ctx.message.attachments) > 0:
             return ctx.message.attachments[0].url
+
+
+class Snapshot():
+            def __init__(self, base, target):
+                self.base = base
+                self.target = target
+                self.result = None
