@@ -60,6 +60,8 @@ class SnapshotSource(menus.ListPageSource):
             text="Scroll using the reactions below to see other pages.")
 
         offset = menu.current_page * self.per_page
+        # Find which is longest: the title or one of the template names. Set w1 to that + 2.
+        # Then w1 can be used to offset text so that the start of the second column all lines up.
         w1 = max(max(map(lambda snap: len(snap.base.name), entries[offset:offset + self.per_page])) + 2, len("Base Template"))
         out = ["{0:<{w1}}  {1}".format("Base Template", "Snapshot Template", w1=w1)]
 
@@ -500,6 +502,7 @@ class Template(commands.Cog):
                     msg = await ctx.send(file=f)
 
                 url = msg.attachments[0].url
+                # The coordinates need to be casted to strings, or the regex in add_template will break shit
                 result = await Template.add_template(ctx, snap.base.canvas, snap.target.name, str(snap.base.x), str(snap.base.y), url)
                 if result is None:
                     snap.result = "gen"
