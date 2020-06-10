@@ -470,17 +470,19 @@ class Template(commands.Cog):
                     diff_img.save(bio, format="PNG")
                     bio.seek(0)
                     f = discord.File(bio, "diff.png")
-                    msg = await ctx.send(content=out, file=f)
+                    diff_msg = await ctx.send(content=out, file=f)
 
                 query = await utils.yes_no(ctx, "There are errors on the snapshot, do you want to update it? You will loose track of progress if you do this.", cancel=True)
                 if query is False:
                     snap.result = "err"
                     await snap_msg.delete(delay=1)
+                    await diff_msg.delete(delay=1)
                     continue
                 elif query is None:
                     for snap in snapshots[i:]:
                         snap.result = "cancel"
                     await snap_msg.delete(delay=1)
+                    await diff_msg.delete(delay=1)
                     break
 
             await snap_msg.edit(content=f"Generating snapshot from {snap.base.name}...")

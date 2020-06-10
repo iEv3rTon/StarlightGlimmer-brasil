@@ -217,7 +217,9 @@ class Canvas(commands.Cog):
             clear_reactions_after=True,
             timeout=300.0)
         check_menu.current_page = max(min(a.page - 1, check_menu.source.get_max_pages()), 0)
-        await check_menu.start(ctx)
+        await check_menu.start(ctx, wait=True)
+        check_menu.source.embed.set_footer(text=ctx.s("bot.timeout"))
+        await check_menu.message.edit(embed=check_menu.source.embed)
 
     # =======================
     #         GRIDIFY
@@ -351,6 +353,10 @@ class Canvas(commands.Cog):
             msg = await ctx.send(ctx.s("canvas.online_await"))
             ct = await http.fetch_online_pxlsspace()
             await msg.edit(content=ctx.s("canvas.online").format(ct, "Pxls.space"))
+
+    # ======================
+    #        METHODS
+    # ======================
 
     async def check_canvas(self, ctx, templates, canvas, msg=None):
         """Update the current total errors for a list of templates.
@@ -720,6 +726,7 @@ class Canvas(commands.Cog):
 class CheckSource(menus.ListPageSource):
     def __init__(self, data):
         super().__init__(data, per_page=10)
+        self.embed = None
 
     async def format_page(self, menu, entries):
         embed = discord.Embed(
@@ -743,6 +750,7 @@ class CheckSource(menus.ListPageSource):
                     x=template.x,
                     y=template.y),
                 inline=False)
+        self.embed = embed
         return embed
 
 
