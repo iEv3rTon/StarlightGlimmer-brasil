@@ -2,6 +2,7 @@ import logging
 import traceback
 import re
 import time
+import os
 
 import discord
 from discord import TextChannel
@@ -62,21 +63,6 @@ async def on_ready():
                         sql.template_update(t)
                     except TemplateHttpError:
                         log.error("Error retrieving template {0.name}. Skipping...".format(t))
-
-    log.info("Loading cogs...")
-    cogs = [
-        Animotes(bot),
-        Canvas(bot),
-        Configuration(bot),
-        Faction(bot),
-        General(bot),
-        Template(bot),
-    ]
-    for c in cogs:
-        try:
-            bot.add_cog(c)
-        except Exception as e:
-            log.error("Failed to load a cog: {}\n{}: {}".format(c, type(e).__name__, e))
 
     log.info("Performing guilds check...")
     for g in bot.guilds:
@@ -307,6 +293,15 @@ async def print_welcome_message(guild):
         log.info(" - Printed welcome message""".format(guild))
     else:
         log.info("- Could not print welcome message: no default channel found".format(guild))
+
+log.info("Loading cogs...")
+
+# loads all extensions from /commands directory
+for filename in os.listdir('./commands'):
+    filename = filename[:-3] if filename.endswith(".py") else filename
+    extensions = ["animotes", "canvas", "cogs", "configuration", "faction", "general", "template"]
+    if filename in extensions:
+        bot.load_extension("commands.{}".format(filename[:-3]))
 
 
 bot.run(config.TOKEN)

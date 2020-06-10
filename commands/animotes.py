@@ -87,3 +87,7 @@ def emote_corrector(message):
     temp = '**<{}>** '.format(message.author.name) + temp
 
     return temp
+
+
+def setup(bot):
+    bot.add_cog(Animotes(bot))

@@ -836,3 +836,7 @@ class Snapshot():
         self.base = base
         self.target = target
         self.result = None
+
+
+def setup(bot):
+    bot.add_cog(Template(bot))

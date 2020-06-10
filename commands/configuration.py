@@ -222,3 +222,7 @@ class Configuration(commands.Cog):
     async def role_templateadmin_clear(self, ctx):
         sql.guild_update(ctx.guild.id, template_admin=None)
         await ctx.send(ctx.s("configuration.role_template_admin_cleared"))
+
+
+def setup(bot):
+    bot.add_cog(Configuration(bot))

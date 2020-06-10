@@ -290,3 +290,7 @@ class Faction(commands.Cog):
             e.set_thumbnail(url=g.faction_emblem)
 
         await ctx.send(embed=e)
+
+
+def setup(bot):
+    bot.add_cog(Faction(bot))

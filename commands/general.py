@@ -189,26 +189,16 @@ class GlimmerHelpCommand(HelpCommand):
             title=self.context.s("general.help_command_list_header"),
             url=self.context.s("general.wiki"))
 
-        def get_category(command: Command):
-            return {
-                'General':       '1. General',
-                'Canvas':        '2. Canvas',
-                'Template':      '3. Template',
-                'Faction':       '4. Faction',
-                'Animotes':      '5. Animotes',
-                'Configuration': '6. Configuration'
-            }[command.cog_name]
+        filtered = await self.filter_commands(self.context.bot.commands, sort=True, key=GlimmerHelpCommand.get_category)
 
-        filtered = await self.filter_commands(self.context.bot.commands, sort=True, key=get_category)
-
-        for cat, cmds in itertools.groupby(filtered, key=get_category):
+        for cat, cmds in itertools.groupby(filtered, key=lambda command: command.cog_name):
             cmds = sorted(cmds, key=lambda x: x.name)
             if len(cmds) > 0:
                 commands = []
                 for c in cmds:
                     url = "{}{}#{}".format(
                         self.context.s("general.wiki"),
-                        self.get_category(c),
+                        GlimmerHelpCommand.get_category(c),
                         c.qualified_name)
                     commands.append(f"[{c.name}]({url})")
                 embed.add_field(name=cat, value=", ".join(commands))
@@ -247,14 +237,7 @@ class GlimmerHelpCommand(HelpCommand):
 
     @staticmethod
     def get_category(command_or_group):
-        return {
-            'General':       'General-Cog',
-            'Canvas':        'Canvas-Cog',
-            'Template':      'Template-Cog',
-            'Faction':       'Faction-Cog',
-            'Animotes':      'Animotes-Cog',
-            'Configuration': 'Configuration-Cog'
-        }[command_or_group.cog_name]
+        return f"{command_or_group.cog_name}-Cog"
 
     async def generate_help(self, command_or_group):
         dot_name = command_or_group.qualified_name.replace(' ', '.')
@@ -264,7 +247,7 @@ class GlimmerHelpCommand(HelpCommand):
             description=self.context.s("brief." + dot_name),
             url="{}{}#{}".format(
                 self.context.s("general.wiki"),
-                self.get_category(command_or_group),
+                GlimmerHelpCommand.get_category(command_or_group),
                 command_or_group.qualified_name.replace(" ", "-")))
 
         sig = self.context.s("signature." + dot_name)
@@ -328,3 +311,7 @@ class GlimmerHelpCommand(HelpCommand):
         embed.set_footer(text=self.context.s("general.help_footer").format(self.clean_prefix))
 
         return embed
+
+
+def setup(bot):
+    bot.add_cog(General(bot))
