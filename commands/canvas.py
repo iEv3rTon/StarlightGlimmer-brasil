@@ -850,3 +850,7 @@ def process_check(templates, chunks):
         tmp = Image.composite(tmp, alpha, template)
         tmp = ImageChops.difference(tmp.convert('RGB'), template.convert('RGB'))
         t.errors = np.array(tmp).any(axis=-1).sum()
+
+
+def setup(bot):
+    bot.load_cog(Canvas(bot))
