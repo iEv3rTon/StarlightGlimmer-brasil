@@ -30,6 +30,7 @@ STRINGS = {
     "bot.usage": "Usage",
     "bot.visibility": "Visibility",
     "bot.yes": "Yes",
+    "bot.menu_deleted": "Menu not found, was the message deleted?",
 
     # Error messages
     "error.account_deleted": "[[Account deleted]]",

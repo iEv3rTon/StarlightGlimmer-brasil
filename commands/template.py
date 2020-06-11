@@ -108,9 +108,12 @@ class Template(commands.Cog):
             clear_reactions_after=True,
             timeout=300.0)
         template_menu.current_page = max(min(args.page - 1, template_menu.source.get_max_pages()), 0)
-        await template_menu.start(ctx, wait=True)
-        template_menu.source.embed.set_footer(text=ctx.s("bot.timeout"))
-        await template_menu.message.edit(embed=template_menu.source.embed)
+        try:
+            await template_menu.start(ctx, wait=True)
+            template_menu.source.embed.set_footer(text=ctx.s("bot.timeout"))
+            await template_menu.message.edit(embed=template_menu.source.embed)
+        except discord.NotFound:
+            await ctx.send(ctx.s("bot.menu_deleted"))
 
     @commands.guild_only()
     @commands.cooldown(2, 5, BucketType.guild)
@@ -580,9 +583,12 @@ class Template(commands.Cog):
             source=SnapshotSource(snapshots),
             clear_reactions_after=True,
             timeout=300.0)
-        await snapshot_menu.start(ctx, wait=True)
-        snapshot_menu.source.embed.set_footer(text=ctx.s("bot.timeout"))
-        await snapshot_menu.message.edit(embed=snapshot_menu.source.embed)
+        try:
+            await snapshot_menu.start(ctx, wait=True)
+            snapshot_menu.source.embed.set_footer(text=ctx.s("bot.timeout"))
+            await snapshot_menu.message.edit(embed=snapshot_menu.source.embed)
+        except discord.NotFound:
+            await ctx.send(ctx.s("bot.menu_deleted"))
 
     @staticmethod
     async def add_template(ctx, canvas, name, x, y, url):

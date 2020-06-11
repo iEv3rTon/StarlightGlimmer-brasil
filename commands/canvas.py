@@ -217,9 +217,12 @@ class Canvas(commands.Cog):
             clear_reactions_after=True,
             timeout=300.0)
         check_menu.current_page = max(min(a.page - 1, check_menu.source.get_max_pages()), 0)
-        await check_menu.start(ctx, wait=True)
-        check_menu.source.embed.set_footer(text=ctx.s("bot.timeout"))
-        await check_menu.message.edit(embed=check_menu.source.embed)
+        try:
+            await check_menu.start(ctx, wait=True)
+            check_menu.source.embed.set_footer(text=ctx.s("bot.timeout"))
+            await check_menu.message.edit(embed=check_menu.source.embed)
+        except discord.NotFound:
+            await ctx.send(ctx.s("bot.menu_deleted"))
 
     # =======================
     #         GRIDIFY
