@@ -12,9 +12,8 @@ class Cogs(commands.Cog):
         self.bot = bot
 
     def cog_check(self, ctx):
-        return self.bot.owner_id == ctx.author.id
+        return self.bot.is_owner(ctx.author)
 
-    @commands.is_owner()
     @commands.command(name="reload")
     async def reload_extension(self, ctx, ext_name):
         try:
@@ -25,7 +24,6 @@ class Cogs(commands.Cog):
         except commands.ExtensionNotFound:
             await ctx.send(f"{ext_name} could not be found.")
 
-    @commands.is_owner()
     @commands.command(name="list-extensions", aliases=["le"])
     async def list_extensions(self, ctx):
         out = [name for name, ext in self.bot.extensions.items()]
