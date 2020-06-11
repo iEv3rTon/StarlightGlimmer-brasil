@@ -1,5 +1,6 @@
+import asyncio
 import logging
-import subprocess
+import os
 
 import discord
 from discord.ext import commands
@@ -29,6 +30,16 @@ class Cogs(commands.Cog):
         out = [name for name, ext in self.bot.extensions.items()]
         await ctx.send(
             embed=discord.Embed().add_field(name="Currently loaded extensions", value="\n".join(out)))
+
+    @commands.command(name="git-pull", aliases=["pull"])
+    async def git_pull(self, ctx):
+        if "glimmer.py" not in os.listdir():
+            await ctx.send("Not in the right directory, I cannot pull from git.")
+            return
+
+        process = await asyncio.create_subprocess_shell("git pull", stdout=asyncio.subprocess.PIPE)
+        stdout, _ = await process.communicate()
+        await ctx.send(f"`{stdout.decode()}`")
 
 
 def setup(bot):

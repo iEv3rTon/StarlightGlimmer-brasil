@@ -180,9 +180,11 @@ async def on_command_error(ctx, error):
         await ctx.send(ctx.s("error.no_dm"))
     elif isinstance(error, commands.MaxConcurrencyReached):
         await ctx.send(ctx.s("error.max_concurrency").format(error.number))
+    elif isinstance(error, commands.CheckFailure):
+        await ctx.send(ctx.s("error.no_user_permission"))
 
     # Menu errors
-    if isinstance(error, menus.CannotAddReactions):
+    elif isinstance(error, menus.CannotAddReactions):
         await ctx.send(error)
 
     # Check errors
