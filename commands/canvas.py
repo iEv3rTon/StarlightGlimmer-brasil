@@ -856,4 +856,4 @@ def process_check(templates, chunks):
 
 
 def setup(bot):
-    bot.load_cog(Canvas(bot))
+    bot.add_cog(Canvas(bot))
