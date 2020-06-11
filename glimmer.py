@@ -36,7 +36,8 @@ class glimmer(commands.Bot):
 log = logging.getLogger(__name__)
 bot = glimmer(
     command_prefix=get_prefix,
-    case_insensitive=True)
+    case_insensitive=True,
+    owner_id=255376766049320960)
 sql.menu_locks_delete_all()
 
 
