@@ -301,7 +301,7 @@ for filename in os.listdir('./commands'):
     filename = filename[:-3] if filename.endswith(".py") else filename
     extensions = ["animotes", "canvas", "cogs", "configuration", "faction", "general", "template"]
     if filename in extensions:
-        bot.load_extension("commands.{}".format(filename[:-3]))
+        bot.load_extension("commands.{}".format(filename))
 
 
 bot.run(config.TOKEN)
