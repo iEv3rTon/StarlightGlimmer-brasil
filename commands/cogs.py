@@ -37,10 +37,14 @@ class Cogs(commands.Cog):
             await ctx.send("Not in the right directory, I cannot pull from git.")
             return
 
-        process = await asyncio.create_subprocess_shell("git pull", stdout=asyncio.subprocess.PIPE)
-        stdout, _ = await process.communicate()
-        await ctx.send(f"`{stdout.decode()}`")
-
+        process = await asyncio.create_subprocess_shell(
+            "/usr/bin/git pull",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+        streams = await process.communicate()
+        streams = [stream.decode() for stream in streams if stream.decode() != ""]
+        for stream in streams:
+            await ctx.send(f"`{stream}`")
 
 def setup(bot):
     bot.add_cog(Cogs(bot))
