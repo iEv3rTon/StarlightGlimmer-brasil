@@ -5,10 +5,8 @@ import time
 import os
 
 import discord
-from discord import TextChannel
-from discord.ext import menus
+from discord.ext import commands, menus
 
-from commands import *
 from objects.bot_objects import GlimContext
 from objects.errors import *
 import utils
@@ -250,6 +248,7 @@ async def on_command_error(ctx, error):
         log.error("An error occurred executing '{}': {}\n{}".format(
             name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
         await ctx.send(ctx.s("error.unknown"))
+
 
 @bot.event
 async def on_message(message):
