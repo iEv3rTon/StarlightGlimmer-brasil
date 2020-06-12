@@ -44,7 +44,7 @@ class Cogs(commands.Cog):
         streams = await process.communicate()
         streams = [stream.decode() for stream in streams if stream.decode() != ""]
         for stream in streams:
-            await ctx.send(f"`{stream}`")
+            await ctx.send(f"```{stream}```")
 
 def setup(bot):
     bot.add_cog(Cogs(bot))
