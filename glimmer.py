@@ -1,16 +1,15 @@
 import logging
-import traceback
 import re
 import time
 import os
 
 import discord
-from discord.ext import commands, menus
+from discord.ext import commands
 
 from objects.bot_objects import GlimContext
-from objects.errors import *
+from objects.errors import TemplateHttpError
 import utils
-from utils import canvases, config, http, render, sqlite as sql
+from utils import config, http, render, sqlite as sql
 from utils.version import VERSION
 
 
@@ -153,101 +152,11 @@ async def on_command_preprocess(ctx):
         invocation_type += "R"
     if ctx.guild:
         log.info("[{0}] {1.name}#{1.discriminator} used '{2}' in {3.name} (UID:{1.id} GID:{3.id})"
-                  .format(invocation_type, ctx.author, ctx.command.qualified_name, ctx.guild))
+                 .format(invocation_type, ctx.author, ctx.command.qualified_name, ctx.guild))
     else:
         log.info("[{0}] {1.name}#{1.discriminator} used '{2}' in DM (UID:{1.id})"
-                  .format(invocation_type, ctx.author, ctx.command.qualified_name, ctx.guild))
+                 .format(invocation_type, ctx.author, ctx.command.qualified_name))
     log.info(ctx.message.content)
-
-@bot.event
-async def on_command_error(ctx, error):
-    # Command errors
-    if isinstance(error, commands.BadArgument):
-        pass
-    elif isinstance(error, commands.CommandInvokeError) \
-            and isinstance(error.original, discord.HTTPException) \
-            and error.original.code == 50013:
-        pass
-    elif isinstance(error, commands.CommandOnCooldown):
-        await ctx.send(ctx.s("error.cooldown").format(error.retry_after))
-    elif isinstance(error, commands.CommandNotFound):
-        pass
-    elif isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send(ctx.s("error.missing_argument"))
-    elif isinstance(error, commands.NoPrivateMessage):
-        await ctx.send(ctx.s("error.no_dm"))
-    elif isinstance(error, commands.MaxConcurrencyReached):
-        await ctx.send(ctx.s("error.max_concurrency").format(error.number))
-    elif isinstance(error, commands.CheckFailure):
-        await ctx.send(ctx.s("error.no_user_permission"))
-
-    # Menu errors
-    elif isinstance(error, menus.CannotAddReactions):
-        await ctx.send(error)
-
-    # Check errors
-    elif isinstance(error, BadArgumentErrorWithMessage):
-        await ctx.send(error.message)
-    elif isinstance(error, FactionNotFoundError):
-        await ctx.send(ctx.s("error.faction_not_found"))
-    elif isinstance(error, IdempotentActionError):
-        try:
-            f = discord.File("assets/y_tho.png", "y_tho.png")
-            await ctx.send(ctx.s("error.why"), file=f)
-        except IOError:
-            await ctx.send(ctx.s("error.why"))
-    elif isinstance(error, NoAttachmentError):
-        await ctx.send(ctx.s("error.no_attachment"))
-    elif isinstance(error, NoJpegsError):
-        try:
-            f = discord.File("assets/disdain_for_jpegs.gif", "disdain_for_jpegs.gif")
-            await ctx.send(ctx.s("error.jpeg"), file=f)
-        except IOError:
-            await ctx.send(ctx.s("error.jpeg"))
-    elif isinstance(error, NoSelfPermissionError):
-        await ctx.send(ctx.s("error.no_self_permission"))
-    elif isinstance(error, NoTemplatesError):
-        if error.is_canvas_specific:
-            await ctx.send(ctx.s("error.no_templates_for_canvas"))
-        else:
-            await ctx.send(ctx.s("error.no_templates"))
-    elif isinstance(error, NoUserPermissionError):
-        await ctx.send(ctx.s("error.no_user_permission"))
-    elif isinstance(error, NotPngError):
-        await ctx.send(ctx.s("error.not_png"))
-    elif isinstance(error, PilImageError):
-        await ctx.send(ctx.s("error.bad_image"))
-    elif isinstance(error, TemplateHttpError):
-        await ctx.send(ctx.s("error.cannot_fetch_template").format(error.template_name))
-    elif isinstance(error, TemplateNotFoundError):
-        out = ctx.s("error.template_not_found").format(error.query)
-        if error.matches != []:
-            m = ctx.s("bot.or").format(", ".join(error.matches[:-1]), error.matches[-1]) if len(error.matches) > 1 else error.matches[0]
-            out = "{} {}".format(out, ctx.s("error.did_you_mean").format(m))
-        await ctx.send(out)
-    elif isinstance(error, UrlError):
-        await ctx.send(ctx.s("error.non_discord_url"))
-    elif isinstance(error, HttpCanvasError):
-        await ctx.send(ctx.s("error.http_canvas").format(canvases.pretty_print[error.canvas]))
-    elif isinstance(error, HttpGeneralError):
-        await ctx.send(ctx.s("error.http"))
-    elif isinstance(error, ColorError):
-        await ctx.send(ctx.s("error.invalid_color"))
-    elif isinstance(error, TemplateTooLargeError):
-        await ctx.send(ctx.s("canvas.dither_toolarge").format(error.limit))
-
-    # Uncaught error
-    else:
-        name = ctx.command.qualified_name if ctx.command else "None"
-        await utils.channel_log(
-            bot, "An error occurred executing `{0}` in server **{1.name}** (ID: `{1.id}`):".format(name, ctx.guild))
-        tb_text = "{}\n{}".format(error, ''.join(traceback.format_exception(None, error, error.__traceback__)))
-        tb_text = [tb_text[i:i + 1500] for i in range(0, len(tb_text), 1500)]
-        for chunk in tb_text:
-            await utils.channel_log(bot, f"```{chunk}```")
-        log.error("An error occurred executing '{}': {}\n{}".format(
-            name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
-        await ctx.send(ctx.s("error.unknown"))
 
 
 @bot.event
@@ -286,22 +195,22 @@ async def on_message(message):
 
 
 async def print_welcome_message(guild):
-    channels = (x for x in guild.channels if x.permissions_for(guild.me).send_messages and type(x) is TextChannel)
+    channels = (x for x in guild.channels if x.permissions_for(guild.me).send_messages and type(x) is discord.TextChannel)
     c = next((x for x in channels if x.name == "general"), next(channels, None))
     if c:
         await c.send("Hi! I'm {0}. For a full list of commands, pull up my help page with `{1}help`. "
                      "You could also take a quick guided tour of my main features with `{1}quickstart`. "
                      "Happy pixel painting!".format(config.NAME, config.PREFIX))
-        log.info(" - Printed welcome message""".format(guild))
+        log.info("Printed welcome message")
     else:
-        log.info("- Could not print welcome message: no default channel found".format(guild))
+        log.info("Could not print welcome message: no default channel found")
 
 log.info("Loading cogs...")
 
 # loads all extensions from /commands directory
 for filename in os.listdir('./commands'):
     filename = filename[:-3] if filename.endswith(".py") else filename
-    extensions = ["animotes", "canvas", "cogs", "configuration", "faction", "general", "template"]
+    extensions = ["animotes", "canvas", "cogs", "configuration", "faction", "general", "template", "errors"]
     if filename in extensions:
         bot.load_extension("commands.{}".format(filename))
 
