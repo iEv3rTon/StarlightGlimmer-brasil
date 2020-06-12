@@ -103,7 +103,3 @@ class Errors(commands.Cog):
             log.error("An error occurred executing '{}': {}\n{}".format(
                 name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
             await ctx.send(ctx.s("error.unknown"))
-
-
-def setup(bot):
-    bot.add_cog(Errors(bot))

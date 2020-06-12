@@ -311,7 +311,3 @@ class GlimmerHelpCommand(HelpCommand):
         embed.set_footer(text=self.context.s("general.help_footer").format(self.clean_prefix))
 
         return embed
-
-
-def setup(bot):
-    bot.add_cog(General(bot))
