@@ -1,4 +1,4 @@
-from commands.canvas.canvas_cog import Canvas
+from extensions.canvas.canvas import Canvas
 
 
 def setup(bot):

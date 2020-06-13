@@ -208,11 +208,11 @@ async def print_welcome_message(guild):
 log.info("Loading cogs...")
 
 # loads all extensions from /commands directory
-for filename in os.listdir('./commands'):
+for filename in os.listdir('./extensions'):
     filename = filename[:-3] if filename.endswith(".py") else filename
-    extensions = ["animotes", "canvas", "cogs", "configuration", "faction", "general", "template", "errors"]
+    extensions = ["animotes", "canvas", "configuration", "faction", "general", "template"]
     if filename in extensions:
-        bot.load_extension("commands.{}".format(filename))
+        bot.load_extension("extensions.{}".format(filename))
 
 
 bot.run(config.TOKEN)
