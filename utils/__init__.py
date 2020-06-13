@@ -199,3 +199,15 @@ class ColorAction(argparse.Action):
             setattr(namespace, self.dest, color)
         except ValueError:
             raise ColorError
+
+
+async def print_welcome_message(guild):
+    channels = (x for x in guild.channels if x.permissions_for(guild.me).send_messages and type(x) is discord.TextChannel)
+    c = next((x for x in channels if x.name == "general"), next(channels, None))
+    if c:
+        await c.send("Hi! I'm {0}. For a full list of commands, pull up my help page with `{1}help`. "
+                     "You could also take a quick guided tour of my main features with `{1}quickstart`. "
+                     "Happy pixel painting!".format(config.NAME, config.PREFIX))
+        log.info("Printed welcome message")
+    else:
+        log.info("Could not print welcome message: no default channel found")
