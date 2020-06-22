@@ -1,12 +1,10 @@
 import logging
-import re
 import traceback
 
 import discord
 from discord.ext import commands, menus
 
 from objects import errors
-from objects.bot_objects import GlimContext
 import utils
 
 log = logging.getLogger(__name__)
@@ -132,37 +130,3 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_role_delete(self, role):
         utils.sql.guild_delete_role(role.id)
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        # Ignore channels that can't be posted in
-        if message.guild and not message.channel.permissions_for(message.guild.me).send_messages:
-            return
-
-        # Ignore other bots
-        if message.author.bot:
-            return
-
-        # Ignore messages from users currently making a menu choice
-        locks = utils.sql.menu_locks_get_all()
-        for l in locks:
-            if message.author.id == l['user_id'] and message.channel.id == l['channel_id']:
-                return
-
-        # Ignore messages with spoilered images
-        for attachment in message.attachments:
-            if attachment.is_spoiler():
-                return
-
-        # Ignore messages with any spoilered text
-        if re.match(r".*\|\|.*\|\|.*", message.content):
-            return
-
-        # Invoke a command if there is one
-        ctx = await self.bot.get_context(message, cls=GlimContext)
-        if ctx.invoked_with:
-            await self.bot.invoke(ctx)
-            return
-
-        # Autoscan
-        await utils.autoscan(ctx)
