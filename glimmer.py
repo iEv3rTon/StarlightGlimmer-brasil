@@ -44,7 +44,7 @@ class Glimmer(commands.Bot):
         await self.wait_until_ready()
 
     async def startup(self):
-        self.wait_until_ready()
+        await self.wait_until_ready()
 
         log.info("Starting Starlight Glimmer v{}!".format(VERSION))
 
@@ -58,23 +58,27 @@ class Glimmer(commands.Bot):
         print("I am ready!")
 
     async def database_check(self):
+        is_new_version = False
         if sql.version_get() is None:
             sql.version_init(VERSION)
-            is_new_version = False
-        else:
-            old_version = sql.version_get()
-            is_new_version = old_version != VERSION and old_version is not None
-            if is_new_version:
-                log.info("Database is a previous version. Updating...")
-                sql.version_update(VERSION)
-                if old_version < 1.6 <= VERSION:
-                    # Fix legacy templates not having a size
-                    for t in sql.template_get_all():
-                        try:
-                            t.size = await render.calculate_size(await http.get_template(t.url, t.name))
-                            sql.template_update(t)
-                        except TemplateHttpError:
-                            log.error("Error retrieving template {0.name}. Skipping...".format(t))
+            return is_new_version
+
+        old_version = sql.version_get()
+        is_new_version = old_version != VERSION and old_version is not None
+
+        if not is_new_version:
+            return is_new_version
+
+        log.info("Database is a previous version. Updating...")
+        sql.version_update(VERSION)
+        if old_version < 1.6 <= VERSION:
+            # Fix legacy templates not having a size
+            for t in sql.template_get_all():
+                try:
+                    t.size = await render.calculate_size(await http.get_template(t.url, t.name))
+                    sql.template_update(t)
+                except TemplateHttpError:
+                    log.error("Error retrieving template {0.name}. Skipping...".format(t))
 
         return is_new_version
 
