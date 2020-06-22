@@ -15,31 +15,40 @@ class Cogs(commands.Cog):
     def cog_check(self, ctx):
         return self.bot.is_owner(ctx.author)
 
+    async def cog_command_error(self, ctx, error):
+        # Unwrap nested errors
+        error = getattr(error, 'original', error)
+
+        try:
+            _, _, ext_name = ctx.args
+        except IndexError:
+            pass
+
+        if isinstance(error, commands.ExtensionNotLoaded):
+            await ctx.send(f"{ext_name} is already unloaded.")
+        elif isinstance(error, commands.ExtensionAlreadyLoaded):
+            await ctx.send(f"{ext_name} is already loaded.")
+        elif isinstance(error, commands.ExtensionNotFound):
+            await ctx.send(f"{ext_name} could not be found.")
+        else:
+            return
+
+        error.handled = True
+
     @commands.command(name="reload")
     async def extension_reload(self, ctx, ext_name):
-        try:
-            self.bot.reload_extension(f"extensions.{ext_name}")
-            await ctx.send(f"Reloaded {ext_name}.")
-        except commands.ExtensionNotLoaded:
-            await ctx.send(f"{ext_name} is already unloaded.")
-        except commands.ExtensionNotFound:
-            await ctx.send(f"{ext_name} could not be found.")
+        self.bot.reload_extension(f"extensions.{ext_name}")
+        await ctx.send(f"Reloaded {ext_name}.")
 
     @commands.command(name="unload")
     async def extension_unload(self, ctx, ext_name):
-        try:
-            self.bot.unload_extension(f"extensions.{ext_name}")
-            await ctx.send(f"Unloaded {ext_name}.")
-        except commands.ExtensionNotLoaded:
-            await ctx.send(f"{ext_name} is already unloaded.")
+        self.bot.unload_extension(f"extensions.{ext_name}")
+        await ctx.send(f"Unloaded {ext_name}.")
 
     @commands.command(name="load")
     async def extension_load(self, ctx, ext_name):
-        try:
-            self.bot.load_extension(f"extensions.{ext_name}")
-            await ctx.send(f"Loaded {ext_name}.")
-        except commands.ExtensionAlreadyLoaded:
-            await ctx.send(f"{ext_name} is already loaded.")
+        self.bot.load_extension(f"extensions.{ext_name}")
+        await ctx.send(f"Loaded {ext_name}.")
 
     @commands.command(name="list-extensions", aliases=["le"])
     async def list_extensions(self, ctx):

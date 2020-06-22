@@ -20,6 +20,10 @@ class Events(commands.Cog):
         # If nothing is found. We keep the exception passed to on_command_error.
         error = getattr(error, 'original', error)
 
+        # See if error has been handled in a cog local error handler already
+        if getattr(error, "handled", None):
+            return
+
         # Command errors
         if isinstance(error, commands.BadArgument):
             pass
