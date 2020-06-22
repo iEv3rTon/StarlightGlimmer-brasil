@@ -18,7 +18,7 @@ class Cogs(commands.Cog):
     @commands.command(name="reload")
     async def extension_reload(self, ctx, ext_name):
         try:
-            self.bot.reload_extension(f"commands.{ext_name}")
+            self.bot.reload_extension(f"extensions.{ext_name}")
             await ctx.send(f"Reloaded {ext_name}.")
         except commands.ExtensionNotLoaded:
             await ctx.send(f"{ext_name} is already unloaded.")
@@ -28,7 +28,7 @@ class Cogs(commands.Cog):
     @commands.command(name="unload")
     async def extension_unload(self, ctx, ext_name):
         try:
-            self.bot.unload_extension(f"commands.{ext_name}")
+            self.bot.unload_extension(f"extensions.{ext_name}")
             await ctx.send(f"Unloaded {ext_name}.")
         except commands.ExtensionNotLoaded:
             await ctx.send(f"{ext_name} is already unloaded.")
@@ -36,7 +36,7 @@ class Cogs(commands.Cog):
     @commands.command(name="load")
     async def extension_load(self, ctx, ext_name):
         try:
-            self.bot.load_extension(f"commands.{ext_name}")
+            self.bot.load_extension(f"extensions.{ext_name}")
             await ctx.send(f"Loaded {ext_name}.")
         except commands.ExtensionAlreadyLoaded:
             await ctx.send(f"{ext_name} is already loaded.")
