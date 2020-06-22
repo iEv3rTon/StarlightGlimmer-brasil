@@ -16,12 +16,14 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        # Check for original exceptions raised and sent to CommandInvokeError.
+        # If nothing is found. We keep the exception passed to on_command_error.
+        error = getattr(error, 'original', error)
+
         # Command errors
         if isinstance(error, commands.BadArgument):
             pass
-        elif isinstance(error, commands.CommandInvokeError) \
-                and isinstance(error.original, discord.HTTPException) \
-                and error.original.code == 50013:
+        elif isinstance(error, discord.HTTPException) and error.original.code == 50013:
             pass
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.send(ctx.s("error.cooldown").format(error.retry_after))
@@ -38,6 +40,8 @@ class Events(commands.Cog):
 
         # Menu errors
         elif isinstance(error, menus.CannotAddReactions):
+            await ctx.send(error)
+        elif isinstance(error, menus.CannotReadMessageHistory):
             await ctx.send(error)
 
         # Check errors

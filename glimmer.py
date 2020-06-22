@@ -125,7 +125,7 @@ class Glimmer(commands.Bot):
                     if config.CHANNEL_LOG_GUILD_KICKS:
                         await utils.channel_log(bot, "Kicked from guild **{0}** (ID: `{1}`)".format(g.name, g.id))
                     sql.guild_delete(g.id)
-    
+
     async def on_message(self, message):
         # Ignore channels that can't be posted in
         if message.guild and not message.channel.permissions_for(message.guild.me).send_messages:
