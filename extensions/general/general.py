@@ -27,6 +27,9 @@ class General(commands.Cog):
         bot.help_command = GlimmerHelpCommand(command_attrs={"aliases": ["h"]})
         bot.help_command.cog = self
 
+        # To initialise cpu measurement
+        psutil.cpu_percent(interval=None, percpu=True)
+
     @commands.command()
     async def changelog(self, ctx):
         data = await http.get_changelog(VERSION)
@@ -60,8 +63,14 @@ class General(commands.Cog):
         bot_uptime = datetime.timedelta(seconds=time() - self.bot.start_time)
         disk = psutil.disk_usage('/')
         mem = psutil.virtual_memory()
-        func = partial(psutil.cpu_percent, interval=2, percpu=True)
-        cpu = await self.bot.loop.run_in_executor(None, func)
+
+        cpu = psutil.cpu_percent(interval=None, percpu=True)
+
+        # Somehow the measurement wasn't initialised :<
+        if all(core == 0 for core in cpu):
+            await asyncio.sleep(2)
+            func = partial(psutil.cpu_percent, interval=2, percpu=True)
+            cpu = await self.bot.loop.run_in_executor(None, func)
 
         embed = discord.Embed(description="System statistics")
         embed.add_field(
