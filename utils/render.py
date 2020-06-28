@@ -27,7 +27,7 @@ async def calculate_size(data):
     return int(np.array(white).any(axis=-1).sum())
 
 
-def dither(origImg, canvas_palette, type=None, threshold=None, order=None):
+def dither(origImg, canvas_palette, type=None, threshold=8, order=4):
     # find all fully transparent pixels
     alpha_mask = origImg.split()[3]
     alpha_mask = Image.eval(alpha_mask, lambda a: 255 if a == 0 else 0)
@@ -35,7 +35,7 @@ def dither(origImg, canvas_palette, type=None, threshold=None, order=None):
 
     palette = hitherdither.palette.Palette(canvas_palette)
     dithers = {
-        "yliluoma": yliluoma2.Yliluoma(order, canvas_palette, 4).dither(origImg),
+        "yliluoma": yliluoma2.Yliluoma(order, canvas_palette).dither(origImg),
         "bayer": hitherdither.ordered.bayer.bayer_dithering(origImg, palette, [threshold / 4], order),
         "floyd-steinberg": hitherdither.diffusion.error_diffusion_dithering(origImg, palette, "floyd-steinberg", order)
     }

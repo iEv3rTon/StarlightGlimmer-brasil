@@ -15,7 +15,7 @@ class Yliluoma:
     LIMIT = 16
     LUMA_VALUES = [299, 587, 114]
 
-    def __init__(self, order, palette, cores):
+    def __init__(self, order, palette):
         self.order = order
         self.matrix = self.create_matrix(order)
         self.matrix = self.matrix.tolist()
@@ -25,8 +25,6 @@ class Yliluoma:
         self.luma = [r + g + b for r, g, b in self.luma]
         self.palette_gamma = \
             [[self.gamma_correct(channel / 255) for channel in color] for color in palette]
-
-        self.cores = cores
 
     def create_matrix(self, order):
         """Get the index matrix with side of length n.
@@ -113,7 +111,7 @@ class Yliluoma:
         output = Image.new("RGB", (image.width, image.height))
         pixels = [[x, y, image.getpixel((x, y))] for y in range(image.height) for x in range(image.width)]
 
-        with Pool(processes=self.cores) as pool:
+        with Pool() as pool:
             for x, y, plan in pool.starmap(self._map_call, pixels):
                 # Below math creates values from 0 through order^2 - 1 according to the current x and y
                 index = (x & (self.order - 1)) + ((y & (self.order - 1)) << 3)
