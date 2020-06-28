@@ -1,4 +1,4 @@
-import asyncio
+from functools import partial
 import logging
 import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageOps
@@ -34,13 +34,15 @@ def dither(origImg, canvas_palette, type=None, threshold=8, order=4):
     origImg = origImg.convert('RGB')
 
     palette = hitherdither.palette.Palette(canvas_palette)
+    yliluoma = yliluoma2.Yliluoma(order, canvas_palette)
     dithers = {
-        "yliluoma": yliluoma2.Yliluoma(order, canvas_palette).dither(origImg),
-        "bayer": hitherdither.ordered.bayer.bayer_dithering(origImg, palette, [threshold / 4], order),
-        "floyd-steinberg": hitherdither.diffusion.error_diffusion_dithering(origImg, palette, "floyd-steinberg", order)
+        "yliluoma": partial(yliluoma.dither, origImg),
+        "bayer": partial(hitherdither.ordered.bayer.bayer_dithering, origImg, palette, [threshold / 4], order),
+        "floyd-steinberg": partial(hitherdither.diffusion.error_diffusion_dithering, origImg, palette, "floyd-steinberg", order)
     }
 
-    dithered_image = dithers.get(type)
+    dither_func = dithers.get(type)
+    dithered_image = dither_func()
     dithered_image = Image.composite(Image.new('RGBA', origImg.size, (0, 0, 0, 0)), dithered_image.convert('RGBA'), alpha_mask)
     return dithered_image
 
