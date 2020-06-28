@@ -68,7 +68,6 @@ class General(commands.Cog):
 
         # Somehow the measurement wasn't initialised :<
         if all(core == 0 for core in cpu):
-            await asyncio.sleep(2)
             func = partial(psutil.cpu_percent, interval=2, percpu=True)
             cpu = await self.bot.loop.run_in_executor(None, func)
 
