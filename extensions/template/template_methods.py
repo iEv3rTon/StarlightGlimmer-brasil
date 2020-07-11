@@ -95,8 +95,8 @@ async def build_template(ctx, name, x, y, url, canvas):
                 with await http.get_template(url, name) as data2:
                     md5 = hashlib.md5(data2.getvalue()).hexdigest()
             created = int(time.time())
-            return DbTemplate(ctx.guild.id, name, url, canvas, x, y, w, h, size, created, created, md5,
-                              ctx.author.id)
+            return DbTemplate.new(ctx.guild.id, name, url, canvas, x, y, w, h, size, created, created, md5,
+                                  ctx.author.id)
     except aiohttp.client_exceptions.InvalidURL:
         raise UrlError
     except IOError:

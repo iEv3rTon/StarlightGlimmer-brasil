@@ -543,7 +543,7 @@ class Template(commands.Cog):
         if target is None:
             return await ctx.send("The snapshot template does not exist.")
 
-        sql.snapshot_add(ctx.guild.id, base_template, snapshot_template)
+        sql.snapshot_add(base, target)
         await ctx.send("Snapshot added!")
 
     @commands.guild_only()
@@ -554,11 +554,19 @@ class Template(commands.Cog):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             return await ctx.send(ctx.s("template.err.not_owner"))
 
-        s = sql.snapshot_get_by_names(ctx.guild.id, base_template, snapshot_template)
+        base = sql.template_get_by_name(ctx.guild.id, base_template)
+        target = sql.template_get_by_name(ctx.guild.id, snapshot_template)
+
+        if base is None:
+            return await ctx.send("The base template does not exist.")
+        if target is None:
+            return await ctx.send("The snapshot template does not exist.")
+
+        s = sql.snapshot_get(base, target)
         if s is None:
             return await ctx.send("That snapshot does not exist.")
 
-        sql.snapshot_delete(ctx.guild.id, base_template, snapshot_template)
+        sql.snapshot_delete(base, target)
         await ctx.send("Snapshot removed!")
 
     @commands.guild_only()

@@ -60,9 +60,9 @@ def _create_tables():
     """)
     c.execute("""
         CREATE TABLE IF NOT EXISTS templates(
-          guild_id      INTEGER NOT NULL
-            CONSTRAINT templates_guilds_id_fk
-            REFERENCES guilds,
+          id            INTEGER
+            PRIMARY KEY,
+          guild_id      INTEGER NOT NULL,
           name          TEXT    NOT NULL,
           url           TEXT    NOT NULL,
           canvas        TEXT    NOT NULL,
@@ -76,21 +76,25 @@ def _create_tables():
           md5           TEXT    NOT NULL,
           owner         INTEGER NOT NULL,
           private       INTEGER DEFAULT 0 NOT NULL,
-          CONSTRAINT templates_pk
-          PRIMARY KEY (guild_id, name)
+          CONSTRAINT templates_guilds_id_fk
+            FOREIGN KEY(guild_id)
+            REFERENCES guilds(id),
+          UNIQUE(guild_id, name)
         );
     """)
     c.execute("""
         CREATE TABLE IF NOT EXISTS snapshots(
-            guild_id INTEGER NOT NULL,
-            base_template_name TEXT NOT NULL,
-            target_template_name TEXT NOT NULL,
-            FOREIGN KEY(guild_id) REFERENCES guilds(id)
+            base_template_id   INTEGER NOT NULL,
+            target_template_id INTEGER NOT NULL,
+            CONSTRAINT snapshots_templates_id1_fk
+              FOREIGN KEY(base_template_id) REFERENCES templates(id),
+            CONSTRAINT snapshots_templates_id2_fk
+              FOREIGN KEY(target_template_id) REFERENCES templates(id)
         );
     """)
     c.execute("""
       CREATE TABLE IF NOT EXISTS version(
-        id      INTEGER
+        id INTEGER
           PRIMARY KEY,
         version REAL,
         CHECK (id = 1)
@@ -218,6 +222,69 @@ def _update_tables(v):
                 BEGIN TRANSACTION;
                 UPDATE guilds SET canvas='pixelcanvas' WHERE canvas='pixelplanet';
                 UPDATE guilds SET canvas='pixelcanvas' WHERE canvas='pixelplanet';
+                COMMIT;
+            """)
+        if v < 2.1:
+            c.executescript("""
+                PRAGMA FOREIGN_KEYS = OFF;
+                BEGIN TRANSACTION;
+                ALTER TABLE templates RENAME TO temp_templates;
+                CREATE TABLE IF NOT EXISTS templates(
+                    id            INTEGER
+                        PRIMARY KEY,
+                    guild_id      INTEGER NOT NULL,
+                    name          TEXT    NOT NULL,
+                    url           TEXT    NOT NULL,
+                    canvas        TEXT    NOT NULL,
+                    x             INTEGER NOT NULL,
+                    y             INTEGER NOT NULL,
+                    w             INTEGER NOT NULL,
+                    h             INTEGER NOT NULL,
+                    size          INTEGER NOT NULL,
+                    date_added    INTEGER NOT NULL,
+                    date_modified INTEGER NOT NULL,
+                    md5           TEXT    NOT NULL,
+                    owner         INTEGER NOT NULL,
+                    private       INTEGER DEFAULT 0 NOT NULL,
+                    CONSTRAINT templates_guilds_id_fk
+                        FOREIGN KEY(guild_id)
+                        REFERENCES guilds(id),
+                    UNIQUE(guild_id, name)
+                );
+                INSERT INTO templates(guild_id, name, url, canvas, x, y, w, h, size, date_added, date_modified, md5, owner, private)
+                    SELECT guild_id, name, url, canvas, x, y, w, h, size, date_added, date_modified, md5, owner, private
+                    FROM temp_templates;
+                DROP TABLE temp_templates;
+
+                ALTER TABLE snapshots RENAME TO temp_snapshots;
+                CREATE TABLE IF NOT EXISTS snapshots(
+                    base_template_id INTEGER NOT NULL,
+                    target_template_id INTEGER NOT NULL,
+                    CONSTRAINT snapshots_templates_id1_fk
+                        FOREIGN KEY(base_template_id) REFERENCES templates(id),
+                    CONSTRAINT snapshots_templates_id2_fk
+                        FOREIGN KEY(target_template_id) REFERENCES templates(id)
+                );
+                COMMIT;
+                PRAGMA FOREIGN_KEYS = ON;
+            """)
+
+            c.execute("""SELECT * FROM temp_snapshots""")
+            snapshots = c.fetchall()
+
+            for snap in snapshots:
+                ids = []
+                for t_name in snap[1:]:
+                    c.execute("""SELECT id FROM templates WHERE guild_id=? AND name=?""", (snap[0], t_name))
+                    id = [x[0] for x in c.fetchall()]
+                    ids.append(id[0])
+                print(ids)
+                c.execute("""INSERT INTO snapshots(base_template_id, target_template_id) VALUES(?,?)""", (ids[0], ids[1]))
+            conn.commit()
+
+            c.executescript("""
+                BEGIN TRANSACTION;
+                DROP TABLE temp_snapshots;
                 COMMIT;
             """)
 
@@ -494,6 +561,12 @@ def template_get_by_name(gid, name):
     return DbTemplate(*t) if t else None
 
 
+def template_get_by_id(tid):
+    c.execute("SELECT * FROM templates WHERE id=?", (tid,))
+    t = c.fetchone()
+    return DbTemplate(*t) if t else None
+
+
 def template_update(template):
     c.execute('UPDATE templates '
               'SET url = ?, canvas=?, x=?, y=?, w=?, h=?, size=?, date_added=?, date_modified=?, md5=?, owner=?, '
@@ -529,40 +602,40 @@ def template_kwarg_update(gid, name, new_name=None, x=None, y=None, url=None, md
 # ================================
 
 
-def snapshot_add(gid, base_name, target_name):
+def snapshot_add(base, target):
     c.execute(
-        'INSERT INTO snapshots(guild_id, base_template_name, target_template_name) VALUES(?,?,?)',
-        (gid, base_name, target_name))
+        'INSERT INTO snapshots(base_template_id, target_template_id) VALUES(?,?)',
+        (base.id, target.id))
     conn.commit()
 
 
-def snapshot_delete(gid, base_name, target_name):
+def snapshot_delete(base, target):
     c.execute(
-        'DELETE FROM snapshots WHERE guild_id=? AND base_template_name=? AND target_template_name=?',
-        (gid, base_name, target_name))
+        'DELETE FROM snapshots WHERE base_template_id=? AND target_template_id=?',
+        (base.id, target.id))
     conn.commit()
 
-def snapshot_get_by_names(gid, base_name, target_name):
+
+def snapshot_get(base, target):
     c.execute(
-        'SELECT * FROM snapshots WHERE guild_id=? AND base_template_name=? AND target_template_name=?',
-        (gid, base_name, target_name))
+        'SELECT * FROM snapshots WHERE base_template_id=? AND target_template_id=?',
+        (base.id, target.id))
     s = c.fetchone()
     return s
 
 
 def snapshots_get_all_by_guild(gid):
-    c.execute('SELECT base_template_name, target_template_name FROM snapshots WHERE guild_id=?', (gid,))
-    snapshots = c.fetchall()
-    for i, s in enumerate(snapshots):
-        base = template_get_by_name(gid, s[0])
-        target = template_get_by_name(gid, s[1])
-        snapshots[i] = [base, target]
-        if base == None or target == None:
-            c.execute(
-                'DELETE FROM snapshots WHERE guild_id=? AND base_template_name=? AND target_template_name=?',
-                (gid, s[0], s[1]))
-            conn.commit()
-    return [s for s in snapshots if s[0] != None and s[1] != None]
+    c.execute(
+        """
+            SELECT base_template_id, target_template_id
+            FROM snapshots
+            WHERE ?=(
+                SELECT guild_id FROM templates WHERE id=snapshots.base_template_id
+            )
+        """,
+        (gid,))
+    snapshots = [[template_get_by_id(id) for id in snap] for snap in c.fetchall()]
+    return [snap for snap in snapshots if all(s is not None for s in snap)]
 
 # =========================
 #      Version queries

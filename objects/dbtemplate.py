@@ -1,6 +1,7 @@
 class DbTemplate:
-    def __init__(self, gid, name, url, canvas, x, y, width, height, size, date_created, date_updated, md5, owner_id,
+    def __init__(self, id, gid, name, url, canvas, x, y, width, height, size, date_created, date_updated, md5, owner_id,
                  private=False):
+        self.id = id
         self.gid = gid
         self.name = name
         self.url = url
@@ -16,6 +17,13 @@ class DbTemplate:
         self.owner_id = owner_id
         self.errors = None
         self.private = private
+
+    @classmethod
+    def new(self, gid, name, url, canvas, x, y, width, height, size, date_created, date_updated, md5, owner_id,
+            private=False):
+        new = DbTemplate(None, gid, name, url, canvas, x, y, width, height, size, date_created, date_updated, md5, owner_id,
+                         private=False)
+        return new
 
     def to_tuple(self):
         return (
