@@ -44,6 +44,14 @@ class Glimmer(commands.Bot):
     async def before_status(self):
         await self.wait_until_ready()
 
+    @tasks.loop(minutes=5.0)
+    async def unmute(self):
+        sql.mutes_remove_expired()
+
+    @unmute.before_loop
+    async def before_unmute(self):
+        await self.wait_until_ready()
+
     async def startup(self):
         await self.wait_until_ready()
 

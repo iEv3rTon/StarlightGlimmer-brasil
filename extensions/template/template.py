@@ -384,6 +384,10 @@ class Template(commands.Cog):
             .add_field(name=ctx.s("bot.date_added"), value=date_added, inline=True) \
             .add_field(name=ctx.s("bot.date_modified"), value=date_modified, inline=True)
 
+        if t.alert_id:
+            channel = self.bot.get_channel(t.alert_id)
+            e.add_field(name=ctx.s("bot.alert_channel"), value=channel.mention, inline=True)
+
         if faction.id != ctx.guild.id and faction.faction_name:
             e = e.set_author(name=faction.faction_name, icon_url=faction.faction_emblem or discord.Embed.Empty)
 

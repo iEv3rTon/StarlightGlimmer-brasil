@@ -1,6 +1,7 @@
 STRINGS = {
     # Global messages
     "bot.added_by": "Added By",
+    "bot.alert_channel": "Alert Channel",
     "bot.alias": "Alias",
     "bot.aliases": "Aliases",
     "bot.cancel": "Cancel",

@@ -107,7 +107,8 @@ def _create_tables():
         template_id INTEGER NOT NULL,
         expires     INTEGER NOT NULL,
         CONSTRAINT muted_templates_template_id_fk
-          FOREIGN KEY(template_id) REFERENCES templates(id)
+          FOREIGN KEY(template_id) REFERENCES templates(id),
+        UNIQUE(template_id)
       );
     """)
 
@@ -616,6 +617,11 @@ def template_kwarg_update(gid, name, new_name=None, x=None, y=None, url=None, md
         c.execute("UPDATE templates SET alert_id=? WHERE guild_id=? AND name=?", (alert_id, gid, name))
     conn.commit()
 
+
+def template_remove_alert(tid):
+    c.execute("UPDATE templates SET alert_id=NULL WHERE id=?", (tid,))
+    conn.commit()
+
 # ================================
 #       Snapshot queries
 # ================================
@@ -639,8 +645,7 @@ def snapshot_get(base, target):
     c.execute(
         'SELECT * FROM snapshots WHERE base_template_id=? AND target_template_id=?',
         (base.id, target.id))
-    s = c.fetchone()
-    return s
+    return c.fetchone()
 
 
 def snapshots_get_all_by_guild(gid):
@@ -655,6 +660,40 @@ def snapshots_get_all_by_guild(gid):
         (gid,))
     snapshots = [[template_get_by_id(id) for id in snap] for snap in c.fetchall()]
     return [snap for snap in snapshots if all(s is not None for s in snap)]
+
+# =========================
+#   Template Mute queries
+# =========================
+
+
+def mute_add(gid, template, expires):
+    c.execute("INSERT INTO muted_templates(alert_id, template_id, expires) VALUES(?,?,?)",
+              (template.alert_id, template.id, expires))
+    conn.commit()
+    template_remove_alert(template.id)
+
+
+def mute_remove(template_id, alert_id=None):
+    if not alert_id:
+        c.execute("SELECT alert_id FROM muted_templates WHERE template_id=?", (template_id,))
+        alert_id = c.fetchone()[0]
+
+    c.execute("DELETE FROM muted_templates WHERE template_id=?", (template_id,))
+    c.execute("UPDATE templates SET alert_id=? WHERE id=?", (alert_id, template_id))
+    conn.commit()
+
+
+def mute_get(template_id):
+    c.execute("SELECT * FROM muted_templates WHERE template_id=?", (template_id,))
+    return c.fetchone()
+
+
+def mutes_remove_expired():
+    c.execute("SELECT * FROM muted_templates WHERE expires < ?", (time.time(),))
+    mutes = c.fetchall()
+
+    for alert_id, template_id, _expires in mutes:
+        mute_remove(template_id, alert_id=alert_id)
 
 # =========================
 #      Version queries
