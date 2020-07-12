@@ -76,6 +76,7 @@ def _create_tables():
           md5           TEXT    NOT NULL,
           owner         INTEGER NOT NULL,
           private       INTEGER DEFAULT 0 NOT NULL,
+          alert_id      INTEGER,
           CONSTRAINT templates_guilds_id_fk
             FOREIGN KEY(guild_id)
             REFERENCES guilds(id),
@@ -98,6 +99,15 @@ def _create_tables():
           PRIMARY KEY,
         version REAL,
         CHECK (id = 1)
+      );
+    """)
+    c.execute("""
+      CREATE TABLE IF NOT EXISTS muted_templates(
+        alert_id    INTEGER NOT NULL,
+        template_id INTEGER NOT NULL,
+        expires     INTEGER NOT NULL,
+        CONSTRAINT muted_templates_template_id_fk
+          FOREIGN KEY(template_id) REFERENCES templates(id)
       );
     """)
 
@@ -287,6 +297,13 @@ def _update_tables(v):
                 DROP TABLE temp_snapshots;
                 COMMIT;
             """)
+        if v < 2.2:
+            c.executescript("""
+                BEGIN TRANSACTION;
+                ALTER TABLE templates ADD COLUMN alert_id INTEGER;
+                COMMIT;
+            """)
+
 
 # ================================
 #      Animotes Users queries
@@ -575,8 +592,8 @@ def template_update(template):
     conn.commit()
 
 
-def template_kwarg_update(gid, name, new_name=None, x=None, y=None, url=None, md5=None, 
-                          w=None, h=None, size=None, date_modified=None):
+def template_kwarg_update(gid, name, new_name=None, x=None, y=None, url=None, md5=None,
+                          w=None, h=None, size=None, date_modified=None, alert_id=None):
     if new_name:
         c.execute("UPDATE templates SET name=? WHERE guild_id=? AND name=?", (new_name, gid, name))
     if x:
@@ -595,6 +612,8 @@ def template_kwarg_update(gid, name, new_name=None, x=None, y=None, url=None, md
         c.execute("UPDATE templates SET size=? WHERE guild_id=? AND name=?", (size, gid, name))
     if date_modified:
         c.execute("UPDATE templates SET date_modified=? WHERE guild_id=? AND name=?", (date_modified, gid, name))
+    if alert_id:
+        c.execute("UPDATE templates SET alert_id=? WHERE guild_id=? AND name=?", (alert_id, gid, name))
     conn.commit()
 
 # ================================
