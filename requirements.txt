@@ -3,6 +3,7 @@ aiohttp
 numpy
 pillow
 websockets
+websocket-client
 git+https://www.github.com/hbldh/hitherdither
 fuzzywuzzy
 python-Levenshtein

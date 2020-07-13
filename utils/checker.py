@@ -206,7 +206,7 @@ class Checker:
                 logger.exception("Error with pixel.")
 
         def on_error(ws, exception):
-            if exception == websocket._exceptions.WebsocketClosedConnectionException:
+            if exception == websocket.WebSocketConnectionClosedException:
                 logger.debug("Pixelcanvas closed the connection.")
             else:
                 logger.exception('Websocket error: {}'.format(exception))
