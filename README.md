@@ -19,6 +19,7 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Features for other
 - [hitherdither](https://www.github.com/hbldh/hitherdither)
 - [fuzzywuzzy](https://github.com/seatgeek/fuzzywuzzy) 
 - [python-Levenshtein](https://github.com/ztane/python-Levenshtein/) 
+- [websocket-client](https://pypi.org/project/websocket_client/)
 
 #### Installation:
 1. Install Python 3.6
@@ -40,6 +41,7 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Features for other
 - Configurable roles
 - [Animotes](https://github.com/ev1l0rd/animotes) support, just because
 - Full language localization
+- Live alerts for damage on templates
 
 For a more in-depth walkthrough of Glimmer's core functions, see [the wiki page](https://github.com/BrickGrass/StarlightGlimmer/wiki).
 
