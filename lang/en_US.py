@@ -205,6 +205,7 @@ STRINGS = {
     "template.updated": "Template '{0}' updated!",
 
     # Command brief help
+    "brief.alert": "Set or clear a templates alert channel.",
     "brief.alertchannel": "Set or clear the channel used for receiving bot update alerts from my github page.",
     "brief.alertchannel.clear": "Clears the alert channel.",
     "brief.alertchannel.set": "Sets the alert channel.",
@@ -255,6 +256,7 @@ STRINGS = {
     "brief.info": "Get info about a faction.",
     "brief.invite": "Gets my invite link.",
     "brief.language": "Sets my language.",
+    "brief.mute": "Mute or unmute a templates alerts.",
     "brief.online": "Shows how many players are currently online.",
     "brief.online.pixelcanvas": "Shows how many players are currently online on Pixelcanvas.io.",
     "brief.online.pixelzone": "Shows how many players are currently online on Pixelzone.io.",
@@ -300,6 +302,7 @@ STRINGS = {
     "brief.version": "Gets my version number.",
 
     # Command long help
+    "help.alert": "With an alert channel set, I will monitor your template constantly and alert for damage in that channel.",
     "help.alertchannel.set": "Use the #channel mention syntax with this command to ensure the correct channel is set.",
     "help.assemble": "Faction names and aliases must be unique. Names must be between 6 and 32 characters, case sensitive. Aliases must be between 1 and 5 characters, case insensitive.",
     "help.autoscan": """
@@ -338,6 +341,7 @@ STRINGS = {
     "help.faction.emblem.set": "URLs must be Discord URLs.",
     "help.faction.hide": "You can still view info about hidden factions if you explicitly use their name or alias in commands with the `-f` paramater.",
     "help.faction.name.set": "Faction names must be unique. Min 6 chars, max 32 chars. Case sensitive.",
+    "help.mute": "Duration should be given in hours.",
     "help.prefix": "Max length is 5 characters. You really shouldn't need more than 2.",
     "help.quantize": """
         This should primarily be used if `{p}diff` is telling you your image has 'bad color' in it.
@@ -405,6 +409,7 @@ STRINGS = {
         `-i` or `--image` - This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image.""",
 
     # Command signatures
+    "signature.alert": "<template_name> (alert_channel)",
     "signature.alertchannel": "(subcommand)",
     "signature.alertchannel.set": "<channel>",
     "signature.assemble": "<name> (alias)",
@@ -431,6 +436,7 @@ STRINGS = {
     "signature.gridify": ['(-f|--faction) (-c|--color) (-z|--zoom)', '<template> (-f|--faction) (-c|--color) (-z|--zoom)'],
     "signature.info": "<faction>",
     "signature.language": "(code)",
+    "signature.mute": "<template_name> (duration)",
     "signature.online": "(subcommand)",
     "signature.prefix": "<prefix>",
     "signature.preview": ['(subcommand) <coordinates> (-t|--templateRegion) (-f|--faction) (-z|--zoom)', '<template_name> (-t|--templateRegion) (-f|--faction) (-z|--zoom)'],

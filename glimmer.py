@@ -1,4 +1,5 @@
 import logging
+import math
 import time
 import os
 import re
@@ -9,7 +10,7 @@ from discord.ext import commands, tasks
 from objects.bot_objects import GlimContext
 from objects.errors import TemplateHttpError
 import utils
-from utils import config, http, render, sqlite as sql
+from utils import checker, config, http, render, sqlite as sql
 from utils.version import VERSION
 
 
@@ -30,14 +31,31 @@ class Glimmer(commands.Bot):
         }
 
         self.set_presense.start()
+        self.unmute.start()
         self.loop.create_task(self.startup())
+        self.loop.create_task(self.start_checker())
 
     @tasks.loop(minutes=30.0)
     async def set_presense(self):
+        # https://stackoverflow.com/a/3155023
+        def millify(n):
+            millnames = ['', 'K', 'M', 'B', 'T']
+            n = float(n)
+            millidx = max(0, min(len(millnames) - 1,
+                                 int(math.floor(0 if n == 0 else math.log10(abs(n)) / 3))))
+
+            return '{:.0f}{}'.format(n / 10**(3 * millidx), millnames[millidx])
+
+        pixels = sql.template_pixels_watched()
+        if not pixels:
+            pixels = "Pixels!"
+        else:
+            pixels = f"{millify(pixels)} Pixels!"
+
         await self.change_presence(
             status=discord.Status.online,
             activity=discord.Activity(
-                name="Pixels!",
+                name=pixels,
                 type=discord.ActivityType.watching))
 
     @set_presense.before_loop
@@ -133,6 +151,11 @@ class Glimmer(commands.Bot):
                     if config.CHANNEL_LOG_GUILD_KICKS:
                         await utils.channel_log(bot, "Kicked from guild **{0}** (ID: `{1}`)".format(g.name, g.id))
                     sql.guild_delete(g.id)
+
+    async def start_checker(self):
+        await self.wait_until_ready()
+        pcio = checker.Checker(self)
+        pcio.connect_websocket()
 
     async def on_message(self, message):
         # Ignore channels that can't be posted in

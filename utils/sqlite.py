@@ -565,6 +565,14 @@ def template_get_all_public_by_guild_id(gid):
     return templates
 
 
+def template_get_all_alert():
+    c.execute("SELECT * FROM templates WHERE alert_id IS NOT NULL")
+    templates = []
+    for t in c.fetchall():
+        templates.append(DbTemplate(*t))
+    return templates
+
+
 def template_get_by_hash(gid, md5):
     c.execute('SELECT * FROM templates WHERE guild_id=? AND md5=?', (gid, md5))
     templates = []
@@ -621,6 +629,11 @@ def template_kwarg_update(gid, name, new_name=None, x=None, y=None, url=None, md
 def template_remove_alert(tid):
     c.execute("UPDATE templates SET alert_id=NULL WHERE id=?", (tid,))
     conn.commit()
+
+
+def template_pixels_watched():
+    c.execute("SELECT SUM(size) FROM templates WHERE alert_id IS NOT NULL")
+    return c.fetchone()[0]
 
 # ================================
 #       Snapshot queries
