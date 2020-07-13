@@ -91,7 +91,11 @@ class Checker:
         return uuid.uuid4().hex
 
     def template_changed(self, t_db, t_list):
-        return (t_db.x != t_list.sx) or (t_db.y != t_list.sy) or (t_db.md5 != t_list.md5) or (t_db.name != t_list.name)
+        return (t_db.x != t_list.sx) or \
+               (t_db.y != t_list.sy) or \
+               (t_db.md5 != t_list.md5) or \
+               (t_db.name != t_list.name) or \
+               (t_db.alert_id != t_list.alert_channel)
 
     def generate_template(self, t, last_alert_message=None, pixels=[], sending=False):
         try:
