@@ -111,8 +111,8 @@ class Checker:
                                 t.x, t.y, t.alert_id, last_alert_message, sending, pixels)
             logger.debug("Generated template {0.name} from ({0.sx},{0.sy}) to ({0.ex},{0.ey}).".format(template))
             return template
-        except:
-            logger.exception('Failed to generate template {}.'.format(t.name))
+        except Exception as e:
+            logger.exception(f'Failed to generate template {t.name}. {e}')
             return None
 
     def update(self):
@@ -180,8 +180,8 @@ class Checker:
 
                 # Sleep for 5m
                 time.sleep(300)
-            except:
-                logger.exception('Failed to update.')
+            except Exception as e:
+                logger.exception(f'Failed to update. {e}')
 
     def get(self, route: str, stream: bool = False):
         return requests.get(Checker.URL + route, stream=stream, headers=Checker.HEADER_USER_AGENT)
@@ -206,8 +206,8 @@ class Checker:
                     # logger.debug('Pixel placed, coords:({0},{1}) colour:{2}'.format(x,y,self.colors[color]))
                     for template in self.templates:
                         check_template(self, template, x, y, color)
-            except:
-                logger.exception("Error with pixel.")
+            except Exception as e:
+                logger.exception(f"Error with pixel. {e}")
 
         def on_error(ws, exception):
             if exception == websocket.WebSocketConnectionClosedException:
@@ -248,7 +248,7 @@ class Checker:
                 # Is pixel in the start to end range of this template
                 if template.sx <= x < template.ex and template.sy <= y < template.ey:
                     try:
-                        template_color = int(template.array[abs(x-template.sx), abs(y-template.sy)])
+                        template_color = int(template.array[abs(x - template.sx), abs(y - template.sy)])
                     except IndexError:
                         logger.debug(f"The index error in check_template, pixel coords:{x},{y} colour:{color} template:{template.name} template start:{template.sx},{template.sy} template end:{template.ex},{template.ey}")
                         return
@@ -291,8 +291,8 @@ class Checker:
                         template.pixels.append(Pixel(color, x, y, "flag", template.id))
                         asyncio.ensure_future(send_embed(self, template))
                         logger.debug(f"Untracked pixel {x},{y} on {template.name} damaged to {self.colors[color]}, new message created.")
-            except:
-                logger.exception("Error checking pixel.")
+            except Exception as e:
+                logger.exception(f"Error checking pixel. {e}")
 
         async def send_embed(self, template):
             try:
@@ -310,7 +310,7 @@ class Checker:
                     if (template.last_alert_message and p.alert_id == template.last_alert_message.id) or (p.alert_id == "flag" and template.id == p.template_id):
                         damage_color = self.colors[p.damage_color]
                         try:
-                            template_color = self.colors[int(template.array[abs(p.x-template.sx), abs(p.y-template.sy)])]
+                            template_color = self.colors[int(template.array[abs(p.x - template.sx), abs(p.y - template.sy)])]
                         except IndexError:
                             logger.debug(f"The index error in send_embed, pixel coords:{p.x},{p.y} colour:{p.damage_color} template:{template.name} template start:{template.sx},{template.sy} template end:{template.ex},{template.ey}")
                             continue
@@ -338,12 +338,12 @@ class Checker:
                 # Release send lock
                 template.sending = False
                 logger.debug(f"Finished sending embed for {template.name} sending:{template.sending}")
-            except:
+            except Exception as e:
                 template.sending = False
-                logger.exception("Error sending/editing an embed.")
+                logger.exception(f"Error sending/editing an embed. {e}")
 
         try:
             logger.debug("Opener launching...")
             open_connection()
-        except:
-            logger.exception("Error launching!")
+        except Exception as e:
+            logger.exception(f"Error launching! {e}")
