@@ -19,7 +19,6 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Features for other
 - [hitherdither](https://www.github.com/hbldh/hitherdither)
 - [fuzzywuzzy](https://github.com/seatgeek/fuzzywuzzy) 
 - [python-Levenshtein](https://github.com/ztane/python-Levenshtein/) 
-- [websocket-client](https://pypi.org/project/websocket_client/)
 
 #### Installation:
 1. Install Python 3.6

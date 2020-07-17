@@ -535,25 +535,25 @@ class Canvas(commands.Cog):
                 except UnboundLocalError:
                     await ctx.send(content=out, file=f)
 
-            if args.errors and len(err_list) > 0:
-                error_list = []
-                for _x, _y, current, target in err_list:
-                    # Color Filtering
-                    c = current if not args.excludeTarget else target
-                    if args.excludeColors:
-                        if c in args.excludeColors:
-                            continue
-                    elif args.onlyColors:
-                        if c not in args.onlyColors:
-                            continue
+        if args.errors and len(err_list) > 0:
+            error_list = []
+            for _x, _y, current, target in err_list:
+                # Color Filtering
+                c = current if not args.excludeTarget else target
+                if args.excludeColors:
+                    if c in args.excludeColors:
+                        continue
+                elif args.onlyColors:
+                    if c not in args.onlyColors:
+                        continue
 
-                    # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
-                    _x += x
-                    _y += y
-                    error_list.append(Pixel(current, target, _x, _y))
+                # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
+                _x += x
+                _y += y
+                error_list.append(Pixel(current, target, _x, _y))
 
-                checker = Checker(self.bot, ctx, canvas, error_list)
-                checker.connect_websocket()
+            checker = Checker(self.bot, ctx, canvas, error_list)
+            await checker.connect_websocket()
 
     async def _dither(self, ctx, palette, type, threshold, order):
         """Sends a message containing a dithered version of the image given.

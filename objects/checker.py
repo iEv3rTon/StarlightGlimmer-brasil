@@ -2,12 +2,11 @@ import asyncio
 import logging
 import math
 from struct import unpack_from
-import threading
 import time
 import uuid
 
 import discord
-import websocket
+import websockets
 
 log = logging.getLogger(__name__)
 
@@ -21,85 +20,29 @@ class Pixel:
 
 
 class Checker:
-    URL = 'https://pixelcanvas.io/'
-    TEMPLATE_PATH = ''
-    HEADER_USER_AGENT = {
-        'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3'
-    }
-    HEADERS = {
-        'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
-        'accept': 'application/json',
-        'content-type': 'application/json',
-        'Host': 'pixelcanvas.io',
-        'Origin': URL,
-        'Referer': URL
-    }
-
     def __init__(self, bot, ctx, canvas, pixels):
         self.bot = bot
         self.ctx = ctx
         self.fingerprint = uuid.uuid4().hex
-        self._5_mins_time = time.time() + 60 * 5
+        self._5_mins_time = time.time() + (60 * 5)
         self.canvas = canvas
         self.pixels = pixels
         self.sending = False
         self.msg = None
         self.embed = None
-        # Was failing weirdly when called outside of init
-        self.timeout_string = self.ctx.s("canvas.diff_timeout")
 
-        asyncio.ensure_future(self.send_err_embed())
+    async def connect_websocket(self):
+        await self.send_err_embed()
 
-    def connect_websocket(self):
-        def on_message(ws, message):
-            asyncio.set_event_loop(self.bot.loop)
-            if self._5_mins_time < time.time():
-                self.embed.set_footer(text=self.timeout_string)
-                asyncio.ensure_future(self.msg.edit(embed=self.embed))
-                ws.close()
-            if unpack_from('B', message, 0)[0] == 193:
-                x = unpack_from('!h', message, 1)[0]
-                y = unpack_from('!h', message, 3)[0]
-                a = unpack_from('!H', message, 5)[0]
-                number = (65520 & a) >> 4
-                x = int(x * 64 + ((number % 64 + 64) % 64))
-                y = int(y * 64 + math.floor(number / 64))
-                color = 15 & a
+        uri = f"wss://ws.pixelcanvas.io:8443/?fingerprint={self.fingerprint}"
+        async with websockets.connect(uri, ssl=True) as ws:
+            async for message in ws:
+                await self.on_message(message)
+                if time.time() > self._5_mins_time:
+                    break
 
-                asyncio.ensure_future(self.check_pixels(x, y, color, ws))
-
-        def on_error(ws, exception):
-            log.exception(exception)
-            self.embed.set_footer(text=self.timeout_string)
-            asyncio.ensure_future(self.msg.edit(embed=self.embed))
-
-        def on_close(ws):
-            pass
-
-        def on_open(ws):
-            pass
-
-        url = "wss://ws.pixelcanvas.io:8443"
-        ws = websocket.WebSocketApp(
-            url + '/?fingerprint=' + self.fingerprint, on_message=on_message,
-            on_open=on_open, on_close=on_close, on_error=on_error)
-
-        def worker(ws):
-            asyncio.set_event_loop(self.bot.loop)
-            ws.run_forever()
-
-        thread = threading.Thread(target=worker, args=(ws,))
-        thread.setDaemon(True)
-        thread.start()
-
-    async def check_pixels(self, x, y, color, ws):
-        for p in self.pixels:
-            if p.x == x and p.y == y:
-                p.current = color
-                check = await self.send_err_embed()
-                if check is True:
-                    ws.close()
+        self.embed.set_footer(text=self.ctx.s("canvas.diff_timeout"))
+        await self.msg.edit(embed=self.embed)
 
     async def send_err_embed(self):
         if self.sending:
@@ -129,3 +72,18 @@ class Checker:
             self.msg = await self.ctx.send(embed=self.embed)
         # Release send lock
         self.sending = False
+
+    async def on_message(self, message):
+        if unpack_from('B', message, 0)[0] == 193:
+            x = unpack_from('!h', message, 1)[0]
+            y = unpack_from('!h', message, 3)[0]
+            a = unpack_from('!H', message, 5)[0]
+            number = (65520 & a) >> 4
+            x = int(x * 64 + ((number % 64 + 64) % 64))
+            y = int(y * 64 + math.floor(number / 64))
+            color = 15 & a
+
+            for p in self.pixels:
+                if p.x == x and p.y == y:
+                    p.current = color
+                    await self.send_err_embed()
