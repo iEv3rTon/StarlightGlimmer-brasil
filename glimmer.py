@@ -31,45 +31,46 @@ class Glimmer(commands.Bot):
             'pxlsspace': render.fetch_pxlsspace
         }
 
-        self.set_presense.start()
-        self.unmute.start()
         self.loop.create_task(self.startup())
-        self.loop.create_task(self.start_checker())
 
     @tasks.loop(minutes=30.0)
     async def set_presense(self):
-        # https://stackoverflow.com/a/3155023
-        def millify(n):
-            millnames = ['', 'K', 'M', 'B', 'T']
-            n = float(n)
-            millidx = max(0, min(len(millnames) - 1,
-                                 int(math.floor(0 if n == 0 else math.log10(abs(n)) / 3))))
+        try:
+            # https://stackoverflow.com/a/3155023
+            def millify(n):
+                millnames = ['', 'K', 'M', 'B', 'T']
+                n = float(n)
+                millidx = max(0, min(len(millnames) - 1,
+                                    int(math.floor(0 if n == 0 else math.log10(abs(n)) / 3))))
 
-            return '{:.0f}{}'.format(n / 10**(3 * millidx), millnames[millidx])
+                return '{:.0f}{}'.format(n / 10**(3 * millidx), millnames[millidx])
 
-        pixels = sql.template_pixels_watched()
-        if not pixels:
-            pixels = "Pixels!"
-        else:
-            pixels = f"{millify(pixels)} Pixels!"
+            pixels = sql.template_pixels_watched()
+            if not pixels:
+                pixels = "Pixels!"
+            else:
+                pixels = f"{millify(pixels)} Pixels!"
 
-        await self.change_presence(
-            status=discord.Status.online,
-            activity=discord.Activity(
-                name=pixels,
-                type=discord.ActivityType.watching))
-
-    @set_presense.before_loop
-    async def before_status(self):
-        await self.wait_until_ready()
+            await self.change_presence(
+                status=discord.Status.online,
+                activity=discord.Activity(
+                    name=pixels,
+                    type=discord.ActivityType.watching))
+        except Exception as e:
+            log.exception(e)
+            await utils.channel_log(self, e)
 
     @tasks.loop(minutes=5.0)
     async def unmute(self):
-        sql.mutes_remove_expired()
+        try:
+            sql.mutes_remove_expired()
+        except Exception as e:
+            log.exception(e)
+            await utils.channel_log(self, e)
 
-    @unmute.before_loop
-    async def before_unmute(self):
-        await self.wait_until_ready()
+    @tasks.loop(minutes=5.0)
+    async def checker_update(self):
+        await self.pcio.update()
 
     async def startup(self):
         await self.wait_until_ready()
@@ -78,11 +79,21 @@ class Glimmer(commands.Bot):
 
         log.info("Performing database check...")
         is_new_version = await self.database_check()
+
         log.info("Performing guilds check...")
         await self.guilds_check(is_new_version)
 
+        log.info("Starting template checker...")
+        self.pcio = checker.Checker(self)
+        self.loop.create_task(self.pcio.run_websocket())
+        self.checker_update.start()
+
+        log.info("Beginning status and unmute tasks...")
+        self.set_presense.start()
+        self.unmute.start()
+
         log.info('I am ready!')
-        await utils.channel_log(bot, "I am ready!")
+        await utils.channel_log(self, "I am ready!")
         print("I am ready!")
 
     async def database_check(self):
@@ -152,12 +163,6 @@ class Glimmer(commands.Bot):
                     if config.CHANNEL_LOG_GUILD_KICKS:
                         await utils.channel_log(bot, "Kicked from guild **{0}** (ID: `{1}`)".format(g.name, g.id))
                     sql.guild_delete(g.id)
-
-    async def start_checker(self):
-        await self.wait_until_ready()
-        pcio = checker.Checker(self)
-        self.loop.create_task(pcio.update())
-        self.loop.create_task(pcio.run_websocket())
 
     async def on_message(self, message):
         # Ignore channels that can't be posted in

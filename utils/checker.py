@@ -91,65 +91,62 @@ class Checker:
             return None
 
     async def update(self):
-        while True:
-            try:
-                # Get the templates currently in the db
-                templates = sql.template_get_all_alert()
+        try:
+            # Get the templates currently in the db
+            templates = sql.template_get_all_alert()
 
-                # Remove any templates from self.templates that are no longer in db
-                db_t_ids = [t.id for t in templates]
-                for t in self.templates:
-                    if t.id not in db_t_ids:
-                        self.templates.remove(t)
+            # Remove any templates from self.templates that are no longer in db
+            db_t_ids = [t.id for t in templates]
+            for t in self.templates:
+                if t.id not in db_t_ids:
+                    self.templates.remove(t)
 
-                # Update any templates already in self.templates that have changed
-                for i, t in enumerate(self.templates):
-                    for t_ in templates:
-                        if t.id == t_.id:
-                            if self.template_changed(t_, t):
-                                # Pass in the old state to preserve it
-                                tp = await self.generate_template(t_, t.last_alert_message, t.pixels, t.sending)
-                                self.templates[i] = tp if tp is not None else t
+            # Update any templates already in self.templates that have changed
+            for i, t in enumerate(self.templates):
+                for t_ in templates:
+                    if t.id == t_.id:
+                        if self.template_changed(t_, t):
+                            # Pass in the old state to preserve it
+                            tp = await self.generate_template(t_, t.last_alert_message, t.pixels, t.sending)
+                            self.templates[i] = tp if tp is not None else t
 
-                # Add any new templates from db to self.templates
-                list_t_ids = [t.id for t in self.templates]
-                for t in templates:
-                    if t.id not in list_t_ids:
-                        tp = await self.generate_template(t)
-                        if tp is not None:
-                            self.templates.append(tp)
+            # Add any new templates from db to self.templates
+            list_t_ids = [t.id for t in self.templates]
+            for t in templates:
+                if t.id not in list_t_ids:
+                    tp = await self.generate_template(t)
+                    if tp is not None:
+                        self.templates.append(tp)
 
-                # Do cleanup on data
-                for t in self.templates:
+            # Do cleanup on data
+            for t in self.templates:
+                if t.last_alert_message:
+                    # Is the most recent alert within the last 5 messages in it's alert channel?
+                    alert_channel = self.bot.get_channel(t.alert_channel)
+                    messages = await alert_channel.history(limit=5).flatten()
+                    # The channel could have been cleared during the time we spend collecting the history
                     if t.last_alert_message:
-                        # Is the most recent alert within the last 5 messages in it's alert channel?
-                        alert_channel = self.bot.get_channel(t.alert_channel)
-                        messages = await alert_channel.history(limit=5).flatten()
-                        # The channel could have been cleared during the time we spend collecting the history
-                        if t.last_alert_message:
-                            msg_found = False
-                            for msg in messages:
-                                if msg.id == t.last_alert_message.id:
-                                    msg_found = True
-                            # Clear the alert message if it isn't recent anymore so new alerts will be at the bottom of the channel
-                            if not msg_found:
-                                t.last_alert_message = None
-                                logger.debug(f"Alert message for {t.name} more than 5 messages ago, cleared.")
+                        msg_found = False
+                        for msg in messages:
+                            if msg.id == t.last_alert_message.id:
+                                msg_found = True
+                        # Clear the alert message if it isn't recent anymore so new alerts will be at the bottom of the channel
+                        if not msg_found:
+                            t.last_alert_message = None
+                            logger.debug(f"Alert message for {t.name} more than 5 messages ago, cleared.")
 
-                    # Clean up old pixel data
-                    for p in t.pixels:
-                        delta = time.time() - p.recieved
-                        _5_mins = 60 * 30
-                        # Pixels recieved more than 5 mins ago that are not attached to the current alert msg will be cleared
-                        if t.last_alert_message:
-                            if delta > _5_mins and p.alert_id != t.last_alert_message.id:
-                                t.pixels.remove(p)
-                                logger.debug(f"Pixel {p.x},{p.y} colour:{p.damage_color} template:{t.name} received more than 5 mins ago and not attached to current message, cleared.")
+                # Clean up old pixel data
+                for p in t.pixels:
+                    delta = time.time() - p.recieved
+                    _5_mins = 60 * 30
+                    # Pixels recieved more than 5 mins ago that are not attached to the current alert msg will be cleared
+                    if t.last_alert_message:
+                        if delta > _5_mins and p.alert_id != t.last_alert_message.id:
+                            t.pixels.remove(p)
+                            logger.debug(f"Pixel {p.x},{p.y} colour:{p.damage_color} template:{t.name} received more than 5 mins ago and not attached to current message, cleared.")
 
-                # Sleep for 5m
-                await asyncio.sleep(300)
-            except Exception as e:
-                logger.exception(f'Failed to update. {e}')
+        except Exception as e:
+            logger.exception(f'Failed to update. {e}')
 
     async def run_websocket(self):
         while True:
