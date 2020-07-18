@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import math
 import time
@@ -155,7 +156,8 @@ class Glimmer(commands.Bot):
     async def start_checker(self):
         await self.wait_until_ready()
         pcio = checker.Checker(self)
-        pcio.connect_websocket()
+        self.loop.create_task(pcio.update())
+        self.loop.create_task(pcio.run_websocket())
 
     async def on_message(self, message):
         # Ignore channels that can't be posted in
