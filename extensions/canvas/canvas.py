@@ -12,10 +12,12 @@ from discord.ext import commands, menus
 from PIL import Image
 
 from extensions.canvas.canvas_methods import \
-    (CheckSource,
+    (Checker,
+     CheckSource,
      select_url,
      get_dither_image,
      dither_argparse,
+     Pixel,
      process_check)
 from objects.bot_objects import GlimContext
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
@@ -26,7 +28,6 @@ from objects.errors import \
      PilImageError,
      TemplateTooLargeError,
      UrlError)
-from objects.checker import Pixel, Checker
 from utils import \
     (autoscan,
      canvases,
