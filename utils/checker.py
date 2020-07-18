@@ -58,21 +58,6 @@ class Pixel:
 
 
 class Checker:
-    URL = 'https://pixelcanvas.io/'
-    TEMPLATE_PATH = ''
-    HEADER_USER_AGENT = {
-        'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3'
-    }
-    HEADERS = {
-        'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36',
-        'accept': 'application/json',
-        'content-type': 'application/json',
-        'Host': 'pixelcanvas.io',
-        'Origin': URL,
-        'Referer': URL
-    }
-
     def __init__(self, bot):
         self.bot = bot
         self.templates = []
@@ -183,12 +168,6 @@ class Checker:
             except Exception as e:
                 logger.exception(f'Failed to update. {e}')
 
-    def get(self, route: str, stream: bool = False):
-        return requests.get(Checker.URL + route, stream=stream, headers=Checker.HEADER_USER_AGENT)
-
-    def fetch_websocket(self):
-        return 'wss://ws.pixelcanvas.io:8443'
-
     def connect_websocket(self):
         def on_message(ws, message):
             asyncio.set_event_loop(self.bot.loop)
@@ -229,8 +208,8 @@ class Checker:
         def open_connection():
             if not self.working:
                 logger.debug("Bot loading websocket...")
-                url = self.fetch_websocket()
-                ws = websocket.WebSocketApp(url + '/?fingerprint=' + self.fingerprint, on_message=on_message,
+                url = f"wss://ws.pixelcanvas.io:8443/?fingerprint={self.fingerprint}"
+                ws = websocket.WebSocketApp(url, on_message=on_message,
                                             on_open=on_open, on_close=on_close, on_error=on_error)
 
                 def worker(ws):
