@@ -98,6 +98,8 @@ class Events(commands.Cog):
             await ctx.send(ctx.s("error.invalid_color"))
         elif isinstance(error, errors.TemplateTooLargeError):
             await ctx.send(ctx.s("canvas.dither_toolarge").format(error.limit))
+        elif isinstance(error, errors.CanvasNotSupportedError):
+            await ctx.send(ctx.s("error.canvas_not_supported"))
 
         # Uncaught error
         else:

@@ -61,6 +61,7 @@ STRINGS = {
     "error.timed_out": "Command timed out.",
     "error.unknown": "An unknown error occurred. The dev has been notified.",
     "error.why": "But... why?",
+    "error.canvas_not_supported": "Templates of that canvas are not supported for this command.",
 
     # Alerts command messages
     "alerts.alert_title": "{} took damage!",

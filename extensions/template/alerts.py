@@ -4,7 +4,7 @@ import time
 import discord
 from discord.ext import commands, menus
 
-from objects.errors import TemplateNotFoundError
+from objects.errors import TemplateNotFoundError, CanvasNotSupportedError
 from utils import checks, GlimmerArgumentParser, FactionAction, sqlite as sql
 from extensions.template.utils import CheckerSource
 
@@ -24,6 +24,9 @@ class Alerts(commands.Cog):
 
         if not template:
             raise TemplateNotFoundError(ctx.guild.id, name)
+
+        if template.canvas != "pixelcanvas":
+            raise CanvasNotSupportedError()
 
         mute = sql.mute_get(template.id)
         if mute:
@@ -46,6 +49,9 @@ class Alerts(commands.Cog):
 
         if not template:
             raise TemplateNotFoundError(ctx.guild.id, name)
+
+        if template.canvas != "pixelcanvas":
+            raise CanvasNotSupportedError()
 
         if not duration:
             if template.alert_id:

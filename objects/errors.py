@@ -87,3 +87,7 @@ class ColorError(commands.CommandError):
 class TemplateTooLargeError(commands.CommandError):
     def __init__(self, limit):
         self.limit = limit
+
+
+class CanvasNotSupportedError(commands.CommandError):
+    pass
