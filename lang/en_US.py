@@ -272,6 +272,7 @@ STRINGS = {
     "brief.quantize.pixelzone": "Quantizes colors using the palette of Pixelzone.io.",
     "brief.quantize.pxlsspace": "Quantizes colors using the palette of Pxls.space.",
     "brief.quickstart": "Gives a guided tour to the bot.",
+    "brief.recent": "Lists recent error pixels from templates with alerting on.",
     "brief.register": "Opt-in to animated emoji replacement.",
     "brief.repeat": "Repeats the last used canvas command.",
     "brief.role": "Assign bot privileges to a role.",
@@ -395,6 +396,9 @@ STRINGS = {
     "args.preview": """
         `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
         `-z` or `--zoom` - Zooms in the image by the factor you provide.""",
+    "args.recent": """
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to list error pixels from there.
+        `-p` or `--page` - Opens on the page number you provide, if it is a valid page.""",
     "args.template": """
         `-p` or `--page` - Opens on the page number you provide, if it is a valid page.
         `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.""",
@@ -447,6 +451,7 @@ STRINGS = {
     "signature.quantize.pixelcanvas": ['(-f|--faction) (-z|--zoom)', '<template> (-f|--faction) (-z|--zoom)'],
     "signature.quantize.pixelzone": ['(-f|--faction) (-z|--zoom)', '<template> (-f|--faction) (-z|--zoom)'],
     "signature.quantize.pxlsspace": ['(-f|--faction) (-z|--zoom)', '<template> (-f|--faction) (-z|--zoom)'],
+    "signature.recent": "(-f|--faction) (-p|--page)",
     "signature.role": "(role)",
     "signature.role.botadmin": "(subcommand)",
     "signature.role.botadmin.set": "<role>",

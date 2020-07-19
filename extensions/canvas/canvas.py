@@ -11,7 +11,7 @@ import discord
 from discord.ext import commands, menus
 from PIL import Image
 
-from extensions.canvas.canvas_methods import \
+from extensions.canvas.utils import \
     (Checker,
      CheckSource,
      select_url,

@@ -1,11 +1,12 @@
 import logging
 import time
 
-from discord import TextChannel
-from discord.ext import commands
+import discord
+from discord.ext import commands, menus
 
 from objects.errors import TemplateNotFoundError
-from utils import checks, sqlite as sql
+from utils import checks, GlimmerArgumentParser, FactionAction, sqlite as sql
+from extensions.template.utils import CheckerSource
 
 log = logging.getLogger(__name__)
 
@@ -15,10 +16,10 @@ class Alerts(commands.Cog):
         self.bot = bot
 
     @commands.guild_only()
-    @commands.cooldown(2, 5, commands.BucketType.guild)
+    @commands.cooldown(1, 5, commands.BucketType.guild)
     @checks.template_adder_only()
     @commands.command(name='alert')
-    async def alert(self, ctx, name, channel: TextChannel = None):
+    async def alert(self, ctx, name, channel: discord.TextChannel = None):
         template = sql.template_get_by_name(ctx.guild.id, name)
 
         if not template:
@@ -37,7 +38,7 @@ class Alerts(commands.Cog):
             await ctx.send(f"`{name}` will no longer alert for damage.")
 
     @commands.guild_only()
-    @commands.cooldown(2, 5, commands.BucketType.guild)
+    @commands.cooldown(1, 5, commands.BucketType.guild)
     @checks.template_adder_only()
     @commands.command(name='mute', aliases=['m'])
     async def mute(self, ctx, name, duration=None):
@@ -63,3 +64,42 @@ class Alerts(commands.Cog):
 
             sql.mute_add(ctx.guild.id, template, time.time() + (duration * 3600))
             await ctx.send(f"`{name}` muted for {duration} hours.")
+
+    @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    @commands.command(name="recent")
+    async def recent(self, ctx, *args):
+        # Argument Parsing
+        parser = GlimmerArgumentParser(ctx)
+        parser.add_argument("-p", "--page", type=int, default=1)
+        parser.add_argument("-f", "--faction", default=None, action=FactionAction)
+        try:
+            args = parser.parse_args(args)
+        except TypeError:
+            return
+
+        gid = ctx.guild.id
+        if args.faction is not None:
+            gid = args.faction.id
+
+        templates = sql.template_get_all_by_guild_id(gid)
+        checker_templates = [t for id, t in self.bot.pcio.templates.items() if id in [t_.id for t_ in templates]]
+        pixels = [p for t in checker_templates for p in t.pixels if p.fixed is False]
+        pixels = list(dict.fromkeys(pixels))  # Remove duplicates because fuck this codebase with a rusty screwdriver, good god I hate it
+        pixels.sort(key=lambda p: p.recieved, reverse=True)
+
+        if not pixels:
+            await ctx.send("No recent errors found.")
+            return
+
+        checker_menu = menus.MenuPages(
+            source=CheckerSource(pixels, checker_templates),
+            clear_reactions_after=True,
+            timeout=300.0)
+        checker_menu.current_page = max(min(args.page - 1, checker_menu.source.get_max_pages()), 0)
+        try:
+            await checker_menu.start(ctx, wait=True)
+            checker_menu.source.embed.set_footer(text=ctx.s("bot.timeout"))
+            await checker_menu.message.edit(embed=checker_menu.source.embed)
+        except discord.NotFound:
+            await ctx.send(ctx.s("bot.menu_deleted"))

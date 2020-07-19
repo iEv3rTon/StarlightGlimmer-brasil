@@ -49,6 +49,9 @@ class Pixel:
         self.recieved = time.time()
         self.fixed = False
 
+    def __repr__(self):
+        return f"Pixel(color={self.damage_color}, x={self.x}, y={self.y}, aid={self.alert_id}, tid={self.template_id}, recieved={self.recieved}, fixed={self.fixed})"
+
 
 class Checker:
     def __init__(self, bot):

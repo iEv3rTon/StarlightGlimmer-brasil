@@ -10,7 +10,7 @@ import time
 import discord
 from discord.ext import commands, menus
 
-from extensions.template.template_methods import \
+from extensions.template.utils import \
     (build_template,
      add_template,
      send_end,

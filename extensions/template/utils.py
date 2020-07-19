@@ -323,3 +323,49 @@ class SnapshotSource(discord.ext.menus.ListPageSource):
             inline=False)
         self.embed = embed
         return embed
+
+
+class CheckerSource(discord.ext.menus.ListPageSource):
+    def __init__(self, pixels, templates):
+        super().__init__(pixels, per_page=10)
+        self.embed = None
+        self.templates = templates
+
+    async def format_page(self, menu, entries):
+        embed = discord.Embed(
+            description=f"Page {menu.current_page + 1} of {self.get_max_pages()}")
+        embed.set_footer(
+            text="Scroll using the reactions below to see other pages.")
+
+        colors = []
+        for x in range(16):
+            colors.append(menu.ctx.s(f"color.pixelcanvas.{x}"))
+
+        offset = menu.current_page * self.per_page
+        for i, p in enumerate(entries, start=offset):
+            if i == offset + self.per_page:
+                break
+
+            template = [t for t in self.templates if t.id == p.template_id][0]
+
+            try:
+                template_color = colors[int(template.array[abs(p.x - template.sx), abs(p.y - template.sy)])]
+            except IndexError:
+                continue
+
+            s = round(time.time() - p.recieved)
+            h = s // 3600
+            s -= h * 3600
+            m = s // 60
+            s -= m * 60
+            delta = f"{h}h" if h != 0 else ""
+            delta += f"{m}m" if m != 0 else ""
+            delta += f"{s}s" if s != 0 else ""
+
+            embed.add_field(
+                name=f"{delta} ago - Template: {template.name}",
+                value="[@{0.x},{0.y}](https://pixelcanvas.io/@{0.x},{0.y}) is **{1}**, should be **{2}**.".format(
+                    p, colors[p.damage_color], template_color),
+                inline=False)
+        self.embed = embed
+        return embed

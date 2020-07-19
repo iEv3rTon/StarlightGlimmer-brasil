@@ -10,7 +10,7 @@ import psutil
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import BucketType, Command, HelpCommand, Group
+from discord.ext.commands import BucketType, HelpCommand, Group
 
 from lang import en_US, pt_BR, tr_TR
 from objects.bot_objects import GlimContext
