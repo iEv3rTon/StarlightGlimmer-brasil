@@ -370,5 +370,6 @@ class CheckerSource(discord.ext.menus.ListPageSource):
                 value="[@{0.x},{0.y}](https://pixelcanvas.io/@{0.x},{0.y}) is **{1}**, should be **{2}**.".format(
                     p, colors[p.damage_color], template_color),
                 inline=False)
+
         self.embed = embed
         return embed

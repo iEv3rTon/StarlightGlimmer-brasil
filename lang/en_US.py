@@ -62,6 +62,12 @@ STRINGS = {
     "error.unknown": "An unknown error occurred. The dev has been notified.",
     "error.why": "But... why?",
 
+    # Alerts command messages
+    "alerts.alert_title": "{} took damage!",
+    "alerts.alert_description": "Messages that are crossed out have been fixed.",
+    "alerts.alert_pixel": "{c}[@{0.x},{0.y}](https://pixelcanvas.io/@{0.x},{0.y}) painted **{1}**, should be **{2}**.{c}\n",
+    "alerts.recieved": "Received:",
+
     # Animotes command messages
     "animotes.opt_in": "You have successfully **opted-in** to emoji conversion.",
     "animotes.opt_out": "You have successfully **opted-out** of emoji conversion.",

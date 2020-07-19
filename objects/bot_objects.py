@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands
 from discord.utils import get as dget
 
@@ -37,7 +38,11 @@ class GlimContext(commands.Context):
 
     @staticmethod
     def get_from_guild(guild, str_id):
-        language = sql.guild_get_language_by_id(guild.id).lower()
+        if isinstance(guild, discord.Guild):
+            language = sql.guild_get_language_by_id(guild.id).lower()
+        else:
+            language = sql.guild_get_language_by_id(guild).lower()
+
         if language == "en-us":
             return en_US.STRINGS.get(str_id, None)
         if language == "pt-br":

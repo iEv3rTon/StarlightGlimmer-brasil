@@ -13,6 +13,7 @@ import numpy as np
 import websockets
 
 from lang import en_US
+from objects.bot_objects import GlimContext
 from utils import converter, sqlite as sql
 
 logger = logging.getLogger(__name__)
@@ -21,8 +22,9 @@ logger = logging.getLogger(__name__)
 class Template:
     def __init__(self,
                  id: int, name: str, array: np.array, url: str, md5: str, sx: int, sy: int,
-                 alert_channel: int, last_alert_message, sending: bool, pixels: list):
+                 alert_channel: int, last_alert_message, sending: bool, pixels: list, gid):
 
+        self.gid = gid
         self.id = id  # Unique identifier for each template, never changes, sourced from db
         self.name = name
         self.array = array  # Image array
@@ -37,6 +39,12 @@ class Template:
         self.sending = sending
 
         self.pixels = pixels  # list of pixel objects
+
+    def s(self, string_id):
+        return GlimContext.get_from_guild(self.gid, string_id)
+
+    def color(self, index):
+        return self.s(f"color.pixelcanvas.{index}")
 
 
 class Pixel:
@@ -85,7 +93,7 @@ class Checker:
                         return None
 
             template = Template(t.id, t.name, converter.image_to_array(image), t.url, t.md5,
-                                t.x, t.y, t.alert_id, last_alert_message, sending, pixels)
+                                t.x, t.y, t.alert_id, last_alert_message, sending, pixels, t.gid)
             logger.debug("Generated template {0.name} from ({0.sx},{0.sy}) to ({0.ex},{0.ey}).".format(template))
             return template
         except Exception as e:
@@ -111,7 +119,8 @@ class Checker:
                         old_t = self.templates.get(id)
                         if self.template_changed(t, old_t):
                             # Pass in the old state to preserve it
-                            tp = await self.generate_template(t, t.last_alert_message, t.pixels, t.sending)
+                            tp = await self.generate_template(
+                                t, old_t.last_alert_message, old_t.pixels, old_t.sending)
                             self.templates[id] = tp if tp is not None else old_t
 
             # Add any new templates from db to self.templates
@@ -242,8 +251,8 @@ class Checker:
             template.sending = True
 
             embed = discord.Embed(
-                title="{} took damage!".format(template.name), 
-                description="Messages that are crossed out have been fixed.")
+                title=template.s("alerts.alert_title").format(template.name),
+                description=template.s("alerts.alert_description"))
             embed.set_thumbnail(url=template.url)
             text = ""
 
@@ -251,17 +260,17 @@ class Checker:
                 if (template.last_alert_message and p.alert_id == template.last_alert_message.id) or \
                    (p.alert_id == "flag" and template.id == p.template_id):
 
-                    damage_color = self.colors[p.damage_color]
+                    damage_color = template.color(p.damage_color)
                     try:
-                        template_color = self.colors[
-                            int(template.array[abs(p.x - template.sx), abs(p.y - template.sy)])]
+                        template_color = template.color(
+                            int(template.array[abs(p.x - template.sx), abs(p.y - template.sy)]))
                     except IndexError:
                         logger.debug(f"The index error in send_embed, pixel coords:{p.x},{p.y} colour:{p.damage_color} template:{template.name} template start:{template.sx},{template.sy} template end:{template.ex},{template.ey}")
                         continue
-                    text += "{c}[@{0.x},{0.y}](https://pixelcanvas.io/@{0.x},{0.y}) painted **{1}**, should be **{2}**.{c}\n".format(
+                    text += template.s("alerts.alert_pixel").format(
                         p, damage_color, template_color, c="~~" if p.fixed else "")
 
-            embed.add_field(name="Received:", value=text, inline=False)
+            embed.add_field(name=template.s("alerts.recieved"), value=text, inline=False)
             embed.timestamp = datetime.datetime.now()
 
             try:
