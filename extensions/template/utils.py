@@ -346,7 +346,10 @@ class CheckerSource(discord.ext.menus.ListPageSource):
             if i == offset + self.per_page:
                 break
 
-            template = [t for t in self.templates if t.id == p.template_id][0]
+            try:
+                template = [t for t in self.templates if t.id == p.template_id][0]
+            except IndexError:
+                continue
 
             try:
                 template_color = colors[int(template.array[abs(p.x - template.sx), abs(p.y - template.sy)])]
