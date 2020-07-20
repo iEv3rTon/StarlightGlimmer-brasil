@@ -14,6 +14,7 @@ from utils import config, sqlite as sql
 
 log = logging.getLogger(__name__)
 
+
 async def autoscan(ctx):
     if ctx.guild and not sql.guild_is_autoscan(ctx.guild.id):
         return
@@ -22,11 +23,11 @@ async def autoscan(ctx):
 
     cmd = None
     g = None
-    m_pc = re.search('pixelcanvas\.io/@(-?\d+),(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
-    m_pz = re.search('pixelzone\.io/\?p=(-?\d+),(-?\d+)(?:,(\d+))?(?:(?: |#| #)(-?\d+))?', ctx.message.content)
-    m_ps = re.search('pxls\.space/#x=(\d+)&y=(\d+)(?:&scale=(\d+))?(?:(?: |#| #)(-?\d+))?', ctx.message.content)
-    m_pre_def = re.search('@(-?\d+)(?: |,|, )(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
-    m_dif_def = re.search('(-?\d+)(?: |,|, )(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
+    m_pc = re.search(r'pixelcanvas\.io/@(-?\d+),(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
+    m_pz = re.search(r'pixelzone\.io/\?p=(-?\d+),(-?\d+)(?:,(\d+))?(?:(?: |#| #)(-?\d+))?', ctx.message.content)
+    m_ps = re.search(r'pxls\.space/#x=(\d+)&y=(\d+)(?:&scale=(\d+))?(?:(?: |#| #)(-?\d+))?', ctx.message.content)
+    m_pre_def = re.search(r'@(-?\d+)(?: |,|, )(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
+    m_dif_def = re.search(r'(-?\d+)(?: |,|, )(-?\d+)(?:(?: |#| #)(-?\d+))?', ctx.message.content)
     if m_pc:
         cmd = dget(dget(ctx.bot.commands, name='preview').commands, name='pixelcanvas')
         g = m_pc.groups()
@@ -50,6 +51,7 @@ async def autoscan(ctx):
         ctx.is_autoscan = True
         await ctx.bot.invoke(ctx)
         return True
+
 
 async def channel_log(bot, msg):
     if config.LOGGING_CHANNEL_ID:

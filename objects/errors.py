@@ -70,9 +70,10 @@ class TemplateNotFoundError(commands.CommandError):
         for t in templates:
             ratio = fuzz.partial_ratio(t.name, template_name)
             if ratio >= 70:
-                matches.append([t, ratio])
-        matches.sort(key=lambda match: match[1])
-        self.matches = [f"`{t[0].name}`" for i, t in enumerate(matches) if i < 5]
+                t.ratio = ratio
+                matches.append(t)
+        matches.sort(key=lambda match: match.ratio)
+        self.matches = [f"`{t.name}`" for i, t in enumerate(matches) if i < 5]
         self.query = template_name
 
 
