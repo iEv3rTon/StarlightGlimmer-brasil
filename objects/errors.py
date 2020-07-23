@@ -73,7 +73,7 @@ class TemplateNotFoundError(commands.CommandError):
                 t.ratio = ratio
                 matches.append(t)
         matches.sort(key=lambda match: match.ratio)
-        self.matches = [f"`{t.name}`" for i, t in enumerate(matches) if i < 5]
+        self.matches = [f"`{t.name}`" for t in matches[0:5]]
         self.query = template_name
 
 

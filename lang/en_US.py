@@ -38,6 +38,7 @@ STRINGS = {
     "error.bad_image": "An error occurred while attempting to open an image. Ensure that the supplied image is not corrupted.",
     "error.bad_png": "This image seems to be corrupted. Try re-saving it with an image editor or using `{0}quantize`.",
     "error.cannot_fetch_template": "Could not access URL for template '{}'. (Was the original attachment deleted?)",
+    "error.command_not_found": "The command {0} could not be found.",
     "error.cooldown": "That command is on cooldown. Try again in {0:.01f}s.",
     "error.did_you_mean": "Did you mean: {0}?",
     "error.faction_not_found": "That faction could not be found.",

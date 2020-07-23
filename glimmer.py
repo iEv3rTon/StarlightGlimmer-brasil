@@ -189,8 +189,8 @@ class Glimmer(commands.Bot):
 
         # Invoke a command if there is one
         ctx = await self.get_context(message, cls=GlimContext)
+        await self.invoke(ctx)
         if ctx.invoked_with:
-            await self.invoke(ctx)
             return
 
         # Autoscan

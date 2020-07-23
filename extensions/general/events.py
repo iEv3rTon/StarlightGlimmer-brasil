@@ -3,6 +3,7 @@ import traceback
 
 import discord
 from discord.ext import commands, menus
+from fuzzywuzzy import fuzz
 
 from objects import errors
 import utils
@@ -32,7 +33,29 @@ class Events(commands.Cog):
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.send(ctx.s("error.cooldown").format(error.retry_after))
         elif isinstance(error, commands.CommandNotFound):
-            pass
+            cmds = []
+            for key, command in self.bot.all_commands.items():
+                ratio = fuzz.partial_ratio(key, ctx.invoked_with)
+                if command not in cmds:
+                    command.ratios = [ratio]
+                    cmds.append(command)
+                else:
+                    command.ratios.append(ratio)
+
+            matches = []
+            for command in cmds:
+                command.ratio = sum(command.ratios) / len(command.ratios)
+                if command.ratio > 65:
+                    matches.append(command)
+
+            matches.sort(key=lambda match: match.ratio)
+            matches = [f"`{cmd.name}`" for cmd in matches[0:5]]
+
+            out = ctx.s("error.command_not_found").format(ctx.invoked_with)
+            if matches:
+                m = ctx.s("bot.or").format(", ".join(matches[:-1]), matches[-1]) if len(matches) > 1 else matches[0]
+                out = "{} {}".format(out, ctx.s("error.did_you_mean").format(m))
+            await ctx.send(out)
         elif isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(ctx.s("error.missing_argument"))
         elif isinstance(error, commands.NoPrivateMessage):
