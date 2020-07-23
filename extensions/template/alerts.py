@@ -62,7 +62,7 @@ class Alerts(commands.Cog):
             await ctx.send(f"Unmuted `{name}`.")
         else:
             try:
-                duration = float(duration)
+                duration = float(duration) * 3600
             except ValueError:
                 matches = re.findall(r"(\d+[wdhms])", duration.lower())  # Week Day Hour Minute Second
 
@@ -86,8 +86,8 @@ class Alerts(commands.Cog):
             if not template.alert_id:
                 return await ctx.send(f"`{name}` has no alert channel/is already muted.")
 
-            sql.mute_add(ctx.guild.id, template, time.time() + (duration * 3600))
-            await ctx.send(f"`{name}` muted for {duration} hours.")
+            sql.mute_add(ctx.guild.id, template, time.time() + duration)
+            await ctx.send(f"`{name}` muted for {duration / 3600} hours.")
 
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
