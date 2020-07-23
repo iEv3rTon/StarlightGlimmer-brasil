@@ -32,7 +32,9 @@ class Alerts(commands.Cog):
         mute = sql.mute_get(template.id)
         if mute:
             sql.mute_remove(template.id)
-            await ctx.send(f"Mute for `{name}` in {channel.mention} cleared.")
+            alert_id, _, _ = mute
+            mute_channel = self.bot.get_channel(alert_id)
+            await ctx.send(f"Mute for `{name}` in {mute_channel.mention} cleared.")
 
         if channel:
             sql.template_kwarg_update(ctx.guild.id, name, alert_id=channel.id)
