@@ -87,7 +87,7 @@ class Alerts(commands.Cog):
                 return await ctx.send(f"`{name}` has no alert channel/is already muted.")
 
             sql.mute_add(ctx.guild.id, template, time.time() + duration)
-            await ctx.send(f"`{name}` muted for {duration / 3600} hours.")
+            await ctx.send(f"`{name}` muted for {duration / 3600:.2f} hours.")
 
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
