@@ -413,14 +413,14 @@ class Template(commands.Cog):
         await ctx.send(ctx.s("template.remove").format(name))
 
     # =======================
-    #    Template Snapshot
+    #        Snapshot
     # =======================
 
     @commands.guild_only()
     @commands.cooldown(2, 5, commands.BucketType.guild)
     @checks.template_adder_only()
-    @template.group(name='snapshot', aliases=['s'], invoke_without_command=True, case_insensitive=True)
-    async def template_snapshot(self, ctx, *filter):
+    @commands.group(name='snapshot', aliases=['s'], invoke_without_command=True, case_insensitive=True)
+    async def snapshot(self, ctx, *filter):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             return await ctx.send(ctx.s("template.err.not_owner"))
 
@@ -533,8 +533,8 @@ class Template(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(2, 5, commands.BucketType.guild)
     @checks.template_adder_only()
-    @template_snapshot.command(name='add', aliases=['a'])
-    async def template_snapshot_add(self, ctx, base_template, snapshot_template):
+    @snapshot.command(name='add', aliases=['a'])
+    async def snapshot_add(self, ctx, base_template, snapshot_template):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             await ctx.send(ctx.s("template.err.not_owner"))
             return
@@ -553,8 +553,8 @@ class Template(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(2, 5, commands.BucketType.guild)
     @checks.template_adder_only()
-    @template_snapshot.command(name='remove', aliases=['r'])
-    async def template_snapshot_remove(self, ctx, base_template, snapshot_template):
+    @snapshot.command(name='remove', aliases=['r'])
+    async def snapshot_remove(self, ctx, base_template, snapshot_template):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             return await ctx.send(ctx.s("template.err.not_owner"))
 
@@ -576,8 +576,8 @@ class Template(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(2, 5, commands.BucketType.guild)
     @checks.template_adder_only()
-    @template_snapshot.command(name='list', aliases=['l'])
-    async def template_snapshot_list(self, ctx):
+    @snapshot.command(name='list', aliases=['l'])
+    async def snapshot_list(self, ctx):
         snapshots = [Snapshot(base, target) for base, target in sql.snapshots_get_all_by_guild(ctx.guild.id)]
         if not snapshots:
             return await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")

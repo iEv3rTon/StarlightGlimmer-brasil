@@ -301,10 +301,10 @@ STRINGS = {
     "brief.template.all": "List all templates for all factions.",
     "brief.template.info": "Displays info about a template.",
     "brief.template.remove": "Removes a template.",
-    "brief.template.snapshot": "Manages snapshots.",
-    "brief.template.snapshot.add": "Add snapshots.",
-    "brief.template.snapshot.list": "List snapshots.",
-    "brief.template.snapshot.remove": "Remove snapshots.",
+    "brief.snapshot": "Manages snapshots.",
+    "brief.snapshot.add": "Add snapshots.",
+    "brief.snapshot.list": "List snapshots.",
+    "brief.snapshot.remove": "Remove snapshots.",
     "brief.template.update": "Updates a template.",
     "brief.unregister": "Opt-out of animated emoji replacement.",
     "brief.version": "Gets my version number.",
@@ -383,11 +383,11 @@ STRINGS = {
         Templates must have unique names (max 32 chars, case sensitive). If you attempt to add a new template with the same name as an existing one, it will be replaced if you have permission to remove the old one (see `{p}help remove`).
         I only store URLs to templates. If the message that originally uploaded a template is deleted, its URL will break and the template will be lost. Save backups to your computer just in case.""",
     "help.template.remove": "This command can only be used if the template being removed was added by you, unless you are a Template Admin, Bot Admin, or have the Administrator permission (see 'role').",
-    "help.template.snapshot": """
+    "help.snapshot": """
         Attempts to update all currently registered snapshot templates. If a snapshot has errors, it will not be updated.
         This command can only be used by Template Admins and those with Admin perms. If you wish to only attempt to update specific templates you can specify them by listing their base template names.""",
-    "help.template.snapshot.add": "Base is what you want the template to look like, snapshot is what it looks like currently.",
-    "help.template.update": "Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.",
+    "help.snapshot.add": "Base is what you want the template to look like, snapshot is what it looks like currently.",
+    "help.update": "Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.",
     "help.unregister": "You only need to unregister once for this to apply to all guilds.",
 
     "args.check": """
@@ -485,9 +485,9 @@ STRINGS = {
     "signature.template.add.pxlsspace": "<name> <x> <y> (url)",
     "signature.template.info": "<template> (-r|--raw) (-f|--faction) (-z|--zoom)",
     "signature.template.remove": "<template>",
-    "signature.template.snapshot": "(subcommand) (template_filtering)",
-    "signature.template.snapshot.add": "<base_template_name> <snapshot_template_name>",
-    "signature.template.snapshot.remove": "<base_template_name> <snapshot_template_name>",
+    "signature.snapshot": "(subcommand) (template_filtering)",
+    "signature.snapshot.add": "<base_template_name> <snapshot_template_name>",
+    "signature.snapshot.remove": "<base_template_name> <snapshot_template_name>",
     "signature.template.update": "<name> (-n|--name) (-x) (-y) (-i|--image)",
 
     # Examples
@@ -646,7 +646,7 @@ STRINGS = {
          ("RawTemplate -r -z 5", "Get just the image for template named 'RawTemplate' magnified 5 times"),
          ("CoolRawTemplate -r -f CoolFaction -z 4", "Get just the image for a template named 'CoolRawTemplate' belonging to a faction named 'CoolFaction' magnified 4 times")],
     "example.template.remove": [("MyTemplate", "Remove a template named 'MyTemplate'")],
-    "example.template.snapshot":
+    "example.snapshot":
         [("", "Try to update all snapshots in this guild."),
          ("cb mb", "Only try to update the snapshots 'cb' and 'mb'.")],
     "example.template.update": [
