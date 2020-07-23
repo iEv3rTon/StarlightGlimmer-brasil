@@ -339,7 +339,7 @@ class Canvas(commands.Cog):
             new_ctx = await self.bot.get_context(msg, cls=GlimContext)
             new_ctx.is_repeat = True
 
-            match = re.match('^{}(diff|d|preview|p)'.format(ctx.prefix), msg.content)
+            match = re.match('^{}(diff|d|preview|p) '.format(ctx.prefix), msg.content)
             if match:
                 await new_ctx.reinvoke()
                 return

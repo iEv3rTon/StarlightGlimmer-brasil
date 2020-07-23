@@ -1,5 +1,6 @@
 import logging
 import time
+import re
 
 import discord
 from discord.ext import commands, menus
@@ -63,7 +64,24 @@ class Alerts(commands.Cog):
             try:
                 duration = float(duration)
             except ValueError:
-                return await ctx.send("Invalid mute duration, please provide a number.")
+                matches = re.findall(r"(\d+[wdhms])", duration.lower())  # Week Day Hour Minute Second
+
+                if not matches:
+                    return await ctx.send("Invalid mute duration, give the number of hours or format like `1h8m`")
+
+                suffixes = [match[-1] for match in matches]
+                if len(suffixes) != len(set(suffixes)):
+                    return await ctx.send("Invalid mute duration, duplicate time suffix (eg: 1**h**8m3**h**)")
+
+                seconds = {
+                    "w": 7 * 24 * 60 * 60,
+                    "d": 24 * 60 * 60,
+                    "h": 60 * 60,
+                    "m": 60,
+                    "s": 1
+                }
+
+                duration = sum([int(match[:-1]) * seconds.get(match[-1]) for match in matches])
 
             if not template.alert_id:
                 return await ctx.send(f"`{name}` has no alert channel/is already muted.")

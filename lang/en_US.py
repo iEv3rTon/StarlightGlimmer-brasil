@@ -349,7 +349,18 @@ STRINGS = {
     "help.faction.emblem.set": "URLs must be Discord URLs.",
     "help.faction.hide": "You can still view info about hidden factions if you explicitly use their name or alias in commands with the `-f` paramater.",
     "help.faction.name.set": "Faction names must be unique. Min 6 chars, max 32 chars. Case sensitive.",
-    "help.mute": "Duration should be given in hours.",
+    "help.mute": """
+        Duration can either be given in hours.
+        eg:
+        `7` - 7 hours
+        `5.5` - 5 hours 30 minutes
+
+        Or you can give the duration using one of these 5 suffixes. w - Week, d - Day, h - Hour, m - Minute, s - Second.
+        eg:
+        `2h` - 2 hours
+        `7h2M4s` - 7 hours, 2 minutes, 4 seconds
+        `1s5d2M` - 5 days, 2 minutes, 1 second
+    """,
     "help.prefix": "Max length is 5 characters. You really shouldn't need more than 2.",
     "help.quantize": """
         This should primarily be used if `{p}diff` is telling you your image has 'bad color' in it.
