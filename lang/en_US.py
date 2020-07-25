@@ -654,6 +654,13 @@ STRINGS = {
         ("coolTemplate -x 67 -y 88", "Update the template 'coolTemplate' with the coordinates (67, 88)"),
         ("funtemplate -n funnertemplate -i -x 8", "(with an attachment) Update the template 'funtemplate' with the new name 'funnertemplate' and the new x coordinate 8. The image of the template will be updated with the attached image."),
         ("MyTemplate -i https://cdn.discordapp.com/.../template.png -y 876", "Update the template 'MyTemplate' with the image linked and the y coordinate 876.")],
+    "example.alert": [
+        ("MyTemplate #alert-channel", "Set up the template 'MyTemplate' to alert for damage in the channel #alert-channel"),
+        ("MyTemplate", "Clear any existing alert channels for the template 'MyTemplate', it will no longer alert for damage")],
+    "example.mute": [
+        ("MyTemplate 4", "Mute alerts for 'MyTemplate' for 4 hours"),
+        ("MyTemplate 30m7s", "Mute alerts for 'MyTemplate' for 30 minutes and 7 seconds"),
+        ("MyTemplate", "Unmute 'MyTemplate' immediately instead of waiting for the mute time to expire")],
 
     # Canvas colors
     "color.unknown": "Unknown",
