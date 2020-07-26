@@ -115,52 +115,54 @@ class Checker:
             # Update any templates already in self.templates that have changed
             for id in self.templates.keys():
                 for t in templates:
-                    if id == t.id:
-                        old_t = self.templates.get(id)
-                        if self.template_changed(t, old_t):
-                            # Pass in the old state to preserve it
-                            tp = await self.generate_template(
-                                t, old_t.last_alert_message, old_t.pixels, old_t.sending)
-                            self.templates[id] = tp if tp is not None else old_t
+                    if id != t.id:
+                        continue
+                    old_t = self.templates.get(id)
+                    if not self.template_changed(t, old_t):
+                        continue
+
+                    # Pass in the old state to preserve it
+                    tp = await self.generate_template(
+                        t, old_t.last_alert_message, old_t.pixels, old_t.sending)
+                    self.templates[id] = tp if tp is not None else old_t
 
             # Add any new templates from db to self.templates
             for t in templates:
-                if t.id not in self.templates.keys():
-                    tp = await self.generate_template(t)
-                    if tp is not None:
-                        self.templates[tp.id] = tp
+                if t.id in self.templates.keys():
+                    continue
+                tp = await self.generate_template(t)
+                if tp is None:
+                    continue
+
+                self.templates[tp.id] = tp
 
             # Do cleanup on data
             _5_mins = 60 * 30
+            now = time.time()
             channel_messages = {}
             for id in self.templates.keys():
                 t = self.templates.get(id)
-                if t.last_alert_message:
-                    # Is the most recent alert within the last 5 messages in it's alert channel?
-                    messages = channel_messages.get(t.alert_channel)
-                    if not messages:
-                        alert_channel = self.bot.get_channel(t.alert_channel)
-                        messages = await alert_channel.history(limit=5).flatten()
-                        channel_messages[t.alert_channel] = messages
-                    # The channel could have been cleared during the time we spend collecting the history
-                    if t.last_alert_message:
-                        msg_found = False
-                        for msg in messages:
-                            if msg.id == t.last_alert_message.id:
-                                msg_found = True
-                        # Clear the alert message if it isn't recent anymore so new alerts will be at the bottom of the channel
-                        if not msg_found:
-                            t.last_alert_message = None
-                            logger.debug(f"Alert message for {t.name} more than 5 messages ago, cleared.")
+                if not t.last_alert_message:
+                    continue
+
+                # Get last 5 messages in channel
+                messages = channel_messages.get(t.alert_channel)
+                if not messages:
+                    alert_channel = self.bot.get_channel(t.alert_channel)
+                    messages = await alert_channel.history(limit=5).flatten()
+                    channel_messages[t.alert_channel] = messages
+
+                # Clear the alert message if it isn't recent anymore so new alerts will be at the bottom of the channel
+                if not any(m.id == t.last_alert_message.id for m in messages):
+                    t.last_alert_message = None
+                    logger.debug(f"Alert message for {t.name} is more than 5 messages ago, cleared.")
 
                 # Clean up old pixel data
                 for p in t.pixels:
-                    delta = time.time() - p.recieved
                     # Pixels recieved more than 5 mins ago that are not attached to the current alert msg will be cleared
-                    if t.last_alert_message:
-                        if delta > _5_mins and p.alert_id != t.last_alert_message.id:
-                            t.pixels.remove(p)
-                            logger.debug(f"Pixel {p.x},{p.y} colour:{self.colors[p.damage_color]} template:{t.name} cleared.")
+                    if (now - p.recieved) > _5_mins and p.alert_id != t.last_alert_message.id:
+                        t.pixels.remove(p)
+                        logger.debug(f"Pixel {p.x},{p.y} colour:{self.colors[p.damage_color]} template:{t.name} cleared.")
 
         except Exception as e:
             logger.exception(f'Failed to update. {e}')
