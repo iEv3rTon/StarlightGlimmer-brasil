@@ -132,12 +132,16 @@ class Checker:
 
             # Do cleanup on data
             _5_mins = 60 * 30
+            channel_messages = {}
             for id in self.templates.keys():
                 t = self.templates.get(id)
                 if t.last_alert_message:
                     # Is the most recent alert within the last 5 messages in it's alert channel?
-                    alert_channel = self.bot.get_channel(t.alert_channel)
-                    messages = await alert_channel.history(limit=5).flatten()
+                    messages = channel_messages.get(t.alert_channel)
+                    if not messages:
+                        alert_channel = self.bot.get_channel(t.alert_channel)
+                        messages = await alert_channel.history(limit=5).flatten()
+                        channel_messages[t.alert_channel] = messages
                     # The channel could have been cleared during the time we spend collecting the history
                     if t.last_alert_message:
                         msg_found = False
