@@ -42,7 +42,7 @@ class Template:
 
         self.pixels = pixels  # list of pixel objects
 
-    def repr(self):
+    def __repr__(self):
         return ("Template(id={0.id}, gid={0.gid}, name={0.name}, url={0.url}, md5={0.md5}, sx={0.sx}, sy={0.sy} "
                 "ex={0.ex}, ey={0.ey}, aid={0.alert_channel}, message={0.last_alert_message}, sending={0.sending}, "
                 "pixels={0.pixels})".format(self))
