@@ -20,10 +20,6 @@ from utils import converter, sqlite as sql
 
 logger = logging.getLogger(__name__)
 
-colors = []
-for x in range(16):
-    colors.append(en_US.STRINGS.get(f"color.pixelcanvas.{x}", None))
-
 
 class Template:
     def __init__(self,
@@ -59,6 +55,10 @@ class Template:
 
 
 class Pixel:
+    colors = []
+    for x in range(16):
+        colors.append(en_US.STRINGS.get(f"color.pixelcanvas.{x}", None))
+
     def __init__(self, damage_color, x, y, alert_id, template_id):
         self.id = uuid.uuid4()
         self.damage_color = damage_color  # int from 0-15, corresponds to an index in colors
@@ -70,8 +70,8 @@ class Pixel:
         self.fixed = False
 
     def __repr__(self):
-        return ("Pixel(id={0.id}, color={colors[0.damage_color]}, x={0.x}, y={0.y}, aid={0.alert_id}, "
-                "tid={0.template_id}, recieved={0.recieved}, fixed={0.fixed})".format(self))
+        return ("Pixel(id={0.id}, color={1}, x={0.x}, y={0.y}, aid={0.alert_id}, "
+                "tid={0.template_id}, recieved={0.recieved}, fixed={0.fixed})".format(self, Pixel.colors[self.damage_color]))
 
 
 class Checker:
