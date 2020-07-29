@@ -125,7 +125,7 @@ class Checker:
             for t in self.templates:
                 if t.id not in db_t_ids:
                     logger.debug(f"Template {t} no longer in the database, removed.")
-                    del t
+                    self.templates.remove(t)
 
             # Update any templates already in self.templates that have changed
             for old_t in self.templates:
@@ -137,7 +137,7 @@ class Checker:
 
                     tp = await self.generate_template(t)
                     if tp is not None:
-                        del old_t
+                        self.templates.remove(old_t)
                         self.templates.append(tp)
 
             # Add any new templates from db to self.templates
@@ -176,7 +176,7 @@ class Checker:
                     # Pixels recieved more than 5 mins ago that are not attached to the current alert msg will be cleared
                     if (now - p.recieved) > _5_mins and p.alert_id != t.last_alert_message.id:
                         logger.debug(f"Clearing {p}.")
-                        del p
+                        t.pixels.remove(p)
 
         except Exception as e:
             logger.exception(f'Failed to update. {e}')
