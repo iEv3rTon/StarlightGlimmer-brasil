@@ -84,8 +84,8 @@ class Glimmer(commands.Bot):
 
         log.info("Starting template checker...")
         self.pcio = checker.Checker(self)
-        self.loop.create_task(self.pcio.run_websocket())
         self.checker_update.start()
+        self.loop.create_task(self.start_checker_websocket())
 
         log.info("Beginning status and unmute tasks...")
         self.set_presense.start()
@@ -94,6 +94,11 @@ class Glimmer(commands.Bot):
         log.info('I am ready!')
         await utils.channel_log(self, "I am ready!")
         print("I am ready!")
+
+    async def start_checker_websocket(self):
+        while self.checker_update.current_loop < 2:
+            asyncio.sleep(0.1)
+        self.loop.create_task(self.pcio.run_websocket())
 
     async def database_check(self):
         is_new_version = False
