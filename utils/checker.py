@@ -123,9 +123,7 @@ class Checker:
                     if not self.template_changed(t, old_t):
                         continue
 
-                    # Pass in the old state to preserve it
-                    tp = await self.generate_template(
-                        t, old_t.last_alert_message, old_t.pixels, old_t.sending)
+                    tp = await self.generate_template(t)
                     self.templates[id] = tp if tp is not None else old_t
 
             # Add any new templates from db to self.templates
@@ -288,7 +286,6 @@ class Checker:
             try:
                 if template.last_alert_message:
                     await template.last_alert_message.edit(embed=embed)
-                    logger.debug(f"Alert message for {template.name} edited.")
                 else:
                     channel = self.bot.get_channel(template.alert_channel)
                     msg = await channel.send(embed=embed)
@@ -296,7 +293,6 @@ class Checker:
                     for p in template.pixels:
                         if p.alert_id == "flag":
                             p.alert_id = msg.id
-                    logger.debug(f"New alert message for {template.name} created.")
             except discord.errors.HTTPException as e:
                 logger.debug(f"Exception sending message for {template.name}, {e}")
 
