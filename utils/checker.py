@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import math
 import time
@@ -183,7 +184,7 @@ class Checker:
             except Exception as e:
                 logger.exception(f"Error launching! {e}")
 
-            await time.sleep(0.5)
+            await asyncio.sleep(0.5)
 
     async def on_message(self, message):
         try:
