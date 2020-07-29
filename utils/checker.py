@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class Template:
     def __init__(self,
                  id: int, name: str, array: np.array, url: str, md5: str, sx: int, sy: int,
-                 alert_channel: int, last_alert_message, sending: bool, pixels: list, gid):
+                 alert_channel: int, gid):
 
         self.gid = gid
         self.id = id  # Unique identifier for each template, never changes, sourced from db
@@ -37,10 +37,10 @@ class Template:
         self.ex, self.ey = sx + array.shape[0], sy + array.shape[1]
 
         self.alert_channel = alert_channel  # Channel id
-        self.last_alert_message = last_alert_message  # Message object
-        self.sending = sending
+        self.last_alert_message = None  # Message object
+        self.sending = False
 
-        self.pixels = pixels  # list of pixel objects
+        self.pixels = []
 
     def __repr__(self):
         return ("Template(id={0.id}, gid={0.gid}, name={0.name}, url={0.url}, md5={0.md5}, sx={0.sx}, sy={0.sy} "
@@ -53,6 +53,9 @@ class Template:
     def color(self, index):
         return self.s(f"color.pixelcanvas.{index}")
 
+    def in_range(self, x, y):
+        return self.sx <= x < self.ex and self.sy <= y < self.ey
+
 
 class Pixel:
     colors = []
@@ -60,7 +63,6 @@ class Pixel:
         colors.append(en_US.STRINGS.get(f"color.pixelcanvas.{x}", None))
 
     def __init__(self, damage_color, x, y, alert_id, template_id):
-        self.id = uuid.uuid4()
         self.damage_color = damage_color  # int from 0-15, corresponds to an index in colors
         self.x = x
         self.y = y
@@ -70,15 +72,14 @@ class Pixel:
         self.fixed = False
 
     def __repr__(self):
-        return ("Pixel(id={0.id}, color={1}, x={0.x}, y={0.y}, aid={0.alert_id}, "
-                "tid={0.template_id}, recieved={0.recieved}, fixed={0.fixed})".format(self, Pixel.colors[self.damage_color]))
+        return ("Pixel(color={1}, x={0.x}, y={0.y}, aid={0.alert_id}, tid={0.template_id}, "
+                "recieved={0.recieved}, fixed={0.fixed})".format(self, Pixel.colors[self.damage_color]))
 
 
 class Checker:
     def __init__(self, bot):
         self.bot = bot
-        self.templates = {}
-        self.pixels = {}
+        self.templates = []
         self.fingerprint = self.make_fingerprint()
 
     def make_fingerprint(self):
@@ -91,7 +92,7 @@ class Checker:
                (t_db.name != t_list.name) or \
                (t_db.alert_id != t_list.alert_channel)
 
-    async def generate_template(self, t, last_alert_message=None, pixels=[], sending=False):
+    async def generate_template(self, t):
         try:
             async with aiohttp.ClientSession() as sess:
                 async with sess.get(t.url) as resp:
@@ -103,7 +104,7 @@ class Checker:
                         return None
 
             template = Template(t.id, t.name, converter.image_to_array(image), t.url, t.md5,
-                                t.x, t.y, t.alert_id, last_alert_message, sending, pixels, t.gid)
+                                t.x, t.y, t.alert_id, t.gid)
             logger.debug(f"Generated {template}.")
             return template
         except Exception as e:
@@ -117,39 +118,40 @@ class Checker:
 
             # Remove any templates from self.templates that are no longer in db
             db_t_ids = [t.id for t in templates]
-            for id in self.templates.keys():
-                if id not in db_t_ids:
-                    t = self.templates.pop(id, None)
+            for t in self.templates:
+                if t.id not in db_t_ids:
                     logger.debug(f"Template {t} no longer in the database, removed.")
+                    del t
 
             # Update any templates already in self.templates that have changed
-            for id in self.templates.keys():
+            for old_t in self.templates:
                 for t in templates:
-                    if id != t.id:
+                    if old_t.id != t.id:
                         continue
-                    old_t = self.templates.get(id)
                     if not self.template_changed(t, old_t):
                         continue
 
                     tp = await self.generate_template(t)
-                    self.templates[id] = tp if tp is not None else old_t
+                    if tp is not None:
+                        del old_t
+                        self.templates.append(tp)
 
             # Add any new templates from db to self.templates
+            template_ids = [template.id for template in self.templates]
             for t in templates:
-                if t.id in self.templates.keys():
+                if t.id in template_ids:
                     continue
                 tp = await self.generate_template(t)
                 if tp is None:
                     continue
 
-                self.templates[tp.id] = tp
+                self.templates.append(tp)
 
             # Do cleanup on data
             _5_mins = 60 * 30
             now = time.time()
             channel_messages = {}
-            for id in self.templates.keys():
-                t = self.templates.get(id)
+            for t in self.templates:
                 if not t.last_alert_message:
                     continue
 
@@ -170,7 +172,7 @@ class Checker:
                     # Pixels recieved more than 5 mins ago that are not attached to the current alert msg will be cleared
                     if (now - p.recieved) > _5_mins and p.alert_id != t.last_alert_message.id:
                         logger.debug(f"Clearing {p}.")
-                        t.pixels.remove(p)
+                        del p
 
         except Exception as e:
             logger.exception(f'Failed to update. {e}')
@@ -205,62 +207,61 @@ class Checker:
 
                 # logger.debug("Pixel placed, ({0},{1}) colour:{2}".format(x, y, colors[color]))
 
-                for id in self.templates.keys():
-                    template = self.templates.get(id)
-                    await self.check_template(template, x, y, color)
+                for template in self.templates:
+                    if not template.in_range(x, y):
+                        continue
+                    self.bot.loop.create_task(self.check_template(template, x, y, color))
         except Exception as e:
             logger.exception(f"Error with pixel. {e}")
 
     async def check_template(self, template, x, y, color):
         try:
-            # Is pixel in the start to end range of this template
-            if template.sx <= x < template.ex and template.sy <= y < template.ey:
-                try:
-                    template_color = int(template.array[abs(x - template.sx), abs(y - template.sy)])
-                except IndexError:
-                    logger.debug(f"The index error in check_template, coords:{x}, {y} template:{template}")
-                    return
-                # Pixel correct
-                if color == template_color:
-                    # Is this pixel in the most recent alert?
-                    for p in template.pixels:
+            try:
+                template_color = int(template.array[abs(x - template.sx), abs(y - template.sy)])
+            except IndexError:
+                logger.debug(f"The index error in check_template, coords:{x}, {y} template:{template}")
+                return
+            # Pixel correct
+            if color == template_color:
+                # Is this pixel in the most recent alert?
+                for p in template.pixels:
+                    if p.x == x and p.y == y:
+                        p.fixed = True
+                        logger.debug(f"Tracked pixel {p} on {template} fixed.")
+                        await self.send_embed(template)
+            # Pixel incorrect
+            elif color != template_color and template_color > -1:
+                # If there is a current alert message, edit/add pixels to that
+                if template.last_alert_message:
+                    current_pixels = [p for p in template.pixels if p.alert_id == template.last_alert_message.id]
+
+                    # If pixel is already being tracked, just update the data
+                    for p in current_pixels:
                         if p.x == x and p.y == y:
-                            p.fixed = True
-                            logger.debug(f"Tracked pixel {p} on {template} fixed.")
+                            p.damage_color = color
+                            p.fixed = False
+                            logger.debug(f"Tracked pixel {p} on {template} damaged.")
                             await self.send_embed(template)
-                # Pixel incorrect
-                elif color != template_color and template_color > -1:
-                    # If there is a current alert message, edit/add pixels to that
-                    if template.last_alert_message:
-                        current_pixels = [p for p in template.pixels if p.alert_id == template.last_alert_message.id]
-
-                        # If pixel is already being tracked, just update the data
-                        for p in current_pixels:
-                            if p.x == x and p.y == y:
-                                p.damage_color = color
-                                p.fixed = False
-                                logger.debug(f"Tracked pixel {p} on {template} damaged.")
-                                await self.send_embed(template)
-                                return
-
-                        # Pixel is not already tracked, add it to an old message
-                        if len(current_pixels) < 10:
-                            p = Pixel(color, x, y, template.last_alert_message.id, template.id)
-                            template.pixels.append(p)
-                            logger.debug(f"Untracked pixel {p} on {template} damaged.")
-                            await self.send_embed(template)
-
-                            # if adding our pixel increases it to 10, a new message needs to be created
-                            if len(current_pixels) == 9:
-                                logger.debug(f"Clearing alert message for {template}")
-                                template.last_alert_message = None
                             return
 
-                    # No current alert message, make a new one
-                    p = Pixel(color, x, y, "flag", template.id)
-                    template.pixels.append(p)
-                    logger.debug(f"Untracked pixel {p} on {template} damaged, new message created.")
-                    await self.send_embed(template)
+                    # Pixel is not already tracked, add it to an old message
+                    if len(current_pixels) < 10:
+                        p = Pixel(color, x, y, template.last_alert_message.id, template.id)
+                        template.pixels.append(p)
+                        logger.debug(f"Untracked pixel {p} on {template} damaged.")
+                        await self.send_embed(template)
+
+                        # if adding our pixel increases it to 10, a new message needs to be created
+                        if len(current_pixels) == 9:
+                            logger.debug(f"Clearing alert message for {template}")
+                            template.last_alert_message = None
+                        return
+
+                # No current alert message, make a new one
+                p = Pixel(color, x, y, "flag", template.id)
+                template.pixels.append(p)
+                logger.debug(f"Untracked pixel {p} on {template} damaged, new message created.")
+                await self.send_embed(template)
         except Exception as e:
             logger.exception(f"Error checking pixel. {e}")
 
