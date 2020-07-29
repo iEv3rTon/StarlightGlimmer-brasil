@@ -3,6 +3,7 @@ import math
 import time
 import uuid
 from io import BytesIO
+import socket
 from struct import unpack_from
 import datetime
 
@@ -177,8 +178,12 @@ class Checker:
                         await self.on_message(message)
             except websockets.exceptions.ConnectionClosed:
                 logger.debug("Websocket disconnected.")
+            except socket.gaierror:
+                logger.debug("Temporary failure in name resolution.")
             except Exception as e:
                 logger.exception(f"Error launching! {e}")
+
+            await time.sleep(0.5)
 
     async def on_message(self, message):
         try:
