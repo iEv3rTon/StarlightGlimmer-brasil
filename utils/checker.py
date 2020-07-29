@@ -20,6 +20,10 @@ from utils import converter, sqlite as sql
 
 logger = logging.getLogger(__name__)
 
+colors = []
+for x in range(16):
+    colors.append(en_US.STRINGS.get(f"color.pixelcanvas.{x}", None))
+
 
 class Template:
     def __init__(self,
@@ -42,6 +46,11 @@ class Template:
 
         self.pixels = pixels  # list of pixel objects
 
+    def repr(self):
+        return ("Template(id={0.id}, gid={0.gid}, name={0.name}, url={0.url}, md5={0.md5}, sx={0.sx}, sy={0.sy} "
+                "ex={0.ex}, ey={0.ey}, aid={0.alert_channel}, message={0.last_alert_message}, sending={0.sending}, "
+                "pixels={0.pixels})".format(self))
+
     def s(self, string_id):
         return GlimContext.get_from_guild(self.gid, string_id)
 
@@ -51,6 +60,7 @@ class Template:
 
 class Pixel:
     def __init__(self, damage_color, x, y, alert_id, template_id):
+        self.id = uuid.uuid4()
         self.damage_color = damage_color  # int from 0-15, corresponds to an index in colors
         self.x = x
         self.y = y
@@ -60,18 +70,16 @@ class Pixel:
         self.fixed = False
 
     def __repr__(self):
-        return f"Pixel(color={self.damage_color}, x={self.x}, y={self.y}, aid={self.alert_id}, tid={self.template_id}, recieved={self.recieved}, fixed={self.fixed})"
+        return ("Pixel(id={0.id}, color={colors[0.damage_color]}, x={0.x}, y={0.y}, aid={0.alert_id}, "
+                "tid={0.template_id}, recieved={0.recieved}, fixed={0.fixed})".format(self))
 
 
 class Checker:
     def __init__(self, bot):
         self.bot = bot
         self.templates = {}
+        self.pixels = {}
         self.fingerprint = self.make_fingerprint()
-
-        self.colors = []
-        for x in range(16):
-            self.colors.append(en_US.STRINGS.get(f"color.pixelcanvas.{x}", None))
 
     def make_fingerprint(self):
         return uuid.uuid4().hex
@@ -91,15 +99,15 @@ class Checker:
                         image = Image.open(BytesIO(await resp.read())).convert('RGBA')
                     else:
                         # Skip this template, it can get updated on the next round, no point retrying and delaying the others
-                        logger.exception(f"File {t.name} could not be downloaded, status code: {resp.status}")
+                        logger.exception(f"File for {t.name} could not be downloaded, status code: {resp.status}")
                         return None
 
             template = Template(t.id, t.name, converter.image_to_array(image), t.url, t.md5,
                                 t.x, t.y, t.alert_id, last_alert_message, sending, pixels, t.gid)
-            logger.debug("Generated template {0.name} from ({0.sx},{0.sy}) to ({0.ex},{0.ey}).".format(template))
+            logger.debug(f"Generated {template}.")
             return template
         except Exception as e:
-            logger.exception(f'Failed to generate template {t.name}. {e}')
+            logger.exception(f'Failed to generate {t}. {e}')
             return None
 
     async def update(self):
@@ -112,7 +120,7 @@ class Checker:
             for id in self.templates.keys():
                 if id not in db_t_ids:
                     t = self.templates.pop(id, None)
-                    logger.debug(f"Template {t.name} no longer in the database, removed.")
+                    logger.debug(f"Template {t} no longer in the database, removed.")
 
             # Update any templates already in self.templates that have changed
             for id in self.templates.keys():
@@ -154,15 +162,15 @@ class Checker:
 
                 # Clear the alert message if it isn't recent anymore so new alerts will be at the bottom of the channel
                 if not any(m.id == t.last_alert_message.id for m in messages):
+                    logger.debug(f"Alert message for {t} is more than 5 messages ago, clearing.")
                     t.last_alert_message = None
-                    logger.debug(f"Alert message for {t.name} is more than 5 messages ago, cleared.")
 
                 # Clean up old pixel data
                 for p in t.pixels:
                     # Pixels recieved more than 5 mins ago that are not attached to the current alert msg will be cleared
                     if (now - p.recieved) > _5_mins and p.alert_id != t.last_alert_message.id:
+                        logger.debug(f"Clearing {p}.")
                         t.pixels.remove(p)
-                        logger.debug(f"Pixel {p.x},{p.y} colour:{self.colors[p.damage_color]} template:{t.name} cleared.")
 
         except Exception as e:
             logger.exception(f'Failed to update. {e}')
@@ -195,7 +203,7 @@ class Checker:
                 y = int(y * 64 + math.floor(number / 64))
                 color = 15 & a
 
-                # logger.debug("Pixel placed, ({0},{1}) colour:{2}".format(x, y, self.colors[color]))
+                # logger.debug("Pixel placed, ({0},{1}) colour:{2}".format(x, y, colors[color]))
 
                 for id in self.templates.keys():
                     template = self.templates.get(id)
@@ -210,7 +218,7 @@ class Checker:
                 try:
                     template_color = int(template.array[abs(x - template.sx), abs(y - template.sy)])
                 except IndexError:
-                    logger.debug(f"The index error in check_template, pixel coords:{x},{y} colour:{color} template:{template.name} template start:{template.sx},{template.sy} template end:{template.ex},{template.ey}")
+                    logger.debug(f"The index error in check_template, coords:{x}, {y} template:{template}")
                     return
                 # Pixel correct
                 if color == template_color:
@@ -218,7 +226,7 @@ class Checker:
                     for p in template.pixels:
                         if p.x == x and p.y == y:
                             p.fixed = True
-                            logger.debug(f"Tracked pixel {x},{y} on {template.name} fixed to {self.colors[color]}.")
+                            logger.debug(f"Tracked pixel {p} on {template} fixed.")
                             await self.send_embed(template)
                 # Pixel incorrect
                 elif color != template_color and template_color > -1:
@@ -231,25 +239,27 @@ class Checker:
                             if p.x == x and p.y == y:
                                 p.damage_color = color
                                 p.fixed = False
-                                logger.debug(f"Tracked pixel {x},{y} on {template.name} damaged to {self.colors[color]}.")
+                                logger.debug(f"Tracked pixel {p} on {template} damaged.")
                                 await self.send_embed(template)
                                 return
 
                         # Pixel is not already tracked, add it to an old message
                         if len(current_pixels) < 10:
-                            template.pixels.append(Pixel(color, x, y, template.last_alert_message.id, template.id))
-                            logger.debug(f"Untracked pixel {x},{y} on {template.name} damaged to {self.colors[color]}.")
+                            p = Pixel(color, x, y, template.last_alert_message.id, template.id)
+                            template.pixels.append(p)
+                            logger.debug(f"Untracked pixel {p} on {template} damaged.")
                             await self.send_embed(template)
 
                             # if adding our pixel increases it to 10, a new message needs to be created
                             if len(current_pixels) == 9:
+                                logger.debug(f"Clearing alert message for {template}")
                                 template.last_alert_message = None
-                                logger.debug(f"{template.name}'s alert message was cleared.")
                             return
 
                     # No current alert message, make a new one
-                    template.pixels.append(Pixel(color, x, y, "flag", template.id))
-                    logger.debug(f"Untracked pixel {x},{y} on {template.name} damaged to {self.colors[color]}, new message created.")
+                    p = Pixel(color, x, y, "flag", template.id)
+                    template.pixels.append(p)
+                    logger.debug(f"Untracked pixel {p} on {template} damaged, new message created.")
                     await self.send_embed(template)
         except Exception as e:
             logger.exception(f"Error checking pixel. {e}")
@@ -275,7 +285,7 @@ class Checker:
                         template_color = template.color(
                             int(template.array[abs(p.x - template.sx), abs(p.y - template.sy)]))
                     except IndexError:
-                        logger.debug(f"The index error in send_embed, pixel coords:{p.x},{p.y} colour:{p.damage_color} template:{template.name} template start:{template.sx},{template.sy} template end:{template.ex},{template.ey}")
+                        logger.debug(f"The index error in send_embed, {p} {template}")
                         continue
                     text += template.s("alerts.alert_pixel").format(
                         p, damage_color, template_color, c="~~" if p.fixed else "")
@@ -294,7 +304,7 @@ class Checker:
                         if p.alert_id == "flag":
                             p.alert_id = msg.id
             except discord.errors.HTTPException as e:
-                logger.debug(f"Exception sending message for {template.name}, {e}")
+                logger.debug(f"Exception sending message for {template}, {e}")
 
             # Release send lock
             template.sending = False
