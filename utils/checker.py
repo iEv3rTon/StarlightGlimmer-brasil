@@ -72,8 +72,12 @@ class Pixel:
         self.fixed = False
 
     def __repr__(self):
-        return ("Pixel(color={1}, x={0.x}, y={0.y}, aid={0.alert_id}, tid={0.template_id}, "
-                "recieved={0.recieved}, fixed={0.fixed})".format(self, Pixel.colors[self.damage_color]))
+        return ("Pixel(color={0.log_color}, x={0.x}, y={0.y}, aid={0.alert_id}, tid={0.template_id}, "
+                "recieved={0.recieved}, fixed={0.fixed})".format(self))
+
+    @property
+    def log_color(self):
+        return Pixel.colors[self.damage_color]
 
 
 class Checker:
@@ -227,7 +231,7 @@ class Checker:
                 for p in template.pixels:
                     if p.x == x and p.y == y:
                         p.fixed = True
-                        logger.debug(f"Tracked pixel {p} on {template} fixed.")
+                        logger.debug(f"Tracked pixel {p.x},{p.y} fixed to {Pixel.colors[color]}, was {p.log_color}. On {template}")
                         await self.send_embed(template)
             # Pixel incorrect
             elif color != template_color and template_color > -1:
@@ -240,7 +244,7 @@ class Checker:
                         if p.x == x and p.y == y:
                             p.damage_color = color
                             p.fixed = False
-                            logger.debug(f"Tracked pixel {p} on {template} damaged.")
+                            logger.debug(f"Tracked pixel {p.x},{p.y} damaged to {p.log_color}. On {template}")
                             await self.send_embed(template)
                             return
 
@@ -248,7 +252,7 @@ class Checker:
                     if len(current_pixels) < 10:
                         p = Pixel(color, x, y, template.last_alert_message.id, template.id)
                         template.pixels.append(p)
-                        logger.debug(f"Untracked pixel {p} on {template} damaged.")
+                        logger.debug(f"Untracked pixel {p.x},{p.y} damaged to {p.log_color}. On {template}")
                         await self.send_embed(template)
 
                         # if adding our pixel increases it to 10, a new message needs to be created
@@ -260,7 +264,7 @@ class Checker:
                 # No current alert message, make a new one
                 p = Pixel(color, x, y, "flag", template.id)
                 template.pixels.append(p)
-                logger.debug(f"Untracked pixel {p} on {template} damaged, new message created.")
+                logger.debug(f"Untracked pixel {p.x},{p.y} damaged to {p.log_color}, new message created. On {template}")
                 await self.send_embed(template)
         except Exception as e:
             logger.exception(f"Error checking pixel. {e}")
