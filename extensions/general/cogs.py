@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import sys
 
 import discord
 from discord.ext import commands
@@ -78,3 +79,8 @@ class Cogs(commands.Cog):
         streams = [stream.decode() for stream in streams if stream.decode() != ""]
         for stream in streams:
             await ctx.send(f"```{stream}```")
+
+    @commands.command(name="close", aliases=["close-bot"])
+    async def close_bot(self, ctx):
+        await ctx.send("Shutting down bot...")
+        sys.exit()
