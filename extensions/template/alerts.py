@@ -29,12 +29,14 @@ class Alerts(commands.Cog):
 
     def cog_unload(self):
         self.update.cancel()
+        self.cleanup.cancel()
         self.websocket_task.cancel()
 
     async def start_checker(self):
         await self.bot.wait_until_ready()
         log.info("Starting template checker...")
         self.update.start()
+        self.cleanup.start()
         self.websocket_task = self.bot.loop.create_task(self.run_websocket())
 
     @tasks.loop(minutes=5.0)
@@ -74,9 +76,13 @@ class Alerts(commands.Cog):
 
                 self.templates.append(tp)
 
-            # Do cleanup on data
-            _5_mins = 60 * 30
-            now = time.time()
+        except Exception as e:
+            log.exception(f'Failed to update. {e}')
+
+    @tasks.loop(minutes=1.0)
+    async def cleanup(self):
+        try:
+            # Clean up old alert messages
             channel_messages = {}
             for t in self.templates:
                 if not t.last_alert_message:
@@ -94,7 +100,10 @@ class Alerts(commands.Cog):
                     log.debug(f"Alert message for {t} is more than 5 messages ago, clearing.")
                     t.last_alert_message = None
 
-                # Clean up old pixel data
+            # Clean up old pixels
+            _5_mins = 60 * 30
+            now = time.time()
+            for t in self.templates:
                 for p in t.pixels:
                     # Pixels recieved more than 5 mins ago that are not attached to the current alert msg will be cleared
                     if not t.last_alert_message and (now - p.recieved) > _5_mins and p.alert_id != "flag":
@@ -105,7 +114,7 @@ class Alerts(commands.Cog):
                         t.pixels.remove(p)
 
         except Exception as e:
-            log.exception(f'Failed to update. {e}')
+            log.exception(f'Cleanup failed. {e}')
 
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
