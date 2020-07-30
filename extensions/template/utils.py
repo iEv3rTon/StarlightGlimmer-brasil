@@ -8,8 +8,11 @@ import time
 import aiohttp
 import discord
 from PIL import Image
+import numpy as np
 
+from lang import en_US
 from objects import DbTemplate
+from objects.bot_objects import GlimContext
 from objects.errors import PilImageError, UrlError
 import utils
 from utils import canvases, colors, config, http, render, sqlite as sql
@@ -373,3 +376,62 @@ class CheckerSource(discord.ext.menus.ListPageSource):
 
         self.embed = embed
         return embed
+
+
+class Pixel:
+    colors = []
+    for x in range(16):
+        colors.append(en_US.STRINGS.get(f"color.pixelcanvas.{x}", None))
+
+    def __init__(self, damage_color, x, y, alert_id, template_id):
+        self.damage_color = damage_color  # int from 0-15, corresponds to an index in colors
+        self.x = x
+        self.y = y
+        self.alert_id = alert_id  # Alert message this pixel is for
+        self.template_id = template_id
+        self.recieved = time.time()
+        self.fixed = False
+
+    def __repr__(self):
+        return ("Pixel(color={0.log_color}, x={0.x}, y={0.y}, aid={0.alert_id}, tid={0.template_id}, "
+                "recieved={0.recieved}, fixed={0.fixed})".format(self))
+
+    @property
+    def log_color(self):
+        return Pixel.colors[self.damage_color]
+
+
+class Template:
+    def __init__(self,
+                 id: int, name: str, array: np.array, url: str, md5: str, sx: int, sy: int,
+                 alert_channel: int, gid):
+
+        self.gid = gid
+        self.id = id  # Unique identifier for each template, never changes, sourced from db
+        self.name = name
+        self.array = array  # Image array
+        self.url = url  # Image url
+        self.md5 = md5
+
+        self.sx, self.sy = sx, sy  # sx = start x, ex = end x
+        self.ex, self.ey = sx + array.shape[0], sy + array.shape[1]
+
+        self.alert_channel = alert_channel  # Channel id
+        self.last_alert_message = None  # Message object
+        self.sending = False
+
+        self.pixels = []
+
+    def __repr__(self):
+        return ("Template(id={0.id}, gid={0.gid}, name={0.name}, url={0.url}, md5={0.md5}, sx={0.sx}, sy={0.sy} "
+                "ex={0.ex}, ey={0.ey}, aid={0.alert_channel}, message={0.last_alert_message}, sending={0.sending}, "
+                "pixels={0.pixels})".format(self))
+
+    def s(self, string_id):
+        return GlimContext.get_from_guild(self.gid, string_id)
+
+    def color(self, index):
+        return self.s(f"color.pixelcanvas.{index}")
+
+    def in_range(self, x, y):
+        return self.sx <= x < self.ex and self.sy <= y < self.ey

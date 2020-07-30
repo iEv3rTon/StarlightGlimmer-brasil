@@ -10,7 +10,7 @@ from discord.ext import commands, tasks
 from objects.bot_objects import GlimContext
 from objects.errors import TemplateHttpError
 import utils
-from utils import checker, config, http, render, sqlite as sql
+from utils import config, http, render, sqlite as sql
 from utils.version import VERSION
 
 
@@ -29,6 +29,14 @@ class Glimmer(commands.Bot):
             'pixelzone': render.fetch_pixelzone,
             'pxlsspace': render.fetch_pxlsspace
         }
+
+        log.info("Loading cogs...")
+
+        for filename in os.listdir('./extensions'):
+            filename = filename[:-3] if filename.endswith(".py") else filename
+            extensions = ["animotes", "canvas", "configuration", "faction", "general", "template"]
+            if filename in extensions:
+                self.load_extension("extensions.{}".format(filename))
 
         self.loop.create_task(self.startup())
 
@@ -67,10 +75,6 @@ class Glimmer(commands.Bot):
             log.exception(e)
             await utils.channel_log(self, e)
 
-    @tasks.loop(minutes=5.0)
-    async def checker_update(self):
-        await self.pcio.update()
-
     async def startup(self):
         await self.wait_until_ready()
 
@@ -81,11 +85,6 @@ class Glimmer(commands.Bot):
 
         log.info("Performing guilds check...")
         await self.guilds_check(is_new_version)
-
-        log.info("Starting template checker...")
-        self.pcio = checker.Checker(self)
-        self.checker_update.start()
-        self.loop.create_task(self.pcio.run_websocket())
 
         log.info("Beginning status and unmute tasks...")
         self.set_presense.start()
@@ -221,13 +220,5 @@ async def on_command_preprocess(ctx):
         log.info("[{0}] {1.name}#{1.discriminator} used '{2}' in DM (UID:{1.id})"
                  .format(invocation_type, ctx.author, ctx.command.qualified_name))
     log.info(ctx.message.content)
-
-log.info("Loading cogs...")
-
-for filename in os.listdir('./extensions'):
-    filename = filename[:-3] if filename.endswith(".py") else filename
-    extensions = ["animotes", "canvas", "configuration", "faction", "general", "template"]
-    if filename in extensions:
-        bot.load_extension("extensions.{}".format(filename))
 
 bot.run(config.TOKEN)
