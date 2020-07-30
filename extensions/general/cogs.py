@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import sys
 
 import discord
 from discord.ext import commands
@@ -80,7 +79,7 @@ class Cogs(commands.Cog):
         for stream in streams:
             await ctx.send(f"```{stream}```")
 
-    @commands.command(name="close", aliases=["close-bot"])
+    @commands.command(name="restart", aliases=["restart-bot"])
     async def close_bot(self, ctx):
-        await ctx.send("Shutting down bot...")
-        sys.exit()
+        await ctx.send("Restarting bot...")
+        os.system("sudo /home/pi/Documents/glimmer/restart.sh")
