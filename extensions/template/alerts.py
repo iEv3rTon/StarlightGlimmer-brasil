@@ -106,9 +106,10 @@ class Alerts(commands.Cog):
             for t in self.templates:
                 for p in t.pixels:
                     # Pixels recieved more than 5 mins ago that are not attached to the current alert msg will be cleared
-                    if not t.last_alert_message and (now - p.recieved) > _5_mins and p.alert_id != "flag":
-                        log.debug(f"Clearing {p}.")
-                        t.pixels.remove(p)
+                    if not t.last_alert_message:
+                        if (now - p.recieved) > _5_mins and p.alert_id != "flag":
+                            log.debug(f"Clearing {p}.")
+                            t.pixels.remove(p)
                     elif (now - p.recieved) > _5_mins and p.alert_id != t.last_alert_message.id:
                         log.debug(f"Clearing {p}.")
                         t.pixels.remove(p)
