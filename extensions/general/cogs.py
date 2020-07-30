@@ -83,4 +83,4 @@ class Cogs(commands.Cog):
     @commands.command(name="restart", aliases=["restart-bot"])
     async def close_bot(self, ctx):
         await ctx.send("Restarting bot...")
-        subprocess.Popen(["sudo", "/home/pi/Documents/glimmer/restart.sh"])
+        subprocess.Popen("/usr/bin/sudo /home/pi/Documents/glimmer/restart.sh", shell=True)
