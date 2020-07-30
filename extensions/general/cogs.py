@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import subprocess
 
 import discord
 from discord.ext import commands
@@ -82,4 +83,4 @@ class Cogs(commands.Cog):
     @commands.command(name="restart", aliases=["restart-bot"])
     async def close_bot(self, ctx):
         await ctx.send("Restarting bot...")
-        os.system("sudo /home/pi/Documents/glimmer/restart.sh")
+        subprocess.Popen(["sudo", "/home/pi/Documents/glimmer/restart.sh"])
