@@ -4,9 +4,16 @@ from logging.handlers import TimedRotatingFileHandler
 import os
 import sys
 
+
+class WebsocketLogFilter(logging.Filter):
+    def filter(self, record):
+        return 0 if record.name == "websockets.protocol" else 1
+
+
 log = logging.getLogger()
 handler = TimedRotatingFileHandler(filename='data/discord.log', encoding='utf-8', when='midnight', backupCount=7)
 handler.setFormatter(logging.Formatter('{asctime} [{levelname}] {name}: {message}', style='{'))
+handler.addFilter(WebsocketLogFilter())
 log.addHandler(handler)
 
 

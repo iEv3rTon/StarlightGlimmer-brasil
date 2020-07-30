@@ -31,18 +31,84 @@ class Alerts(commands.Cog):
         self.bot.loop.create_task(self.start_checker())
 
     def cog_unload(self):
-        self.checker_update.cancel()
+        self.update.cancel()
         self.websocket_task.cancel()
 
     async def start_checker(self):
         await self.bot.wait_until_ready()
         log.info("Starting template checker...")
-        self.checker_update.start()
+        self.update.start()
         self.websocket_task = self.bot.loop.create_task(self.run_websocket())
 
     @tasks.loop(minutes=5.0)
-    async def checker_update(self):
-        await self.update()
+    async def update(self):
+        try:
+            # Get the templates currently in the db
+            templates = sql.template_get_all_alert()
+
+            # Remove any templates from self.templates that are no longer in db
+            db_t_ids = [t.id for t in templates]
+            for t in self.templates:
+                if t.id not in db_t_ids:
+                    log.debug(f"Template {t} no longer in the database, removed.")
+                    self.templates.remove(t)
+
+            # Update any templates already in self.templates that have changed
+            for old_t in self.templates:
+                for t in templates:
+                    if old_t.id != t.id:
+                        continue
+                    if not self.template_changed(t, old_t):
+                        continue
+
+                    tp = await self.generate_template(t)
+                    if tp is not None:
+                        self.templates.remove(old_t)
+                        self.templates.append(tp)
+
+            # Add any new templates from db to self.templates
+            template_ids = [template.id for template in self.templates]
+            for t in templates:
+                if t.id in template_ids:
+                    continue
+                tp = await self.generate_template(t)
+                if tp is None:
+                    continue
+
+                self.templates.append(tp)
+
+            # Do cleanup on data
+            _5_mins = 60 * 30
+            now = time.time()
+            channel_messages = {}
+            for t in self.templates:
+                if not t.last_alert_message:
+                    continue
+
+                # Get last 5 messages in channel
+                messages = channel_messages.get(t.alert_channel)
+                if not messages:
+                    alert_channel = self.bot.get_channel(t.alert_channel)
+                    messages = await alert_channel.history(limit=5).flatten()
+                    channel_messages[t.alert_channel] = messages
+
+                # Clear the alert message if it isn't recent anymore so new alerts will be at the bottom of the channel
+                if not any(m.id == t.last_alert_message.id for m in messages):
+                    log.debug(f"Alert message for {t} is more than 5 messages ago, clearing.")
+                    t.last_alert_message = None
+
+                # Clean up old pixel data
+                for p in t.pixels:
+                    # Pixels recieved more than 5 mins ago that are not attached to the current alert msg will be cleared
+                    if not t.last_alert_message and (now - p.recieved) > _5_mins and p.alert_id != "flag":
+                        log.debug(f"Clearing {p}.")
+                        t.pixels.remove(p)
+                    elif (now - p.recieved) > _5_mins and p.alert_id != t.last_alert_message.id:
+                        log.debug(f"Clearing {p}.")
+                        t.pixels.remove(p)
+
+        except Exception as e:
+            log.exception(f'Failed to update. {e}')
 
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
@@ -186,75 +252,6 @@ class Alerts(commands.Cog):
             log.exception(f'Failed to generate {t}. {e}')
             return None
 
-    async def update(self):
-        try:
-            # Get the templates currently in the db
-            templates = sql.template_get_all_alert()
-
-            # Remove any templates from self.templates that are no longer in db
-            db_t_ids = [t.id for t in templates]
-            for t in self.templates:
-                if t.id not in db_t_ids:
-                    log.debug(f"Template {t} no longer in the database, removed.")
-                    self.templates.remove(t)
-
-            # Update any templates already in self.templates that have changed
-            for old_t in self.templates:
-                for t in templates:
-                    if old_t.id != t.id:
-                        continue
-                    if not self.template_changed(t, old_t):
-                        continue
-
-                    tp = await self.generate_template(t)
-                    if tp is not None:
-                        self.templates.remove(old_t)
-                        self.templates.append(tp)
-
-            # Add any new templates from db to self.templates
-            template_ids = [template.id for template in self.templates]
-            for t in templates:
-                if t.id in template_ids:
-                    continue
-                tp = await self.generate_template(t)
-                if tp is None:
-                    continue
-
-                self.templates.append(tp)
-
-            # Do cleanup on data
-            _5_mins = 60 * 30
-            now = time.time()
-            channel_messages = {}
-            for t in self.templates:
-                if not t.last_alert_message:
-                    continue
-
-                # Get last 5 messages in channel
-                messages = channel_messages.get(t.alert_channel)
-                if not messages:
-                    alert_channel = self.bot.get_channel(t.alert_channel)
-                    messages = await alert_channel.history(limit=5).flatten()
-                    channel_messages[t.alert_channel] = messages
-
-                # Clear the alert message if it isn't recent anymore so new alerts will be at the bottom of the channel
-                if not any(m.id == t.last_alert_message.id for m in messages):
-                    log.debug(f"Alert message for {t} is more than 5 messages ago, clearing.")
-                    t.last_alert_message = None
-
-                # Clean up old pixel data
-                for p in t.pixels:
-                    # Pixels recieved more than 5 mins ago that are not attached to the current alert msg will be cleared
-                    if not t.last_alert_message and (now - p.recieved) > _5_mins and p.alert_id != "flag":
-                        log.debug(f"Clearing {p}.")
-                        t.pixels.remove(p)
-                    elif (now - p.recieved) > _5_mins and p.alert_id != t.last_alert_message.id:
-                        log.debug(f"Clearing {p}.")
-                        t.pixels.remove(p)
-
-        except Exception as e:
-            log.exception(f'Failed to update. {e}')
-
     async def run_websocket(self):
         while True:
             log.debug("Connecting to websocket...")
@@ -294,11 +291,7 @@ class Alerts(commands.Cog):
 
     async def check_template(self, template, x, y, color):
         try:
-            try:
-                template_color = int(template.array[abs(x - template.sx), abs(y - template.sy)])
-            except IndexError:
-                log.debug(f"The index error in check_template, coords:{x}, {y} template:{template}")
-                return
+            template_color = int(template.array[abs(x - template.sx), abs(y - template.sy)])
             # Pixel correct
             if color == template_color:
                 # Is this pixel in the most recent alert?
@@ -360,12 +353,8 @@ class Alerts(commands.Cog):
                    (p.alert_id == "flag" and template.id == p.template_id):
 
                     damage_color = template.color(p.damage_color)
-                    try:
-                        template_color = template.color(
-                            int(template.array[abs(p.x - template.sx), abs(p.y - template.sy)]))
-                    except IndexError:
-                        log.debug(f"The index error in send_embed, {p} {template}")
-                        continue
+                    template_color = template.color(
+                        int(template.array[abs(p.x - template.sx), abs(p.y - template.sy)]))
                     text += template.s("alerts.alert_pixel").format(
                         p, damage_color, template_color, c="~~" if p.fixed else "")
 
