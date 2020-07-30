@@ -15,7 +15,7 @@ from objects import DbTemplate
 from objects.bot_objects import GlimContext
 from objects.errors import PilImageError, UrlError
 import utils
-from utils import canvases, colors, config, http, render, sqlite as sql
+from utils import canvases, colors, config, converter, http, render, sqlite as sql
 
 log = logging.getLogger(__name__)
 
@@ -427,11 +427,50 @@ class Template:
                 "ex={0.ex}, ey={0.ey}, aid={0.alert_channel}, message={0.last_alert_message}, sending={0.sending}, "
                 "pixels={0.pixels})".format(self))
 
-    def s(self, string_id):
-        return GlimContext.get_from_guild(self.gid, string_id)
+    @property
+    def current_pixels(self):
+        return [p for p in self.pixels if p.alert_id == self.last_alert_message.id]
 
-    def color(self, index):
+    @staticmethod
+    async def new(t):
+        async with aiohttp.ClientSession() as sess:
+            async with sess.get(t.url) as resp:
+                if resp.status == 200:
+                    image = Image.open(io.BytesIO(await resp.read())).convert('RGBA')
+                else:
+                    # Skip this template, it can get updated on the next round, no point retrying and delaying the others
+                    log.exception(f"File for {t.name} could not be downloaded, status code: {resp.status}")
+                    return None
+
+        template = Template(t.id, t.name, converter.image_to_array(image), t.url, t.md5,
+                            t.x, t.y, t.alert_id, t.gid)
+        log.debug(f"Generated {template}.")
+        return template
+
+    def s(self, str_id):
+        return GlimContext.get_from_guild(self.gid, str_id)
+
+    def color_string(self, index):
         return self.s(f"color.pixelcanvas.{index}")
 
     def in_range(self, x, y):
         return self.sx <= x < self.ex and self.sy <= y < self.ey
+
+    def changed(self, t_db):
+        return (t_db.x != self.sx) or \
+               (t_db.y != self.sy) or \
+               (t_db.md5 != self.md5) or \
+               (t_db.name != self.name) or \
+               (t_db.alert_id != self.alert_channel)
+
+    def color_at(self, x, y):
+        return int(self.array[abs(x - self.sx), abs(y - self.sy)])
+
+    def add_pixel(self, color, x, y):
+        try:
+            alert_id = self.last_alert_message.id
+        except AttributeError:
+            alert_id = "flag"
+        pixel = Pixel(color, x, y, alert_id, self.id)
+        self.pixels.append(pixel)
+        return pixel

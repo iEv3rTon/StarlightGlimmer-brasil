@@ -26,13 +26,13 @@ if not os.path.isfile('config/config.json'):
         log.critical("config/config.json could not be found! Please get the example copy from GitHub and "
                      "rename it to config.json!")
         print("config/config.json could not be found! Please get the example copy from GitHub and "
-                     "rename it to config.json!")
+              "rename it to config.json!")
         sys.exit(1)
     else:
         log.critical("config/config.json could not be found! (Did you rename config/config.json.example to "
                      "config/config.json yet?)")
         print("config/config.json could not be found! (Did you rename config/config.json.example to "
-                     "config/config.json yet?)")
+              "config/config.json yet?)")
         sys.exit(1)
 
 config_file = "config/config.json"
