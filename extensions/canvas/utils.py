@@ -4,6 +4,7 @@ import math
 from struct import unpack_from
 import time
 import uuid
+import logging
 
 import aiohttp
 import discord
@@ -13,6 +14,8 @@ import websockets
 
 from objects.errors import UrlError, TemplateHttpError
 from utils import GlimmerArgumentParser, http
+
+log = logging.getLogger(__name__)
 
 
 class Pixel:
@@ -39,11 +42,14 @@ class Checker:
         await self.send_err_embed()
 
         uri = f"wss://ws.pixelcanvas.io:8443/?fingerprint={self.fingerprint}"
-        async with websockets.connect(uri, ssl=True) as ws:
-            async for message in ws:
-                await self.on_message(message)
-                if time.time() > self._5_mins_time:
-                    break
+        try:
+            async with websockets.connect(uri, ssl=True) as ws:
+                async for message in ws:
+                    await self.on_message(message)
+                    if time.time() > self._5_mins_time:
+                        break
+        except websockets.exceptions.ConnectionClosed:
+            log.debug("Websocket disconnected in g!d -e")
 
         self.embed.set_footer(text=self.ctx.s("canvas.diff_timeout"))
         await self.msg.edit(embed=self.embed)
