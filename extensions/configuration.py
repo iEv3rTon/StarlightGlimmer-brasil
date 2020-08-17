@@ -6,7 +6,8 @@ from discord.ext import commands
 from discord.utils import get as dget
 
 import utils
-from utils import checks, sqlite as sql
+from utils import checks
+from utils.database import get_guild
 
 log = logging.getLogger(__name__)
 

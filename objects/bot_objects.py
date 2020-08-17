@@ -3,7 +3,8 @@ from discord.ext import commands
 from discord.utils import get as dget
 
 from lang import en_US, pt_BR, tr_TR
-from utils import canvases, sqlite as sql
+from utils import canvases, config
+from utils.database import Session, session_scope, Guild
 
 
 class GlimContext(commands.Context):
@@ -14,6 +15,11 @@ class GlimContext(commands.Context):
         self.is_default = False
         self.is_template = False
 
+        # Create database session, we don't want to do this
+        # inside before_invoke because it doesn't happen
+        # before checks
+        self.session = Session()
+
     langs = {
         'en-us': "English (US)",
         'pt-br': "Português (BR)",
@@ -22,7 +28,7 @@ class GlimContext(commands.Context):
 
     @property
     def canvas(self):
-        return sql.guild_get_canvas_by_id(self.guild.id)
+        return self.session.query(Guild).get(self.guild.id).canvas
 
     @property
     def canvas_pretty(self):
@@ -30,18 +36,22 @@ class GlimContext(commands.Context):
 
     @property
     def gprefix(self):
-        return sql.guild_get_prefix_by_id(self.guild.id)
+        guild = self.session.query(Guild).get(self.guild.id)
+        if guild and guild.prefix:
+            return guild.prefix
+        return config.PREFIX
 
     @property
     def lang(self):
-        return sql.guild_get_language_by_id(self.guild.id)
+        return self.session.query(Guild).get(self.guild.id).language
 
     @staticmethod
     def get_from_guild(guild, str_id):
-        if isinstance(guild, discord.Guild):
-            language = sql.guild_get_language_by_id(guild.id).lower()
-        else:
-            language = sql.guild_get_language_by_id(guild).lower()
+        with session_scope() as session:
+            if isinstance(guild, discord.Guild):
+                language = session.query(Guild).get(guild.id).language.lower()
+            else:
+                language = session.query(Guild).get(guild).language.lower()
 
         if language == "en-us":
             return en_US.STRINGS.get(str_id, None)
@@ -51,7 +61,7 @@ class GlimContext(commands.Context):
             return tr_TR.STRINGS.get(str_id, None)
 
     def s(self, str_id):
-        language = sql.guild_get_language_by_id(self.guild.id).lower()
+        language = self.lang.lower()
         if language == "en-us":
             return en_US.STRINGS.get(str_id, None)
         if language == "pt-br":

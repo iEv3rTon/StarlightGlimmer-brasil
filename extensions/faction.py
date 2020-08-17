@@ -7,7 +7,8 @@ from discord.ext import commands
 from PIL import Image
 
 from objects.errors import BadArgumentErrorWithMessage, NoSelfPermissionError, UrlError
-from utils import canvases, checks, sqlite as sql
+from utils import canvases, checks
+from utils.database import Guild, get_guild, Template
 
 log = logging.getLogger(__name__)
 
@@ -19,31 +20,42 @@ class Faction(commands.Cog):
     @checks.admin_only()
     @commands.command(name="assemble")
     async def assemble(self, ctx, name, alias=""):
-        if sql.guild_is_faction(ctx.guild.id):
+        guild = get_guild(ctx.session, ctx.guild.id)
+
+        if guild.is_faction:
             await ctx.send(ctx.s("faction.already_faction"))
             return
         name = re.sub(r"[^\S ]+", "", name)
         if not (6 <= len(name) <= 32):
             raise BadArgumentErrorWithMessage(ctx.s("faction.err.name_length"))
-        if sql.guild_get_by_faction_name(name):
+        if ctx.session.query(Guild).filter_by(faction_name=name).first():
             await ctx.send(ctx.s("faction.name_already_exists"))
             return
         alias = re.sub(r"[^A-Za-z]+", "", alias).lower()
         if alias and not (1 <= len(alias) <= 5):
             raise BadArgumentErrorWithMessage(ctx.s("faction.err.alias_length"))
-        if sql.guild_get_by_faction_alias(alias):
+        if ctx.session.query(Guild).filter_by(faction_alias=alias).first():
             await ctx.send(ctx.s("faction.alias_already_exists"))
             return
 
-        sql.guild_faction_set(ctx.guild.id, name=name, alias=alias)
+        guild.faction_name = name
+        guild.faction_alias = alias
         await ctx.send(ctx.s("faction.assembled").format(name))
 
     @checks.admin_only()
     @commands.command(name="disband")
     async def disband(self, ctx):
-        if not sql.guild_is_faction(ctx.guild.id):
+        guild = get_guild(ctx.session, ctx.guild.id)
+
+        if not guild.is_faction:
             return await ctx.send(ctx.s("faction.must_be_a_faction"))
-        sql.guild_faction_disband(ctx.guild.id)
+
+        guild.faction_name = None
+        guild.faction_alias = None
+        guild.faction_emblem = None
+        guild.faction_invite = None
+        guild.faction_hidden = False
+
         await ctx.send(ctx.s("faction.disbanded"))
 
     @checks.admin_only()
@@ -53,11 +65,13 @@ class Faction(commands.Cog):
 
     @faction.group(name="alias", case_insensitive=True)
     async def faction_alias(self, ctx):
-        if not sql.guild_is_faction(ctx.guild.id):
+        guild = get_guild(ctx.session, ctx.guild.id)
+
+        if not guild.is_faction:
             await ctx.send(ctx.s("faction.must_be_a_faction"))
             return
         if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "alias":
-            alias = sql.guild_get_by_id(ctx.guild.id).faction_alias
+            alias = guild.faction_alias
             if alias:
                 await ctx.send(alias)
             else:
@@ -65,35 +79,45 @@ class Faction(commands.Cog):
 
     @faction_alias.command(name="clear")
     async def faction_alias_clear(self, ctx):
-        sql.guild_faction_clear(ctx.guild.id, alias=True)
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            await ctx.send(ctx.s("faction.must_be_a_faction"))
+            return
+        guild.faction_alias = None
         await ctx.send(ctx.s("faction.clear_alias"))
 
     @faction_alias.command(name="set")
     async def faction_alias_set(self, ctx, new_alias):
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            return await ctx.send(ctx.s("faction.must_be_a_faction"))
         new_alias = re.sub("[^A-Za-z]+", "", new_alias).lower()
         if not (1 <= len(new_alias) <= 5):
             raise BadArgumentErrorWithMessage(ctx.s("faction.err.alias_length"))
-        if sql.guild_get_by_faction_alias(new_alias):
+        if ctx.session.query(Guild).filter_by(faction_alias=new_alias).first():
             return await ctx.send(ctx.s("faction.alias_already_exists"))
-        sql.guild_faction_set(ctx.guild.id, alias=new_alias)
+        guild.faction_alias = new_alias
         await ctx.send(ctx.s("faction.set_alias").format(new_alias))
 
     @faction.group(name="color", aliases=["colour"], case_insensitive=True)
     async def faction_color(self, ctx):
-        if not sql.guild_is_faction(ctx.guild.id):
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
             return await ctx.send(ctx.s("faction.must_be_a_faction"))
         if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "color":
-            color = sql.guild_get_by_id(ctx.guild.id).faction_color
-            img = Image.new('RGB', (32, 32), color)
+            img = Image.new('RGB', (32, 32), guild.faction_color)
             with io.BytesIO() as bio:
                 img.save(bio, format="PNG")
                 bio.seek(0)
                 f = discord.File(bio, "color.png")
-                await ctx.send('0x{0:06X}'.format(color), file=f)
+                await ctx.send('0x{0:06X}'.format(guild.faction_color), file=f)
 
     @faction_color.command(name="clear")
     async def faction_color_clear(self, ctx):
-        sql.guild_faction_clear(ctx.guild.id, color=True)
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            return await ctx.send(ctx.s("faction.must_be_a_faction"))
+        guild.faction_color = None
         await ctx.send(ctx.s("faction.clear_color"))
 
     @faction_color.command(name="set")
@@ -102,23 +126,29 @@ class Faction(commands.Cog):
             color = abs(int(color, 16) % 0xFFFFFF)
         except ValueError:
             return await ctx.send(ctx.s("error.invalid_color"))
-        sql.guild_faction_set(ctx.guild.id, color=color)
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            return await ctx.send(ctx.s("faction.must_be_a_faction"))
+        guild.faction_color = color
         await ctx.send(ctx.s("faction.set_color"))
 
     @faction.group(name="desc", case_insensitive=True)
     async def faction_desc(self, ctx):
-        if not sql.guild_is_faction(ctx.guild.id):
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
             return await ctx.send(ctx.s("faction.must_be_a_faction"))
         if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "desc":
-            desc = sql.guild_get_by_id(ctx.guild.id).faction_desc
-            if desc:
-                await ctx.send(desc)
+            if guild.faction_desc:
+                await ctx.send(guild.faction_desc)
             else:
                 await ctx.send(ctx.s("faction.no_description"))
 
     @faction_desc.command(name="clear")
     async def faction_desc_clear(self, ctx):
-        sql.guild_faction_clear(ctx.guild.id, desc=True)
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            return await ctx.send(ctx.s("faction.must_be_a_faction"))
+        guild.faction_desc = None
         await ctx.send(ctx.s("faction.clear_description"))
 
     @faction_desc.command(name="set")
@@ -126,23 +156,29 @@ class Faction(commands.Cog):
         description = re.sub(r"[^\S ]+", "", description)
         if not (len(description) <= 240):
             raise BadArgumentErrorWithMessage(ctx.s("faction.err.description_length"))
-        sql.guild_faction_set(ctx.guild.id, desc=description)
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            return await ctx.send(ctx.s("faction.must_be_a_faction"))
+        guild.faction_desc = description
         await ctx.send(ctx.s("faction.set_description"))
 
     @faction.group(name="emblem", case_insensitive=True)
     async def faction_emblem(self, ctx):
-        if not sql.guild_is_faction(ctx.guild.id):
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
             return await ctx.send(ctx.s("faction.must_be_a_faction"))
         if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "emblem":
-            emblem = sql.guild_get_by_id(ctx.guild.id).faction_emblem
-            if emblem:
-                await ctx.send(emblem)
+            if guild.faction_emblem:
+                await ctx.send(guild.faction_emblem)
             else:
                 await ctx.send(ctx.s("faction.no_emblem"))
 
     @faction_emblem.command(name="clear")
     async def faction_emblem_clear(self, ctx):
-        sql.guild_faction_clear(ctx.guild.id, emblem=True)
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            return await ctx.send(ctx.s("faction.must_be_a_faction"))
+        guild.faction_emblem = None
         await ctx.send(ctx.s("faction.clear_emblem"))
 
     @faction_emblem.command(name="set")
@@ -155,24 +191,31 @@ class Faction(commands.Cog):
 
         if not emblem_url:
             return
+        
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            return await ctx.send(ctx.s("faction.must_be_a_faction"))
 
-        sql.guild_faction_set(ctx.guild.id, emblem=emblem_url)
+        guild.faction_emblem = emblem_url
         await ctx.send(ctx.s("faction.set_emblem"))
 
     @faction.group(name="invite", case_insensitive=True)
     async def faction_invite(self, ctx):
-        if not sql.guild_is_faction(ctx.guild.id):
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
             return await ctx.send(ctx.s("faction.must_be_a_faction"))
         if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "invite":
-            invite = sql.guild_get_by_id(ctx.guild.id).faction_invite
-            if invite:
-                await ctx.send(invite)
+            if guild.faction_invite:
+                await ctx.send(guild.faction_invite)
             else:
                 await ctx.send(ctx.s("faction.no_invite"))
 
     @faction_invite.command(name="clear")
     async def faction_invite_clear(self, ctx):
-        sql.guild_faction_clear(ctx.guild.id, invite=True)
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            return await ctx.send(ctx.s("faction.must_be_a_faction"))
+        guild.faction_invite = None
         await ctx.send(ctx.s("faction.clear_invite"))
 
     @faction_invite.command(name="set")
@@ -191,34 +234,45 @@ class Faction(commands.Cog):
                 raise NoSelfPermissionError
             invite = await ctx.channel.create_invite(reason="Invite for faction info page")
             url = invite.url
-        sql.guild_faction_set(ctx.guild.id, invite=url)
+
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            return await ctx.send(ctx.s("faction.must_be_a_faction"))
+        guild.faction_invite = url
         await ctx.send(ctx.s("faction.set_invite"))
 
     @faction.group(name="name", case_insensitive=True)
     async def faction_name(self, ctx):
-        if not sql.guild_is_faction(ctx.guild.id):
-            await ctx.send(ctx.s("faction.must_be_a_faction"))
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
+            return await ctx.send(ctx.s("faction.must_be_a_faction"))
         elif not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "name":
-            await ctx.send(sql.guild_get_by_id(ctx.guild.id).faction_name)
+            await ctx.send(guild.faction_name)
 
     @faction_name.command(name="set")
     async def faction_name_set(self, ctx, new_name):
         new_name = re.sub(r"[^\S ]+", "", new_name)
         if not (6 <= len(new_name) <= 32):
             raise BadArgumentErrorWithMessage(ctx.s("faction.err.name_length"))
-        elif sql.guild_get_by_faction_name(new_name):
+        elif ctx.session.query(Guild).filter_by(faction_name=new_name).first():
             await ctx.send(ctx.s("faction.name_already_exists"))
         else:
-            sql.guild_faction_set(ctx.guild.id, name=new_name)
+            guild = get_guild(ctx.session, ctx.guild.id)
+            if not guild.is_faction:
+                return await ctx.send(ctx.s("faction.must_be_a_faction"))
+            guild.faction_name = new_name
             await ctx.send(ctx.s("faction.set_name").format(new_name))
 
     @commands.command(name="factionlist", aliases=['fl'])
     async def factionlist(self, ctx, page: int = 1):
-        fs = [x for x in sql.guild_get_all_factions() if x.id not in sql.faction_hides_get_all(ctx.guild.id)]
+        fs = ctx.session.query(Guild).filter(
+            Guild.faction_name != None,
+            Guild.faction_hidden == False).order_by(
+                Guild.faction_name).all()
+
         if len(fs) > 0:
             pages = 1 + len(fs) // 10
             page = min(max(page, 1), pages)
-            g = sql.guild_get_prefix_by_id(ctx.guild.id)
 
             msg = [
                 "**{}** - {} {}/{}".format(ctx.s("faction.list_header"), ctx.s("bot.page"), page, pages),
@@ -229,8 +283,8 @@ class Faction(commands.Cog):
                 alias = '"{}"'.format(f.faction_alias) if f.faction_alias else ""
                 msg.append("{0:<34}  {1:<5}".format('"{}"'.format(f.faction_name), alias))
             msg.append("")
-            msg.append("// " + ctx.s("faction.faction_list_footer_1").format(g))
-            msg.append("// " + ctx.s("faction.faction_list_footer_2").format(g))
+            msg.append("// " + ctx.s("faction.faction_list_footer_1").format(ctx.prefix))
+            msg.append("// " + ctx.s("faction.faction_list_footer_2").format(ctx.prefix))
             msg.append("```")
             await ctx.send('\n'.join(msg))
         else:
@@ -239,35 +293,35 @@ class Faction(commands.Cog):
     @checks.admin_only()
     @commands.command(name="hide")
     async def hide(self, ctx):
-        # try to find faction by guild id
-        faction = [x for x in sql.guild_get_all_factions() if x.id == ctx.guild.id]
-        if len(faction) == 0:
+        guild = get_guild(ctx.session, ctx.guild.id)
+        if not guild.is_faction:
             await ctx.send(ctx.s("faction.not_a_faction_yet"))
             return
-        faction = faction[0]
-        # see if faction is currently hidden
-        hidden = sql.faction_hides_get_all(ctx.guild.id)
-        if hidden == []:
-            sql.faction_hides_add(ctx.guild.id, faction.id)
-            await ctx.send(ctx.s("faction.set_hide").format(faction.faction_name))
-        elif hidden[0] == ctx.guild.id:
-            sql.faction_hides_remove(ctx.guild.id, faction.id)
-            await ctx.send(ctx.s("faction.clear_hide").format(faction.faction_name))
+
+        if guild.faction_hidden is True:
+            guild.faction_hidden = False
+            await ctx.send(ctx.s("faction.clear_hide").format(guild.faction_name))
+        else:
+            guild.faction_hidden = True
+            await ctx.send(ctx.s("faction.set_hide").format(guild.faction_name))
 
     @commands.command(name="factioninfo", aliases=['fi'])
     async def factioninfo(self, ctx, other=None):
-        g = sql.guild_get_by_faction_name_or_alias(other) if other else sql.guild_get_by_id(ctx.guild.id)
-        if not g:
+        if other:
+            if not (guild := ctx.session.query(Guild).filter_by(faction_name=other).first()):
+                guild = ctx.session.query(Guild).filter_by(faction_alias=other.lower()).first()
+        else:
+            guild = get_guild(ctx.session, ctx.guild.id)
+
+        if not guild:
             await ctx.send(ctx.s("error.faction_not_found"))
             return
-        if not g.faction_name:
+        if not guild.is_faction:
             await ctx.send(ctx.s("faction.not_a_faction_yet"))
             return
 
-        templates = sql.template_get_all_public_by_guild_id(g.id)
-        canvas_list = set()
-        for t in templates:
-            canvas_list.add(t.canvas)
+        templates = guild.templates.filter(Template.private == False)
+        canvas_list = set([t.canvas for t in templates])
 
         canvases_pretty = []
         for c in canvas_list:
@@ -275,19 +329,19 @@ class Faction(commands.Cog):
         canvases_pretty.sort()
         canvas_list = '\n'.join(canvases_pretty)
 
-        e = discord.Embed(color=g.faction_color)
+        e = discord.Embed(color=guild.faction_color)
         if canvas_list:
             e.add_field(name=ctx.s("bot.canvases"), value='\n'.join(canvases_pretty))
-        if g.faction_invite:
-            icon_url = self.bot.get_guild(g.id).icon_url
-            e.set_author(name=g.faction_name, url=g.faction_invite, icon_url=icon_url)
+        if guild.faction_invite:
+            icon_url = self.bot.get_guild(guild.id).icon_url
+            e.set_author(name=guild.faction_name, url=guild.faction_invite, icon_url=icon_url)
         else:
-            e.set_author(name=g.faction_name)
-        e.description = g.faction_desc if g.faction_desc else ""
-        if g.faction_alias:
-            e.description = "**{}:** {}\n".format(ctx.s("bot.alias"), g.faction_alias) + e.description
-        if g.faction_emblem:
-            e.set_thumbnail(url=g.faction_emblem)
+            e.set_author(name=guild.faction_name)
+        e.description = guild.faction_desc if guild.faction_desc else ""
+        if guild.faction_alias:
+            e.description = "**{}:** {}\n".format(ctx.s("bot.alias"), guild.faction_alias) + e.description
+        if guild.faction_emblem:
+            e.set_thumbnail(url=guild.faction_emblem)
 
         await ctx.send(embed=e)
 

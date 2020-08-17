@@ -60,6 +60,8 @@ CHANNEL_LOG_GUILD_KICKS = data.get('channel_log_guild_kicks', False)
 
 INVERT = data.get('invert', False)
 
+DATABASE_URI = data.get('database_uri', None)
+
 if data.get('debug', False):
     log.setLevel(logging.DEBUG)
 else:
@@ -68,4 +70,9 @@ else:
 if TOKEN is None:
     log.critical("No bot token was specified!")
     print("No bot token was specified!")
+    sys.exit(1)
+
+if DATABASE_URI is None:
+    log.critical("No database URI was specified!")
+    print("No database URI was specified!")
     sys.exit(1)

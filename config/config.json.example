@@ -16,5 +16,7 @@
     "channel_log_guild_joins": false,
     "channel_log_guild_kicks": false,
 
-    "invert": false
+    "invert": false,
+
+    "database_uri": "valid-sqlalchemy-db-uri-here"
 }

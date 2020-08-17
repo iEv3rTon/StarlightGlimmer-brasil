@@ -1,6 +1,6 @@
 from discord.ext import commands
 from fuzzywuzzy import fuzz
-from utils import sqlite as sql
+from utils.database import session_scope, Guild
 
 
 class IgnoreError(commands.CommandError):
@@ -65,16 +65,18 @@ class TemplateHttpError(commands.CommandError):
 
 class TemplateNotFoundError(commands.CommandError):
     def __init__(self, gid, template_name):
-        templates = sql.template_get_all_by_guild_id(gid)
-        matches = []
-        for t in templates:
-            ratio = fuzz.partial_ratio(t.name, template_name)
-            if ratio >= 70:
-                t.ratio = ratio
-                matches.append(t)
-        matches.sort(key=lambda match: match.ratio)
-        self.matches = [f"`{t.name}`" for t in matches[0:5]]
-        self.query = template_name
+        with session_scope() as session:
+            templates = session.query(Guild).get(gid).templates
+
+            matches = []
+            for t in templates:
+                ratio = fuzz.partial_ratio(t.name, template_name)
+                if ratio >= 70:
+                    t.ratio = ratio
+                    matches.append(t)
+            matches.sort(key=lambda match: match.ratio)
+            self.matches = [f"`{t.name}`" for t in matches[0:5]]
+            self.query = template_name
 
 
 class UrlError(commands.CommandError):
@@ -91,4 +93,8 @@ class TemplateTooLargeError(commands.CommandError):
 
 
 class CanvasNotSupportedError(commands.CommandError):
+    pass
+
+
+class GuildNotFoundError(commands.CommandError):
     pass

@@ -10,16 +10,21 @@ from discord.ext.commands.view import StringView
 from discord.utils import get as dget
 
 from objects.errors import NoAttachmentError, NoJpegsError, NotPngError, FactionNotFoundError, ColorError
-from utils import config, sqlite as sql
+from utils import config
+from utils.database import Guild
 
 log = logging.getLogger(__name__)
 
 
 async def autoscan(ctx):
-    if ctx.guild and not sql.guild_is_autoscan(ctx.guild.id):
+    if not ctx.guild:
         return
 
-    canvas = sql.guild_get_canvas_by_id(ctx.guild.id) if ctx.guild else "pixelcanvas"
+    guild = ctx.session.query(Guild).get(ctx.guild.id)
+    if not guild.autoscan:
+        return
+
+    canvas = guild.canvas if guild.canvas else "pixelcanvas"
 
     cmd = None
     g = None
@@ -66,46 +71,50 @@ async def channel_log(bot, msg):
 
 
 def get_botadmin_role(ctx):
-    role_id = sql.guild_get_by_id(ctx.guild.id).bot_admin
-    r = dget(ctx.guild.roles, id=role_id)
-    if role_id and not r:
-        sql.guild_update(ctx.guild.id, bot_admin=None)
+    guild = ctx.session.query(Guild).get(ctx.guild.id)
+    r = dget(ctx.guild.roles, id=guild.bot_admin)
+    if guild.bot_admin and not r:
+        guild.bot_admin = None
         return None
     return r
 
 
 def get_templateadmin_role(ctx):
-    role_id = sql.guild_get_by_id(ctx.guild.id).template_admin
-    r = dget(ctx.guild.roles, id=role_id)
-    if role_id and not r:
-        sql.guild_update(ctx.guild.id, template_admin=None)
+    guild = ctx.session.query(Guild).get(ctx.guild.id)
+    r = dget(ctx.guild.roles, id=guild.template_admin)
+    if guild.template_admin and not r:
+        guild.template_admin = None
         return None
     return r
 
 
 def get_templateadder_role(ctx):
-    role_id = sql.guild_get_by_id(ctx.guild.id).template_adder
-    r = dget(ctx.guild.roles, id=role_id)
-    if role_id and not r:
-        sql.guild_update(ctx.guild.id, template_adder=None)
+    guild = ctx.session.query(Guild).get(ctx.guild.id)
+    r = dget(ctx.guild.roles, id=guild.template_adder)
+    if guild.template_adder and not r:
+        guild.template_adder = None
         return None
     return r
 
 
 def is_admin(ctx):
-    role_id = sql.guild_get_by_id(ctx.guild.id).bot_admin
-    r = dget(ctx.author.roles, id=role_id)
+    r = dget(
+        ctx.author.roles,
+        id=ctx.session.query(Guild).get(ctx.guild.id).bot_admin
+    )
     return bool(r) or ctx.author.permissions_in(ctx.channel).administrator
 
 
 def is_template_admin(ctx):
-    role_id = sql.guild_get_by_id(ctx.guild.id).template_admin
-    r = dget(ctx.author.roles, id=role_id)
+    r = dget(
+        ctx.author.roles,
+        id=ctx.session.query(Guild).get(ctx.guild.id).template_admin
+    )
     return bool(r)
 
 
 def is_template_adder(ctx):
-    role_id = sql.guild_get_by_id(ctx.guild.id).template_adder
+    role_id = ctx.session.query(Guild).get(ctx.guild.id).template_adder
     r = dget(ctx.author.roles, id=role_id)
     return bool(not role_id or r)
 
@@ -188,7 +197,10 @@ class GlimmerArgumentParser(argparse.ArgumentParser):
 
 class FactionAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        faction = sql.guild_get_by_faction_name_or_alias(values)
+        faction = parser.ctx.session.query(Guild).filter_by(faction_name=values).first()
+        if not faction:
+            faction = parser.ctx.session.query(Guild).filter_by(faction_alias=values.lower()).first()
+
         if faction is None:
             raise FactionNotFoundError
         setattr(namespace, self.dest, faction)
