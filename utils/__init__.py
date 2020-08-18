@@ -11,7 +11,7 @@ from discord.utils import get as dget
 
 from objects.errors import NoAttachmentError, NoJpegsError, NotPngError, FactionNotFoundError, ColorError
 from utils import config
-from utils.database import Guild
+from objects.database_models import Guild
 
 log = logging.getLogger(__name__)
 

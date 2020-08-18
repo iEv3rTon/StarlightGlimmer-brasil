@@ -1,7 +1,6 @@
 import datetime
 from functools import partial
 import io
-import itertools
 import logging
 import math
 import re
@@ -15,9 +14,12 @@ from extensions.template.utils import \
      add_template,
      send_end,
      select_url_update,
-     Snapshot,
      TemplateSource,
      SnapshotSource)
+from objects.database_models import \
+    (Guild,
+     Template as TemplateDb,
+     Snapshot)
 from objects.errors import \
     (NoTemplatesError,
      PilImageError,
@@ -35,8 +37,7 @@ from utils import \
      http,
      render,
      GlimmerArgumentParser,
-     FactionAction,
-     sqlite as sql)
+     FactionAction)
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class Template(commands.Cog):
         if args.faction is not None:
             gid = args.faction.id
 
-        templates = sql.template_get_all_by_guild_id(gid)
+        templates = ctx.session.query(TemplateDb).filter_by(guild_id=gid).all()
         if len(templates) < 1:
             raise NoTemplatesError()
 
@@ -90,19 +91,20 @@ class Template(commands.Cog):
     @commands.cooldown(2, 5, commands.BucketType.guild)
     @template.command(name='all')
     async def template_all(self, ctx, page: int = 1):
-        gs = [x for x in sql.guild_get_all_factions() if x.id not in sql.faction_hides_get_all(ctx.guild.id)]
-        ts = [x for x in sql.template_get_all() if x.gid in [y.id for y in gs]]
+        unhidden_guild_ids = ctx.session.query(Guild.id).filter(
+            Guild.faction_name != None,
+            Guild.faction_hidden == False
+        ).subquery()
 
-        def by_faction_name(template):
-            for g in gs:
-                if template.gid == g.id:
-                    return g.faction_name
+        unhidden_templates = ctx.session.query(TemplateDb).filter(
+            TemplateDb.guild_id.in_(unhidden_guild_ids))
+        ts = unhidden_templates.order_by(
+            TemplateDb.guild_id.desc(),
+            TemplateDb.canvas.asc(),
+            TemplateDb.name.asc()
+        ).all()
 
-        ts = sorted(ts, key=by_faction_name)
-        ts_with_f = []
-        for faction, ts2 in itertools.groupby(ts, key=by_faction_name):
-            for t in ts2:
-                ts_with_f.append((t, faction))
+        ts = sorted(ts, key=lambda t: t.guild.faction_name)
 
         if len(ts) > 0:
             pages = 1 + len(ts) // 10
@@ -116,15 +118,15 @@ class Template(commands.Cog):
                                                           ctx.s("bot.canvas"),
                                                           ctx.s("bot.coordinates"), w1=w1)
             ]
-            for t, f in ts_with_f[(page - 1) * 10:page * 10]:
+            for t, f in ts[(page - 1) * 10:page * 10]:
                 coords = "{}, {}".format(t.x, t.y)
                 faction = '"{}"'.format(f)
                 name = '"{}"'.format(t.name)
                 canvas_name = canvases.pretty_print[t.canvas]
                 msg.append("{0:<{w1}}  {1:<34}  {2:<14}  {3}".format(name, faction, canvas_name, coords, w1=w1))
             msg.append("")
-            msg.append("// " + ctx.s("template.list_all_footer_1").format(ctx.gprefix))
-            msg.append("// " + ctx.s("template.list_all_footer_2").format(ctx.gprefix))
+            msg.append("// " + ctx.s("template.list_all_footer_1").format(ctx.prefix))
+            msg.append("// " + ctx.s("template.list_all_footer_2").format(ctx.prefix))
             msg.append("```")
             await ctx.send('\n'.join(msg))
         else:
@@ -192,9 +194,10 @@ class Template(commands.Cog):
         else:
             args = args[1:]
 
-        orig_template = sql.template_get_by_name(ctx.guild.id, name)
+        orig_template = ctx.session.query(TemplateDb).filter_by(
+            guild_id=ctx.guild.id, name=name).first()
         if not orig_template:
-            raise TemplateNotFoundError(ctx.guild.id, name)
+            raise TemplateNotFoundError(ctx, ctx.guild.id, name)
 
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
@@ -242,16 +245,13 @@ class Template(commands.Cog):
                 out.append("Updating file failed.")
                 return await send_end(ctx, out)
 
-            # TODO: Could check for md5 duplicates here
-            sql.template_kwarg_update(
-                ctx.guild.id,
-                orig_template.name,
-                url=t.url,
-                md5=t.md5,
-                w=t.width,
-                h=t.height,
-                size=t.size,
-                date_modified=int(time.time()))
+            # update template data
+            orig_template.url = t.url
+            orig_template.md5 = t.md5
+            orig_template.width = t.width
+            orig_template.height = t.height
+            orig_template.size = t.size
+            orig_template.date_modified = t.date_modified
             out.append("File updated.")
 
         if args.x:
@@ -261,7 +261,8 @@ class Template(commands.Cog):
                 out.append("Updating x failed, value provided was not a number.")
                 return await send_end(ctx, out)
 
-            sql.template_kwarg_update(ctx.guild.id, orig_template.name, x=x, date_modified=int(time.time()))
+            orig_template.x = x
+            orig_template.date_modified = int(time.time())
             out.append(f"X coordinate changed from {orig_template.x} to {x}.")
 
         if args.y:
@@ -271,11 +272,13 @@ class Template(commands.Cog):
                 out.append("Updating y failed, value provided was not a number.")
                 return await send_end(ctx, out)
 
-            sql.template_kwarg_update(ctx.guild.id, orig_template.name, y=y, date_modified=int(time.time()))
+            orig_template.y = y
+            orig_template.date_modified = int(time.time())
             out.append(f"Y coordinate changed from {orig_template.y} to {y}.")
 
         if args.newName:
-            dup_check = sql.template_get_by_name(ctx.guild.id, args.newName)
+            dup_check = ctx.session.query(TemplateDb.name).filter_by(
+                guild_id=ctx.guild.id, name=args.newName).first()
             if dup_check is not None:
                 out.append(f"Updating name failed, the name {args.newName} is already in use.")
                 return await send_end(ctx, out)
@@ -292,7 +295,8 @@ class Template(commands.Cog):
             except ValueError:
                 pass
 
-            sql.template_kwarg_update(ctx.guild.id, orig_template.name, new_name=args.newName, date_modified=int(time.time()))
+            orig_template.name = args.newName
+            orig_template.date_modified = int(time.time())
             out.append(f"Nickname changed from {name} to {args.newName}.")
 
         await send_end(ctx, out)
@@ -330,11 +334,11 @@ class Template(commands.Cog):
         try:
             gid, faction = args.faction.id, args.faction
         except AttributeError:
-            gid, faction = ctx.guild.id, sql.guild_get_by_id(ctx.guild.id)
+            gid, faction = ctx.guild.id, ctx.session.query(Guild).get(ctx.guild.id)
 
-        t = sql.template_get_by_name(gid, name)
+        t = ctx.session.query(TemplateDb).filter_by(guild_id=gid, name=name).first()
         if not t:
-            raise TemplateNotFoundError(gid, name)
+            raise TemplateNotFoundError(ctx, gid, name)
 
         if args.raw:
             try:
@@ -369,10 +373,6 @@ class Template(commands.Cog):
         description = "[__{}__]({})".format(ctx.s("template.link_to_canvas"),
                                             canvases.url_templates[t.canvas].format(*t.center()))
 
-        if size == 0:
-            t.size = await render.calculate_size(await http.get_template(t.url, t.name))
-            sql.template_update(t)
-
         e = discord.Embed(title=t.name, color=color, description=description) \
             .set_image(url=t.url) \
             .add_field(name=ctx.s("bot.canvas"), value=canvas_name, inline=True) \
@@ -402,14 +402,14 @@ class Template(commands.Cog):
     @checks.template_adder_only()
     @template.command(name='remove', aliases=['rm'])
     async def template_remove(self, ctx, name):
-        t = sql.template_get_by_name(ctx.guild.id, name)
+        t = ctx.session.query(TemplateDb).filter_by(guild_id=ctx.guild.id, name=name).first()
         if not t:
-            raise TemplateNotFoundError(ctx.guild.id, name)
-        log.info("(T:{} G:{})".format(t.name, t.gid))
+            raise TemplateNotFoundError(ctx, ctx.guild.id, name)
+        log.info("(T:{} G:{})".format(t.name, t.guild_id))
         if t.owner_id != ctx.author.id and not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             await ctx.send(ctx.s("template.err.not_owner"))
             return
-        sql.template_delete(t.gid, t.name)
+        ctx.session.delete(t)
         await ctx.send(ctx.s("template.remove").format(name))
 
     # =======================
@@ -424,20 +424,24 @@ class Template(commands.Cog):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             return await ctx.send(ctx.s("template.err.not_owner"))
 
-        snapshots = [Snapshot(base, target) for base, target in sql.snapshots_get_all_by_guild(ctx.guild.id)]
-        if not snapshots:
-            return await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
+        snapshots = ctx.session.query(Snapshot).filter(
+            Snapshot.base_template.guild_id == ctx.guild.id)
 
         if filter:
-            snapshots = [snapshot for i, snapshot in enumerate(snapshots) if snapshot.base.name in filter]
+            snapshots = snapshots.filter(Snapshot.base_template.name.in_(filter)).all()
+        else:
+            snapshots = snapshots.all()
+
+        if not snapshots:
+            return await ctx.send(f"No snapshots found, add some using `{ctx.prefix}template snapshot add`")
 
         for i, snap in enumerate(snapshots):
-            snap_msg = await ctx.send(f"Checking {snap.target.name} for errors...")
+            snap_msg = await ctx.send(f"Checking {snap.target_template.name} for errors...")
 
-            data = await http.get_template(snap.target.url, snap.target.name)
-            fetch = self.bot.fetchers[snap.target.canvas]
-            img = await fetch(snap.target.x, snap.target.y, snap.target.width, snap.target.height)
-            func = partial(render.diff, snap.target.x, snap.target.y, data, 1, img, colors.by_name[snap.target.canvas])
+            data = await http.get_template(snap.target_template.url, snap.target_template.name)
+            fetch = self.bot.fetchers[snap.target_template.canvas]
+            img = await fetch(snap.target_template.x, snap.target_template.y, snap.target_template.width, snap.target_template.height)
+            func = partial(render.diff, snap.target_template.x, snap.target_template.y, data, 1, img, colors.by_name[snap.target_template.canvas])
             diff_img, tot, err, bad, _err, _bad = await self.bot.loop.run_in_executor(None, func)
 
             if not err:
@@ -483,27 +487,27 @@ class Template(commands.Cog):
                     await diff_msg.delete(delay=1)
                     break
 
-            await snap_msg.edit(content=f"Generating snapshot from {snap.base.name}...")
+            await snap_msg.edit(content=f"Generating snapshot from {snap.base_template.name}...")
 
-            data = await http.get_template(snap.base.url, snap.base.name)
-            fetch = self.bot.fetchers[snap.base.canvas]
-            img = await fetch(snap.base.x, snap.base.y, snap.base.width, snap.base.height)
+            data = await http.get_template(snap.base_template.url, snap.base_template.name)
+            fetch = self.bot.fetchers[snap.base_template.canvas]
+            img = await fetch(snap.base_template.x, snap.base_template.y, snap.base_template.width, snap.base_template.height)
             func = partial(
-                render.diff, snap.base.x, snap.base.y, data, 1,
-                img, colors.by_name[snap.base.canvas], create_snapshot=True)
+                render.diff, snap.base_template.x, snap.base_template.y, data, 1,
+                img, colors.by_name[snap.base_template.canvas], create_snapshot=True)
             diff_img, tot, err, bad, _err, _bad = await self.bot.loop.run_in_executor(None, func)
 
             if not bad:
                 with io.BytesIO() as bio:
                     diff_img.save(bio, format="PNG")
                     bio.seek(0)
-                    f = discord.File(bio, f"{snap.target.name}.png")
+                    f = discord.File(bio, f"{snap.target_template.name}.png")
                     await snap_msg.delete(delay=1)
                     msg = await ctx.send(file=f)
 
                 url = msg.attachments[0].url
                 # The coordinates need to be casted to strings, or the regex in add_template will break shit
-                result = await add_template(ctx, snap.base.canvas, snap.target.name, str(snap.base.x), str(snap.base.y), url)
+                result = await add_template(ctx, snap.base_template.canvas, snap.target_template.name, str(snap.base_template.x), str(snap.base_template.y), url)
                 if result is None:
                     snap.result = "gen"
             else:
@@ -515,11 +519,11 @@ class Template(commands.Cog):
             out = []
             for snap in not_updated:
                 reasons = {
-                    "err": f"`{snap.base.name}`: errors on the current snapshot.",
-                    "bad": f"`{snap.base.name}`: unquantised pixels detected.",
-                    "cancel": f"`{snap.base.name}`: the command was cancelled.",
-                    "skip": f"`{snap.base.name}`: the template was skipped.",
-                    "gen": f"`{snap.base.name}`: template generation was halted."
+                    "err": f"`{snap.base_template.name}`: errors on the current snapshot.",
+                    "bad": f"`{snap.base_template.name}`: unquantised pixels detected.",
+                    "cancel": f"`{snap.base_template.name}`: the command was cancelled.",
+                    "skip": f"`{snap.base_template.name}`: the template was skipped.",
+                    "gen": f"`{snap.base_template.name}`: template generation was halted."
                 }
                 text = reasons.get(snap.result)
                 if text:
@@ -539,15 +543,16 @@ class Template(commands.Cog):
             await ctx.send(ctx.s("template.err.not_owner"))
             return
 
-        base = sql.template_get_by_name(ctx.guild.id, base_template)
-        target = sql.template_get_by_name(ctx.guild.id, snapshot_template)
+        base = ctx.session.query(TemplateDb).filter_by(guild_id=ctx.guild.id, name=base_template).first()
+        target = ctx.session.query(TemplateDb).filter_by(guild_id=ctx.guild.id, name=snapshot_template).first()
 
         if base is None:
             return await ctx.send("The base template does not exist.")
         if target is None:
             return await ctx.send("The snapshot template does not exist.")
 
-        sql.snapshot_add(base, target)
+        snap = Snapshot(base_template=base, target_template=target)
+        ctx.session.add(snap)
         await ctx.send("Snapshot added!")
 
     @commands.guild_only()
@@ -558,19 +563,15 @@ class Template(commands.Cog):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             return await ctx.send(ctx.s("template.err.not_owner"))
 
-        base = sql.template_get_by_name(ctx.guild.id, base_template)
-        target = sql.template_get_by_name(ctx.guild.id, snapshot_template)
+        snap = ctx.session.query(Snapshot).filter(
+            Snapshot.base_template.name == base_template,
+            Snapshot.target_template.name == snapshot_template
+        ).first()
 
-        if base is None:
-            return await ctx.send("The base template does not exist.")
-        if target is None:
-            return await ctx.send("The snapshot template does not exist.")
-
-        s = sql.snapshot_get(base, target)
-        if s is None:
+        if not snap:
             return await ctx.send("That snapshot does not exist.")
 
-        sql.snapshot_delete(base, target)
+        ctx.session.delete(snap)
         await ctx.send("Snapshot removed!")
 
     @commands.guild_only()
@@ -578,9 +579,10 @@ class Template(commands.Cog):
     @checks.template_adder_only()
     @snapshot.command(name='list', aliases=['l'])
     async def snapshot_list(self, ctx):
-        snapshots = [Snapshot(base, target) for base, target in sql.snapshots_get_all_by_guild(ctx.guild.id)]
+        snapshots = ctx.session.query(Snapshot).filter(
+            Snapshot.base_template.guild_id == ctx.guild.id).all()
         if not snapshots:
-            return await ctx.send(f"No snapshots found, add some using `{ctx.gprefix}template snapshot add`")
+            return await ctx.send(f"No snapshots found, add some using `{ctx.prefix}template snapshot add`")
 
         snapshot_menu = menus.MenuPages(
             source=SnapshotSource(snapshots),

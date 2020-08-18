@@ -9,13 +9,14 @@ import aiohttp
 import discord
 from PIL import Image
 import numpy as np
+from sqlalchemy.sql import func
 
 from lang import en_US
-from objects import DbTemplate
 from objects.bot_objects import GlimContext
+from objects.database_models import Template as TemplateDb
 from objects.errors import PilImageError, UrlError
 import utils
-from utils import canvases, colors, config, converter, http, render, sqlite as sql
+from utils import canvases, colors, config, converter, http, render
 
 log = logging.getLogger(__name__)
 
@@ -98,8 +99,12 @@ async def build_template(ctx, name, x, y, url, canvas):
                 with await http.get_template(url, name) as data2:
                     md5 = hashlib.md5(data2.getvalue()).hexdigest()
             created = int(time.time())
-            return DbTemplate.new(ctx.guild.id, name, url, canvas, x, y, w, h, size, created, created, md5,
-                                  ctx.author.id)
+
+            return TemplateDb(
+                guild_id=ctx.guild.id, name=name, url=url, canvas=canvas,
+                x=x, y=y, width=w, height=h, size=size, date_added=created,
+                date_modified=created, md5=md5, owner=ctx.author.id
+            )
     except aiohttp.client_exceptions.InvalidURL:
         raise UrlError
     except IOError:
@@ -129,7 +134,9 @@ async def add_template(ctx, canvas, name, x, y, url):
         return
     except ValueError:
         pass
-    if sql.template_count_by_guild_id(ctx.guild.id) >= config.MAX_TEMPLATES_PER_GUILD:
+
+    if session.query(func.count(TemplateDb)).filter_by(
+            guild_id=ctx.guild.id).scalar() >= config.MAX_TEMPLATES_PER_GUILD:
         await ctx.send(ctx.s("template.err.max_templates"))
         return
     url = await select_url(ctx, url)
@@ -148,9 +155,9 @@ async def add_template(ctx, canvas, name, x, y, url):
     if not t:
         await ctx.send(ctx.s("template.err.template_gen_error"))
         return
-    log.info("(T:{} | X:{} | Y:{} | Dim:{})".format(t.name, t.x, t.y, t.size))
-    name_chk = await check_for_duplicate_by_name(ctx, t)
-    md5_chk = await check_for_duplicates_by_md5(ctx, t)
+
+    name_chk = await check_for_duplicate_by_name(ctx, t.name)
+    md5_chk = await check_for_duplicates_by_md5(ctx, t.md5)
 
     if md5_chk is not None:
         dups = md5_chk
@@ -180,7 +187,18 @@ async def add_template(ctx, canvas, name, x, y, url):
             await ctx.send(ctx.s("template.menuclose"))
             return
 
-        sql.template_update(t)
+        # Update template
+        d.url = t.url
+        d.canvas = t.canvas
+        d.x = t.x
+        d.y = t.y
+        d.width = t.width
+        d.height = t.height
+        d.size = t.size
+        d.date_modified = t.date_modified
+        d.md5 = t.md5
+        d.owner = t.owner
+
         return await ctx.send(ctx.s("template.updated").format(name))
 
     if md5_chk is not None:
@@ -190,11 +208,11 @@ async def add_template(ctx, canvas, name, x, y, url):
             await ctx.send(ctx.s("template.menuclose"))
             return
 
-    sql.template_add(t)
+    ctx.session.add(t)
     return await ctx.send(ctx.s("template.added").format(name))
 
 
-async def check_for_duplicates_by_md5(ctx, template):
+async def check_for_duplicates_by_md5(ctx, md5):
     """Checks for duplicates using md5 hashing, returns the list of duplicates if any exist.
 
     Arguments:
@@ -204,25 +222,27 @@ async def check_for_duplicates_by_md5(ctx, template):
     Returns:
     A list or nothing.
     """
-    dups = sql.template_get_by_hash(ctx.guild.id, template.md5)
+    dups = ctx.session.query(TemplateDb).filter_by(
+        guild_id=ctx.guild.id, md5=md5).all()
     return dups if len(dups) > 0 else None
 
 
-async def check_for_duplicate_by_name(ctx, template):
+async def check_for_duplicate_by_name(ctx, name):
     """Checks for duplicates by name, returns a that template if one exists and the user has
     permission to overwrite, False if they do not. None is returned if no other templates share
     this name.
 
     Arguments:
     ctx - commands.Context.
-    template - A template object.
+    name - Template name.
 
     Returns:
     A template object, False or None.
     """
-    dup = sql.template_get_by_name(ctx.guild.id, template.name)
+    dup = ctx.session.query(TemplateDb).filter_by(
+        guild_id=ctx.guild.id, name=name).first()
     if dup:
-        if template.owner_id != ctx.author.id and not utils.is_admin(ctx):
+        if dup.owner_id != ctx.author.id and not utils.is_admin(ctx):
             await ctx.send(ctx.s("template.err.name_exists"))
             return False
         return dup
@@ -266,13 +286,6 @@ async def select_url_update(ctx, input_url, out):
     return
 
 
-class Snapshot():
-    def __init__(self, base, target):
-        self.base = base
-        self.target = target
-        self.result = None
-
-
 class TemplateSource(discord.ext.menus.ListPageSource):
     def __init__(self, data):
         super().__init__(data, per_page=10)
@@ -312,13 +325,13 @@ class SnapshotSource(discord.ext.menus.ListPageSource):
         offset = menu.current_page * self.per_page
         # Find which is longest: the title or one of the template names. Set w1 to that + 2.
         # Then w1 can be used to offset text so that the start of the second column all lines up.
-        w1 = max(max(map(lambda snap: len(snap.base.name), entries[offset:offset + self.per_page])) + 2, len("Base Template"))
+        w1 = max(max(map(lambda snap: len(snap.base_template.name), entries[offset:offset + self.per_page])) + 2, len("Base Template"))
         out = ["{0:<{w1}}  {1}".format("Base Template", "Snapshot Template", w1=w1)]
 
         for i, snap in enumerate(entries, start=offset):
             if i == offset + self.per_page:
                 break
-            out.append("{0.base.name:<{w1}}  {0.target.name}".format(snap, w1=w1))
+            out.append("{0.base_template.name:<{w1}}  {0.target_template.name}".format(snap, w1=w1))
 
         embed.add_field(
             name="Snapshots",

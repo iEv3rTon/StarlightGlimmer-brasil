@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image, ImageChops
 import websockets
 
+from objects.database_models import session_scope
 from objects.errors import UrlError, TemplateHttpError
 from utils import GlimmerArgumentParser, http
 
@@ -209,20 +210,28 @@ def dither_argparse(ctx, args):
 
 
 def process_check(templates, chunks):
-    example_chunk = next(iter(chunks))
-    for t in templates:
-        empty_bcs, shape = example_chunk.get_intersecting(t.x, t.y, t.width, t.height)
-        tmp = Image.new("RGBA", (example_chunk.width * shape[0], example_chunk.height * shape[1]))
-        for i, ch in enumerate(empty_bcs):
-            ch = next((x for x in chunks if x == ch))
-            if ch.is_in_bounds():
-                tmp.paste(ch.image, ((i % shape[0]) * ch.width, (i // shape[0]) * ch.height))
+    # We need to begin a new session for this thread and migrate all
+    # the template objects over to it so we can use them safely!
 
-        x, y = t.x - empty_bcs[0].p_x, t.y - empty_bcs[0].p_y
-        tmp = tmp.crop((x, y, x + t.width, y + t.height))
-        template = Image.open(http.get_template_blocking(t.url, t.name)).convert('RGBA')
-        alpha = Image.new('RGBA', template.size, (255, 255, 255, 0))
-        template = Image.composite(template, alpha, template)
-        tmp = Image.composite(tmp, alpha, template)
-        tmp = ImageChops.difference(tmp.convert('RGB'), template.convert('RGB'))
-        t.errors = np.array(tmp).any(axis=-1).sum()
+    with session_scope() as session:
+        ts = [session.merge(t) for t in templates]
+
+        example_chunk = next(iter(chunks))
+        for t in ts:
+            empty_bcs, shape = example_chunk.get_intersecting(t.x, t.y, t.width, t.height)
+            tmp = Image.new("RGBA", (example_chunk.width * shape[0], example_chunk.height * shape[1]))
+            for i, ch in enumerate(empty_bcs):
+                ch = next((x for x in chunks if x == ch))
+                if ch.is_in_bounds():
+                    tmp.paste(ch.image, ((i % shape[0]) * ch.width, (i // shape[0]) * ch.height))
+
+            x, y = t.x - empty_bcs[0].p_x, t.y - empty_bcs[0].p_y
+            tmp = tmp.crop((x, y, x + t.width, y + t.height))
+            template = Image.open(http.get_template_blocking(t.url, t.name)).convert('RGBA')
+            alpha = Image.new('RGBA', template.size, (255, 255, 255, 0))
+            template = Image.composite(template, alpha, template)
+            tmp = Image.composite(tmp, alpha, template)
+            tmp = ImageChops.difference(tmp.convert('RGB'), template.convert('RGB'))
+            t.errors = np.array(tmp).any(axis=-1).sum()
+
+        return [{"tid": t.id, "errors": t.errors} for t in ts]

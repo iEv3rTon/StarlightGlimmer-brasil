@@ -1,7 +1,8 @@
+from discord.ext.commands import CommandError
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 
-from utils.database import Base
+from objects.database_models import Base
 
 
 class Guild(Base):
@@ -28,7 +29,9 @@ class Guild(Base):
 
     # Dynamic so we can filter using sql instead of python
     # see: https://docs.sqlalchemy.org/en/13/orm/collections.html#dynamic-relationship-loaders
-    templates = relationship("Template", back_populates="guild", lazy="dynamic")
+    templates = relationship(
+        "Template", back_populates="guild", lazy="dynamic",
+        cascade="all, delete, delete-orphan")
 
     @property
     def is_faction(self):
@@ -36,5 +39,4 @@ class Guild(Base):
 
     def __repr__(self):
         return ("<Guild(id={0.id}, name={0.name}, prefix={0.prefix}, "
-                "autoscan={0.autoscan}, canvas={0.canvas}, "
-                "language={0.language}, templates={0.templates})>".format(self))
+                "autoscan={0.autoscan}, canvas={0.canvas}, language={0.language})>".format(self))

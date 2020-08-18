@@ -4,7 +4,7 @@ from discord.utils import get as dget
 
 from lang import en_US, pt_BR, tr_TR
 from utils import canvases, config
-from utils.database import Session, session_scope, Guild
+from objects.database_models import session_scope, Guild
 
 
 class GlimContext(commands.Context):
@@ -15,11 +15,6 @@ class GlimContext(commands.Context):
         self.is_default = False
         self.is_template = False
 
-        # Create database session, we don't want to do this
-        # inside before_invoke because it doesn't happen
-        # before checks
-        self.session = Session()
-
     langs = {
         'en-us': "English (US)",
         'pt-br': "Português (BR)",
@@ -28,30 +23,25 @@ class GlimContext(commands.Context):
 
     @property
     def canvas(self):
-        return self.session.query(Guild).get(self.guild.id).canvas
+        return self.session.query(Guild.canvas).get(self.guild.id)
 
     @property
     def canvas_pretty(self):
         return canvases.pretty_print[self.canvas]
 
     @property
-    def gprefix(self):
-        guild = self.session.query(Guild).get(self.guild.id)
-        if guild and guild.prefix:
-            return guild.prefix
-        return config.PREFIX
-
-    @property
     def lang(self):
-        return self.session.query(Guild).get(self.guild.id).language
+        return self.session.query(Guild.language).get(self.guild.id)
 
     @staticmethod
     def get_from_guild(guild, str_id):
         with session_scope() as session:
             if isinstance(guild, discord.Guild):
-                language = session.query(Guild).get(guild.id).language.lower()
+                language = session.query(Guild.language).get(guild.id)
             else:
-                language = session.query(Guild).get(guild).language.lower()
+                language = session.query(Guild.language).get(guild)
+
+            language = language.lower()
 
         if language == "en-us":
             return en_US.STRINGS.get(str_id, None)

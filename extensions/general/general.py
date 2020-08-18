@@ -14,8 +14,9 @@ from discord.ext.commands import BucketType, HelpCommand, Group
 
 from lang import en_US, pt_BR, tr_TR
 from objects.bot_objects import GlimContext
+from objects.database_models import MenuLock
 import utils
-from utils import config, http, sqlite as sql
+from utils import config, http
 from utils.version import VERSION
 
 log = logging.getLogger(__name__)
@@ -106,14 +107,19 @@ class General(commands.Cog):
     @commands.cooldown(1, 5, BucketType.guild)
     @commands.command(name="quickstart")
     async def quickstart(self, ctx):
-        sql.menu_locks_add(ctx.channel.id, ctx.author.id)
+        menu_lock = MenuLock(channel_id=ctx.channel.id, user_id=ctx.author.id)
+        ctx.session.add(menu_lock)
+        # Need to make sure this takes effect immediately, not after
+        # the command is finished and returns
+        ctx.session.commit()
 
         need_images = {
             3: "https://cdn.discordapp.com/attachments/561977353283174404/701066183927136296/cen_diamond.png"
         }
 
         try:
-            language = sql.guild_get_language_by_id(ctx.guild.id).lower()
+            language = ctx.session.query(Guild.language).get(ctx.guild.id)
+            language = language.lower()
             if language == "en-us":
                 tour_steps = [s for s in en_US.STRINGS if s.split(".")[:2] == ["tour", "command"]]
             elif language == "pt-br":
@@ -131,7 +137,7 @@ class General(commands.Cog):
             await ctx.send(ctx.s("tour.intro"))
 
             for i, _ in enumerate(tour_steps):
-                command = ctx.s(f"tour.command.{i}").format(p=ctx.gprefix, tl=templates["tl"]["name"], tl_e=templates["tl_e"]["name"])
+                command = ctx.s(f"tour.command.{i}").format(p=ctx.prefix, tl=templates["tl"]["name"], tl_e=templates["tl_e"]["name"])
                 request = ctx.s("tour.request").format(command)
 
                 img = need_images.get(i)
@@ -155,7 +161,7 @@ class General(commands.Cog):
 
                     await ctx.send(embed=discord.Embed().add_field(
                         name=ctx.s("tour.explain"),
-                        value=ctx.s(f"tour.explain.{i}").format(ctx.gprefix)))
+                        value=ctx.s(f"tour.explain.{i}").format(ctx.prefix)))
                 else:
                     break
         except Exception as e:
@@ -163,7 +169,8 @@ class General(commands.Cog):
         finally:
             # Always cleanup the menu-lock on exit
             await ctx.send(ctx.s("tour.exit"))
-            sql.menu_locks_delete(ctx.channel.id, ctx.author.id)
+            ctx.session.query(MenuLock).filter_by(
+                channel_id=ctx.channel.id, user_id=ctx.author.id).delete()
 
 
 async def quickstart_wait(bot, ctx, next, image=None):

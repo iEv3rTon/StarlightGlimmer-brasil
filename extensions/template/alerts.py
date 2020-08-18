@@ -12,8 +12,9 @@ import discord
 from discord.ext import commands, menus, tasks
 import websockets
 
+from objects.database_models import session_scope, Template as TemplateDb, MutedTemplate
 from objects.errors import TemplateNotFoundError, CanvasNotSupportedError
-from utils import checks, GlimmerArgumentParser, FactionAction, sqlite as sql
+from utils import checks, GlimmerArgumentParser, FactionAction
 from extensions.template.utils import CheckerSource, Pixel, Template
 
 log = logging.getLogger(__name__)
@@ -42,39 +43,41 @@ class Alerts(commands.Cog):
     @tasks.loop(minutes=5.0)
     async def update(self):
         try:
-            # Get the templates currently in the db
-            templates = sql.template_get_all_alert()
+            with session_scope() as session:
+                # Get the templates currently in the db
+                templates = session.query(TemplateDb).filter(
+                    TemplateDb.alert_id != None).all()
 
-            # Remove any templates from self.templates that are no longer in db
-            db_t_ids = [t.id for t in templates]
-            for t in self.templates:
-                if t.id not in db_t_ids:
-                    log.debug(f"Template {t} no longer in the database, removed.")
-                    self.templates.remove(t)
+                # Remove any templates from self.templates that are no longer in db
+                db_t_ids = [t.id for t in templates]
+                for t in self.templates:
+                    if t.id not in db_t_ids:
+                        log.debug(f"Template {t} no longer in the database, removed.")
+                        self.templates.remove(t)
 
-            # Update any templates already in self.templates that have changed
-            for old_t in self.templates:
+                # Update any templates already in self.templates that have changed
+                for old_t in self.templates:
+                    for t in templates:
+                        if old_t.id != t.id:
+                            continue
+                        if not old_t.changed(t):
+                            continue
+
+                        tp = await Template.new(t)
+                        if tp is not None:
+                            self.templates.remove(old_t)
+                            self.templates.append(tp)
+
+                # Add any new templates from db to self.templates
+                template_ids = [template.id for template in self.templates]
                 for t in templates:
-                    if old_t.id != t.id:
+                    if t.id in template_ids:
                         continue
-                    if not old_t.changed(t):
-                        continue
-
                     tp = await Template.new(t)
-                    if tp is not None:
-                        self.templates.remove(old_t)
-                        self.templates.append(tp)
+                    if tp is None:
+                        continue
 
-            # Add any new templates from db to self.templates
-            template_ids = [template.id for template in self.templates]
-            for t in templates:
-                if t.id in template_ids:
-                    continue
-                tp = await Template.new(t)
-                if tp is None:
-                    continue
-
-                self.templates.append(tp)
+                    self.templates.append(tp)
 
         except Exception as e:
             log.exception(f'Failed to update. {e}')
@@ -122,26 +125,26 @@ class Alerts(commands.Cog):
     @checks.template_adder_only()
     @commands.command(name='alert')
     async def alert(self, ctx, name, channel: discord.TextChannel = None):
-        template = sql.template_get_by_name(ctx.guild.id, name)
+        template = ctx.session.query(TemplateDb).filter_by(
+            guild_id=ctx.guild.id, name=name).first()
 
         if not template:
-            raise TemplateNotFoundError(ctx.guild.id, name)
+            raise TemplateNotFoundError(ctx, ctx.guild.id, name)
 
         if template.canvas != "pixelcanvas":
             raise CanvasNotSupportedError()
 
-        mute = sql.mute_get(template.id)
+        mute = ctx.session.query(MutedTemplate).filter_by(template_id=template.id).first()
         if mute:
-            sql.mute_remove(template.id)
-            alert_id, _, _ = mute
-            mute_channel = self.bot.get_channel(alert_id)
+            mute_channel = self.bot.get_channel(mute.alert_id)
+            ctx.session.delete(mute)
             await ctx.send(f"Mute for `{name}` in {mute_channel.mention} cleared.")
 
         if channel:
-            sql.template_kwarg_update(ctx.guild.id, name, alert_id=channel.id)
+            template.alert_id = channel.id
             await ctx.send(f"`{name}` will now alert in the channel {channel.mention} when damaged.")
         else:
-            sql.template_remove_alert(template.id)
+            template.alert_id = None
             await ctx.send(f"`{name}` will no longer alert for damage.")
 
     @commands.guild_only()
@@ -149,10 +152,11 @@ class Alerts(commands.Cog):
     @checks.template_adder_only()
     @commands.command(name='mute', aliases=['m'])
     async def mute(self, ctx, name, duration=None):
-        template = sql.template_get_by_name(ctx.guild.id, name)
+        template = ctx.session.query(TemplateDb).filter_by(
+            guild_id=ctx.guild.id, name=name).first()
 
         if not template:
-            raise TemplateNotFoundError(ctx.guild.id, name)
+            raise TemplateNotFoundError(ctx, ctx.guild.id, name)
 
         if template.canvas != "pixelcanvas":
             raise CanvasNotSupportedError()
@@ -161,7 +165,13 @@ class Alerts(commands.Cog):
             if template.alert_id:
                 return await ctx.send(f"`{name}` is not currently muted.")
 
-            sql.mute_remove(template.id)
+            mute = ctx.session.query(MutedTemplate).filter_by(template_id=template.id).first()
+
+            if not mute:
+                return await ctx.send(f"`{name}` is not currently muted.")
+
+            template.alert_id = mute.alert_id
+            ctx.session.delete(mute)
             await ctx.send(f"Unmuted `{name}`.")
         else:
             try:
@@ -189,7 +199,9 @@ class Alerts(commands.Cog):
             if not template.alert_id:
                 return await ctx.send(f"`{name}` has no alert channel/is already muted.")
 
-            sql.mute_add(ctx.guild.id, template, time.time() + duration)
+            mute = MutedTemplate(template=template, alert_id=template.alert_id, expires=time.time() + duration)
+            ctx.session.add(mute)
+            template.alert_id = None
             await ctx.send(f"`{name}` muted for {duration / 3600:.2f} hours.")
 
     @commands.guild_only()
@@ -209,7 +221,7 @@ class Alerts(commands.Cog):
         if args.faction is not None:
             gid = args.faction.id
 
-        templates = sql.template_get_all_by_guild_id(gid)
+        templates = ctx.session.query(TemplateDb).filter_by(guild_id=gid).all()
         checker_templates = [t for t in self.templates if t.id in [t_.id for t_ in templates]]
         pixels = [p for t in checker_templates for p in t.current_pixels if p.fixed is False]
         pixels.sort(key=lambda p: p.recieved, reverse=True)

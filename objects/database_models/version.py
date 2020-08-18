@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, Float, CheckConstraint
 
-from utils.database import Base
+from objects.database_models import Base
 
 
 class Version(Base):

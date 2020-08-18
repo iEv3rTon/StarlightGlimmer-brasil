@@ -3,7 +3,7 @@ import re
 import discord
 from discord.ext import commands
 
-from utils import sqlite as sql
+from objects.database_models import AnimoteUser, session_scope
 
 
 #    Cog to reformat messages to allow for animated emotes, regardless of nitro status
@@ -30,22 +30,26 @@ class Animotes(commands.Cog):
 
     @commands.command()
     async def register(self, ctx):
-        sql.animotes_users_add(ctx.author.id)
+        user = AnimoteUser(id=ctx.author.id)
+        ctx.session.add(user)
         await ctx.send(ctx.s("animotes.opt_in"))
 
     @commands.command()
     async def unregister(self, ctx):
-        sql.animotes_users_delete(ctx.author.id)
+        user = ctx.session.query(AnimoteUser).get(ctx.author.id)
+        if user:
+            ctx.session.delete(user)
         await ctx.send(ctx.s("animotes.opt_out"))
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if not message.author.bot and sql.animotes_users_is_registered(message.author.id):
-            channel = message.channel
-            content = emote_corrector(message)
-            if content:
-                await message.delete()
-                await channel.send(content=content)
+        with session_scope() as session:
+            if not message.author.bot and session.query(AnimoteUser).get(message.author.id):
+                channel = message.channel
+                content = emote_corrector(message)
+                if content:
+                    await message.delete()
+                    await channel.send(content=content)
 
 
 # noinspection PyTypeChecker

@@ -1,13 +1,12 @@
 import logging
-import re
 
-from discord import TextChannel
+from discord import TextChannel, Role
 from discord.ext import commands
 from discord.utils import get as dget
 
 import utils
 from utils import checks
-from utils.database import get_guild
+from objects.database_models import Guild
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +19,8 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @commands.group(name="alertchannel", invoke_without_command=True, case_insensitive=True)
     async def alertchannel(self, ctx):
-        channel = dget(ctx.guild.channels, id=sql.guild_get_by_id(ctx.guild.id).alert_channel)
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        channel = dget(ctx.guild.channels, id=guild.alert_channel)
         if channel:
             await ctx.send(ctx.s("configuration.alert_channel_current").format(channel.mention))
         else:
@@ -30,7 +30,8 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @alertchannel.command(name="set")
     async def alertchannel_set(self, ctx, channel: TextChannel):
-        sql.guild_update(ctx.guild.id, alert_channel=channel.id)
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.alert_channel = channel.id
         log.info("Alert channel for {0.name} set to {1.name} (GID:{0.id} CID:{1.name})".format(ctx.guild, channel))
         await ctx.send(ctx.s("configuration.alert_channel_set").format(channel.mention))
 
@@ -38,7 +39,8 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @alertchannel.command(name="clear")
     async def alertchannel_clear(self, ctx):
-        sql.guild_update(ctx.guild.id, alert_channel=0)
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.alert_channel = None
         log.info("Alert channel for {0.name} cleared (GID:{0.id})".format(ctx.guild))
         await ctx.send(ctx.s("configuration.alert_channel_cleared"))
 
@@ -46,29 +48,28 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @commands.command()
     async def prefix(self, ctx, *prefix):
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
         if prefix:
             if len(prefix[0]) > 5:
                 raise commands.BadArgument
+            guild.prefix = prefix
             sql.guild_update(ctx.guild.id, prefix=prefix)
             log.info("Prefix for {0.name} set to {1} (GID: {0.id})".format(ctx.guild, prefix))
             await ctx.send(ctx.s("configuration.prefix_set").format(prefix))
         else:
-            prefix = sql.guild_get_prefix_by_id(ctx.guild.id)
-            await ctx.send(ctx.s("configuration.prefix_current").format(prefix))
+            await ctx.send(ctx.s("configuration.prefix_current").format(guild.prefix))
 
     @checks.admin_only()
     @commands.guild_only()
     @commands.command()
     async def autoscan(self, ctx):
-        # Guild does not have autoscan enabled, enable it
-        if sql.guild_is_autoscan(ctx.guild.id) is False:
-            sql.guild_update(ctx.guild.id, autoscan=1)
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        if guild.autoscan is False:
+            guild.autoscan = True
             log.info("Autoscan enabled for {0.name} (GID: {0.id})".format(ctx.guild))
             await ctx.send(ctx.s("configuration.autoscan_enabled"))
-        # Guild has autoscan enabled, disable it
         else:
-            # for autoscan 2==False, cause 0 was converting to null and fucking up
-            sql.guild_update(ctx.guild.id, autoscan=2)
+            guild.autoscan = False
             log.info("Autoscan disabled for {0.name} (GID: {0.id})".format(ctx.guild))
             await ctx.send(ctx.s("configuration.autoscan_disabled"))
 
@@ -84,7 +85,8 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @canvas.command(name="pixelcanvas", aliases=["pc"])
     async def canvas_pixelcanvas(self, ctx):
-        sql.guild_update(ctx.guild.id, canvas="pixelcanvas")
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.canvas = "pixelcanvas"
         log.info("Default canvas for {0.name} set to pixelcanvas (GID:{0.id})".format(ctx.guild))
         await ctx.send(ctx.s("configuration.canvas_set").format("Pixelcanvas.io"))
 
@@ -92,7 +94,8 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @canvas.command(name="pixelzone", aliases=["pz"])
     async def canvas_pixelzone(self, ctx):
-        sql.guild_update(ctx.guild.id, canvas="pixelzone")
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.canvas = "pixelzone"
         log.info("Default canvas for {0.name} set to pixelzone (GID:{0.id})".format(ctx.guild))
         await ctx.send(ctx.s("configuration.canvas_set").format("Pixelzone.io"))
 
@@ -100,7 +103,8 @@ class Configuration(commands.Cog):
     @commands.guild_only()
     @canvas.command(name="pxlsspace", aliases=["ps"])
     async def canvas_pxlsspace(self, ctx):
-        sql.guild_update(ctx.guild.id, canvas="pxlsspace")
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.canvas = "pxlsspace"
         log.info("Default canvas for {0.name} set to pxlsspace (GID:{0.id})".format(ctx.guild))
         await ctx.send(ctx.s("configuration.canvas_set").format("Pxls.space"))
 
@@ -121,7 +125,8 @@ class Configuration(commands.Cog):
             return
         if option.lower() not in ctx.langs:
             return
-        sql.guild_update(ctx.guild.id, language=option.lower())
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.language = option.lower()
         log.info("Language for {0.name} set to {1} (GID:{0.id})".format(ctx.guild, option.lower()))
         await ctx.send(ctx.s("configuration.language_set").format(ctx.langs[option.lower()]))
 
@@ -150,20 +155,17 @@ class Configuration(commands.Cog):
     @checks.admin_only()
     @commands.guild_only()
     @role_botadmin.command(name="set")
-    async def role_botadmin_set(self, ctx, role=None):
-        m = re.match(r"<@&(\d+)>", role)
-        r = dget(ctx.guild.roles, id=int(m.group(1))) if m else dget(ctx.guild.roles, name=role)
-        if r:
-            sql.guild_update(ctx.guild.id, bot_admin=r.id)
-            await ctx.send(ctx.s("configuration.role_bot_admin_set").format(r.name))
-        else:
-            await ctx.send(ctx.s("configuration.role_not_found"))
+    async def role_botadmin_set(self, ctx, *, role: Role):
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.bot_admin = role.id
+        await ctx.send(ctx.s("configuration.role_bot_admin_set").format(role.name))
 
     @checks.admin_only()
     @commands.guild_only()
     @role_botadmin.command(name="clear")
     async def role_botadmin_clear(self, ctx):
-        sql.guild_update(ctx.guild.id, bot_admin=None)
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.bot_admin = None
         await ctx.send(ctx.s("configuration.role_bot_admin_cleared"))
 
     @checks.admin_only()
@@ -179,20 +181,17 @@ class Configuration(commands.Cog):
     @checks.admin_only()
     @commands.guild_only()
     @role_templateadder.command(name="set")
-    async def role_templateadder_set(self, ctx, role=None):
-        m = re.match(r"<@&(\d+)>", role)
-        r = dget(ctx.guild.roles, id=int(m.group(1))) if m else dget(ctx.guild.roles, name=role)
-        if r:
-            sql.guild_update(ctx.guild.id, template_adder=r.id)
-            await ctx.send(ctx.s("configuration.role_template_adder_set").format(r.name))
-        else:
-            await ctx.send(ctx.s("configuration.role_not_found"))
+    async def role_templateadder_set(self, ctx, *, role: Role):
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.template_adder = role.id
+        await ctx.send(ctx.s("configuration.role_template_adder_set").format(role.name))
 
     @checks.admin_only()
     @commands.guild_only()
     @role_templateadder.command(name="clear")
     async def role_templateadder_clear(self, ctx):
-        sql.guild_update(ctx.guild.id, template_adder=None)
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.template_adder = None
         await ctx.send(ctx.s("configuration.role_template_adder_cleared"))
 
     @checks.admin_only()
@@ -208,20 +207,17 @@ class Configuration(commands.Cog):
     @checks.admin_only()
     @commands.guild_only()
     @role_templateadmin.command(name="set")
-    async def role_templateadmin_set(self, ctx, role=None):
-        m = re.match(r"<@&(\d+)>", role)
-        r = dget(ctx.guild.roles, id=int(m.group(1))) if m else dget(ctx.guild.roles, name=role)
-        if r:
-            sql.guild_update(ctx.guild.id, template_admin=r.id)
-            await ctx.send(ctx.s("configuration.role_template_admin_set").format(r.name))
-        else:
-            await ctx.send(ctx.s("configuration.role_not_found"))
+    async def role_templateadmin_set(self, ctx, *, role: Role):
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.template_admin = role.id
+        await ctx.send(ctx.s("configuration.role_template_admin_set").format(role.name))
 
     @checks.admin_only()
     @commands.guild_only()
     @role_templateadmin.command(name="clear")
     async def role_templateadmin_clear(self, ctx):
-        sql.guild_update(ctx.guild.id, template_admin=None)
+        guild = ctx.session.query(Guild).get(ctx.guild.id)
+        guild.template_admin = None
         await ctx.send(ctx.s("configuration.role_template_admin_cleared"))
 
 

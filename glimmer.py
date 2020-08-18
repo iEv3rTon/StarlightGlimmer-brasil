@@ -9,10 +9,10 @@ from discord.ext import commands, tasks
 from sqlalchemy.sql import func
 
 from objects.bot_objects import GlimContext
+from objects.database_models import session_scope, Guild, MenuLock, MutedTemplate, Template, Version
 import utils
 from utils import config, http, render
 from utils.version import VERSION
-from utils.database import session_scope, Session, Guild, MenuLock, MutedTemplate, Template, Version
 
 
 def get_prefix(bot_, msg: discord.Message):
@@ -20,7 +20,7 @@ def get_prefix(bot_, msg: discord.Message):
 
     if msg.guild:
         with session_scope() as session:
-            if (guild := session.query(Guild).get(msg.guild.id)):
+            if (guild := Guild.get(session, msg.guild.id)):
                 if guild.prefix is not None:
                     prefix_list[0] = guild.prefix
 
@@ -138,7 +138,7 @@ class Glimmer(commands.Bot):
         with session_scope() as session:
             for g in bot.guilds:
                 log.info("'{0.name}' (ID: {0.id})".format(g))
-                if (db_g := session.query(Guild).get(g.id)):
+                if (db_g := Guild.get(session, g.id)):
                     prefix = db_g.prefix if db_g.prefix else config.PREFIX
                     if g.name != db_g.name:
                         if config.CHANNEL_LOG_GUILD_RENAMES:
@@ -188,11 +188,13 @@ class Glimmer(commands.Bot):
 
         # Ignore messages from users currently making a menu choice
         with session_scope() as session:
-            locks = session.query(MenuLock).all()
-            for lock in locks:
-                if message.author.id == lock.user_id and \
-                   message.channel.id == lock.channel_id:
-                    return
+            lock = session.query(MenuLock).filter(
+                message.author.id == MenuLock.user_id,
+                message.channel.id == MenuLock.channel_id
+            ).first()
+
+            if lock:
+                return
 
         # Ignore messages with spoilered images
         for attachment in message.attachments:
@@ -203,25 +205,22 @@ class Glimmer(commands.Bot):
         if re.match(r".*\|\|.*\|\|.*", message.content):
             return
 
-        # Create context from message
-        ctx = await self.get_context(message, cls=GlimContext)
+        with session_scope() as session:
+            # Create context from message, and assign a db session to it
+            # we do that here because before_invoke doesn't happen
+            # before checks
+            ctx = await self.get_context(message, cls=GlimContext)
+            ctx.session = session
 
-        # Attempt to invoke a command from the context
-        await self.invoke(ctx)
+            # Attempt to invoke a command from the context
+            await self.invoke(ctx)
 
-        # A command was recognised, so autoscan doesn't need to occur
-        if ctx.invoked_with:
-            # Do db cleanup
-            ctx.session.commit()
-            ctx.session.close()
-            return
+            # A command was recognised, so autoscan doesn't need to occur
+            if ctx.invoked_with:
+                return
 
-        # Autoscan, since the message contained no command
-        await utils.autoscan(ctx)
-
-        # Do db cleanup
-        ctx.session.commit()
-        ctx.session.close()
+            # Autoscan, since the message contained no command
+            await utils.autoscan(ctx)
 
 
 log = logging.getLogger(__name__)

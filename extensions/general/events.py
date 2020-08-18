@@ -7,6 +7,7 @@ from fuzzywuzzy import fuzz
 
 from objects import errors
 import utils
+from objects.database_models import Guild, session_scope, Template, MutedTemplate
 
 log = logging.getLogger(__name__)
 
@@ -142,7 +143,11 @@ class Events(commands.Cog):
         log.info("Joined new guild '{0.name}' (ID: {0.id})".format(guild))
         if utils.config.CHANNEL_LOG_GUILD_JOINS:
             await utils.channel_log(self.bot, "Joined new guild **{0.name}** (ID: `{0.id}`)".format(guild))
-        utils.sql.guild_add(guild.id, guild.name, int(guild.me.joined_at.timestamp()))
+
+        with session_scope() as session:
+            db_guild = Guild(id=guild.id, name=guild.name, join_date=int(guild.me.joined_at.timestamp()))
+            session.add(db_guild)
+
         await utils.print_welcome_message(guild)
 
     @commands.Cog.listener()
@@ -150,7 +155,10 @@ class Events(commands.Cog):
         log.info("Kicked from guild '{0.name}' (ID: {0.id})".format(guild))
         if utils.config.CHANNEL_LOG_GUILD_KICKS:
             await utils.channel_log(self.bot, "Kicked from guild **{0.name}** (ID: `{0.id}`)".format(guild))
-        utils.sql.guild_delete(guild.id)
+
+        with session_scope() as session:
+            db_guild = session.query(Guild).get(guild.id)
+            session.delete(db_guild)
 
     @commands.Cog.listener()
     async def on_guild_update(self, before, after):
@@ -158,8 +166,34 @@ class Events(commands.Cog):
             log.info("Guild {0.name} is now known as {1.name} (ID: {1.id})")
             if utils.config.CHANNEL_LOG_GUILD_RENAMES:
                 await utils.channel_log(self.bot, "Guild **{0.name}** is now known as **{1.name}** (ID: `{1.id}`)".format(before, after))
-            utils.sql.guild_update(after.id, name=after.name)
+
+            with session_scope() as session:
+                db_guild = session.query(Guild).get(after.id)
+                db_guild.name = after.name
 
     @commands.Cog.listener()
     async def on_guild_role_delete(self, role):
-        utils.sql.guild_delete_role(role.id)
+        with session_scope() as session:
+            guild = session.query(Guild).get(role.guild.id)
+            if guild.template_admin == role.id:
+                guild.template_admin = None
+            if guild.template_adder == role.id:
+                guild.template_adder = None
+            if guild.bot_admin == role.id:
+                guild.bot_admin = None
+
+    @commands.Cog.listener()
+    async def on_guild_channel_delete(self, channel):
+        with session_scope() as session:
+            guild = session.query(Guild).get(channel.guild.id)
+
+            if guild.alert_channel == channel.id:
+                guild.alert_channel = None
+
+            session.query(Template).filter_by(
+                guild_id=channel.guild.id, alert_id=channel.id).update(
+                    {Template.alert_id: None})
+
+            session.query(MutedTemplate).filter(
+                MutedTemplate.template.guild_id == channel.guild.id,
+                MutedTemplate.alert_id == channel.id).delete()

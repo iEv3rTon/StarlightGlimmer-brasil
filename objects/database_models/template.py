@@ -2,14 +2,14 @@ from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import UniqueConstraint
 
-from utils.database import Base
+from objects.database_models import Base
 
 
 class Template(Base):
     __tablename__ = "templates"
 
     id =            Column(Integer, primary_key=True)
-    guild_id =      Column(Integer, ForeignKey("guilds.id"), nullable=False)
+    guild_id =      Column(Integer, ForeignKey("guilds.id", ondelete="CASCADE"), nullable=False)
     name =          Column(String(32), nullable=False)
     url =           Column(String(100), nullable=False)
     canvas =        Column(String(32), nullable=False)
@@ -28,7 +28,22 @@ class Template(Base):
     guild_templates_unique = UniqueConstraint(guild_id, name)
 
     guild = relationship("Guild", back_populates="templates", uselist=False)
-    template_mute = relationship("MutedTemplate", back_populates="template", uselist=False)
+    template_mute = relationship(
+        "MutedTemplate", back_populates="template", uselist=False,
+        cascade="all, delete, delete-orphan")
+
+    snapshot_bases = relationship(
+        "Snapshot",
+        primaryjoin="Template.id==Snapshot.base_template_id",
+        cascade="all, delete, delete-orphan",
+        back_populates="base_template"
+    )
+    snapshot_targets = relationship(
+        "Snapshot",
+        primaryjoin="Template.id==Snapshot.target_template_id",
+        cascade="all, delete, delete-orphan",
+        back_populates="target_template"
+    )
 
     @property
     def center(self):

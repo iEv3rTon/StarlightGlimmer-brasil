@@ -20,6 +20,7 @@ from extensions.canvas.utils import \
      Pixel,
      process_check)
 from objects.bot_objects import GlimContext
+from objects.database_models import Template
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
 from objects.errors import \
     (NoTemplatesError,
@@ -37,7 +38,6 @@ from utils import \
      GlimmerArgumentParser,
      http,
      render,
-     sqlite as sql,
      verify_attachment)
 
 log = logging.getLogger(__name__)
@@ -206,9 +206,9 @@ class Canvas(commands.Cog):
             return
 
         if a.faction:
-            templates = sql.template_get_all_by_guild_id(a.faction.id)
+            templates = ctx.session.query(Template).filter_by(guild_id=a.faction.id).all()
         else:
-            templates = sql.template_get_all_by_guild_id(ctx.guild.id)
+            templates = ctx.session.query(Template).filter_by(guild_id=ctx.guild.id).all()
 
         if len(templates) < 1:
             ctx.command.parent.reset_cooldown(ctx)
@@ -279,7 +279,7 @@ class Canvas(commands.Cog):
             return
 
         gid = ctx.guild.id if not a.faction else a.faction.id
-        t = sql.template_get_by_name(gid, name)
+        t = ctx.session.query(Template).filter_by(guild_id=gid, name=name).first()
 
         if name:
             if t:
@@ -289,7 +289,7 @@ class Canvas(commands.Cog):
                 zoom = max(1, min(a.zoom, max_zoom))
                 template = render.gridify(data, a.color, zoom)
             else:
-                raise TemplateNotFoundError(gid, name)
+                raise TemplateNotFoundError(ctx, gid, name)
         else:
             att = await verify_attachment(ctx)
             data = io.BytesIO()
@@ -339,8 +339,7 @@ class Canvas(commands.Cog):
             new_ctx = await self.bot.get_context(msg, cls=GlimContext)
             new_ctx.is_repeat = True
 
-            # Override the db session created during instantiation
-            new_ctx.session.close()
+            # Provide this new context with the current db session
             new_ctx.session = ctx.session
 
             match = re.match('^{}(diff|d|preview|p) '.format(ctx.prefix), msg.content)
@@ -418,7 +417,12 @@ class Canvas(commands.Cog):
 
         await msg.edit(content=ctx.s("canvas.calculating"))
         func = partial(process_check, templates, chunks)
-        await self.bot.loop.run_in_executor(None, func)
+        results = await self.bot.loop.run_in_executor(None, func)
+
+        for result in results:
+            for t in templates:
+                if result["tid"] == t.id:
+                    t.errors = result["errors"]
 
         return msg
 
@@ -470,7 +474,7 @@ class Canvas(commands.Cog):
 
         if name:
             gid = ctx.guild.id if not args.faction else args.faction.id
-            t = sql.template_get_by_name(gid, name)
+            t = ctx.session.query(Template).filter_by(guild_id=gid, name=name)
             if t:
                 data = await http.get_template(t.url, t.name)
                 await self._diff(
@@ -478,7 +482,7 @@ class Canvas(commands.Cog):
                     t.canvas, self.bot.fetchers[t.canvas],
                     colors.by_name[t.canvas], data)
             else:
-                raise TemplateNotFoundError(gid, name)
+                raise TemplateNotFoundError(ctx, gid, name)
         else:
             data = io.BytesIO()
             await att.save(data)
@@ -552,7 +556,8 @@ class Canvas(commands.Cog):
                     if c not in args.onlyColors:
                         continue
 
-                # The current x,y are in terms of the template area, add to template start coords so they're in terms of canvas
+                # The current x,y are in terms of the template area,
+                # add to template start coords so they're in terms of canvas
                 _x += x
                 _y += y
                 error_list.append(Pixel(current, target, _x, _y))
@@ -670,10 +675,10 @@ class Canvas(commands.Cog):
         t = None
         if name:
             gid = ctx.guild.id if not args.faction else args.faction.id
-            t = sql.template_get_by_name(gid, name)
+            t = ctx.session.query(Template).filter_by(guild_id=gid, name=name).first()
 
             if not t:
-                raise TemplateNotFoundError(gid, name)
+                raise TemplateNotFoundError(ctx, gid, name)
 
             fetch = self.bot.fetchers[t.canvas]
             if args.templateRegion:
@@ -724,7 +729,7 @@ class Canvas(commands.Cog):
             return
 
         gid = ctx.guild.id if not args.faction else args.faction.id
-        t = sql.template_get_by_name(gid, name)
+        t = ctx.session.query(Template).filter_by(guild_id=gid, name=name).first()
 
         data = None
         if name:
@@ -734,7 +739,7 @@ class Canvas(commands.Cog):
                     raise IdempotentActionError
                 data = await http.get_template(t.url, t.name)
             else:
-                raise TemplateNotFoundError(gid, name)
+                raise TemplateNotFoundError(ctx, gid, name)
         else:
             att = await verify_attachment(ctx)
             if att:
