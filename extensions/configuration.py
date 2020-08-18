@@ -57,7 +57,7 @@ class Configuration(commands.Cog):
             log.info("Prefix for {0.name} set to {1} (GID: {0.id})".format(ctx.guild, prefix))
             await ctx.send(ctx.s("configuration.prefix_set").format(prefix))
         else:
-            await ctx.send(ctx.s("configuration.prefix_current").format(guild.prefix))
+            await ctx.send(ctx.s("configuration.prefix_current").format(guild.prefix if guild.prefix else utils.config.PREFIX))
 
     @checks.admin_only()
     @commands.guild_only()

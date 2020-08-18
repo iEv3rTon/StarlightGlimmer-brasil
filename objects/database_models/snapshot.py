@@ -18,18 +18,16 @@ class Snapshot(Base):
         "Template",
         foreign_keys="Snapshot.base_template_id",
         uselist=False,
-        back_populates="snapshot_bases"
+        back_populates="snapshot_bases",
+        lazy="immediate"
     )
     target_template = relationship(
         "Template",
         foreign_keys="Snapshot.target_template_id",
         uselist=False,
-        back_populates="snapshot_targets"
+        back_populates="snapshot_targets",
+        lazy="immediate"
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.result = None
 
     def __repr__(self):
         return ("<Snapshot(id={0.id}, base_template={0.base_template}, "

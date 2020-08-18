@@ -17,7 +17,6 @@ bot:
   or_all_caps: OR
   page: Page
   percent: Percent
-  private: Private
   public: Public
   size: Size
   subcommands: Subcommands

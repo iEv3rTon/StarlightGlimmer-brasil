@@ -148,7 +148,7 @@ class Events(commands.Cog):
             db_guild = Guild(id=guild.id, name=guild.name, join_date=int(guild.me.joined_at.timestamp()))
             session.add(db_guild)
 
-        await utils.print_welcome_message(guild)
+        # await utils.print_welcome_message(guild)
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):

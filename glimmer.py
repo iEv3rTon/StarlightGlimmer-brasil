@@ -3,6 +3,7 @@ import math
 import time
 import os
 import re
+import traceback
 
 import discord
 from discord.ext import commands, tasks
@@ -20,7 +21,7 @@ def get_prefix(bot_, msg: discord.Message):
 
     if msg.guild:
         with session_scope() as session:
-            if (guild := Guild.get(session, msg.guild.id)):
+            if (guild := session.query(Guild).get(msg.guild.id)):
                 if guild.prefix is not None:
                     prefix_list[0] = guild.prefix
 
@@ -76,14 +77,14 @@ class Glimmer(commands.Bot):
                     type=discord.ActivityType.watching))
         except Exception as e:
             log.exception(e)
-            await utils.channel_log(self, e)
+            await utils.channel_log(self, ''.join(traceback.format_exception(None, e, e.__traceback__)))
 
     @tasks.loop(minutes=5.0)
     async def unmute(self):
         try:
             with session_scope() as session:
-                mutes = session.query(MutedTemplate).filter_by(
-                    MutedTemplate.expires < time.time())
+                mutes = session.query(MutedTemplate).filter(
+                    MutedTemplate.expires < time.time()).all()
 
                 for mute in mutes:
                     mute.template.alert_channel = mute.alert_id
@@ -91,7 +92,7 @@ class Glimmer(commands.Bot):
 
         except Exception as e:
             log.exception(e)
-            await utils.channel_log(self, e)
+            await utils.channel_log(self, ''.join(traceback.format_exception(None, e, e.__traceback__)))
 
     async def startup(self):
         await self.wait_until_ready()
@@ -116,7 +117,7 @@ class Glimmer(commands.Bot):
         with session_scope() as session:
             is_new_version = False
 
-            if not (old_version := session.query(Version).all()):
+            if not (old_version := session.query(Version).first()):
                 print("version initialized to {}".format(VERSION))
                 version = Version(version=VERSION)
                 session.add(version)
@@ -138,7 +139,7 @@ class Glimmer(commands.Bot):
         with session_scope() as session:
             for g in bot.guilds:
                 log.info("'{0.name}' (ID: {0.id})".format(g))
-                if (db_g := Guild.get(session, g.id)):
+                if (db_g := session.query(Guild).get(g.id)):
                     prefix = db_g.prefix if db_g.prefix else config.PREFIX
                     if g.name != db_g.name:
                         if config.CHANNEL_LOG_GUILD_RENAMES:
@@ -166,7 +167,7 @@ class Glimmer(commands.Bot):
                         await utils.channel_log(bot, "Joined guild **{0.name}** (ID: `{0.id}`)".format(g))
                     log.info("Joined guild '{0.name}' (ID: {0.id}) between sessions at {1}".format(g, j.timestamp()))
                     session.add(Guild(id=g.id, name=g.name, join_date=int(j.timestamp())))
-                    await utils.print_welcome_message(g)
+                    # await utils.print_welcome_message(g)
 
             db_guilds = session.query(Guild).all()
             if len(bot.guilds) != len(db_guilds):

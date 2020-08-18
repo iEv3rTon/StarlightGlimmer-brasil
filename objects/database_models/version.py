@@ -6,7 +6,7 @@ from objects.database_models import Base
 class Version(Base):
     __tablename__ = "version"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, default=1, primary_key=True)
     version = Column(Float, nullable=False)
 
     CheckConstraint("id = 1")

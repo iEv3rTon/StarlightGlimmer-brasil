@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.utils import get as dget
 
 from lang import en_US, pt_BR, tr_TR
-from utils import canvases, config
+from utils import canvases
 from objects.database_models import session_scope, Guild
 
 
@@ -23,7 +23,8 @@ class GlimContext(commands.Context):
 
     @property
     def canvas(self):
-        return self.session.query(Guild.canvas).get(self.guild.id)
+        guild = self.session.query(Guild).get(self.guild.id)
+        return guild.canvas
 
     @property
     def canvas_pretty(self):
@@ -31,17 +32,18 @@ class GlimContext(commands.Context):
 
     @property
     def lang(self):
-        return self.session.query(Guild.language).get(self.guild.id)
+        guild = self.session.query(Guild).get(self.guild.id)
+        return guild.language
 
     @staticmethod
     def get_from_guild(guild, str_id):
         with session_scope() as session:
             if isinstance(guild, discord.Guild):
-                language = session.query(Guild.language).get(guild.id)
+                guild = session.query(Guild).get(guild.id)
             else:
-                language = session.query(Guild.language).get(guild)
+                guild = session.query(Guild).get(guild)
 
-            language = language.lower()
+            language = guild.language.lower()
 
         if language == "en-us":
             return en_US.STRINGS.get(str_id, None)

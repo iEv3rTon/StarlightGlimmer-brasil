@@ -1,6 +1,6 @@
 import time
 
-from sqlalchemy import Column, Integer
+from sqlalchemy import Column, Integer, BigInteger
 from sqlalchemy.schema import UniqueConstraint
 
 from objects.database_models import Base
@@ -14,8 +14,8 @@ class MenuLock(Base):
     __tablename__ = "menu_locks"
 
     id = Column(Integer, primary_key=True)
-    channel_id = Column(Integer, nullable=False)
-    user_id = Column(Integer, nullable=False)
+    channel_id = Column(BigInteger, nullable=False)
+    user_id = Column(BigInteger, nullable=False)
     date_added = Column(Integer, nullable=False, default=current_time)
 
     channel_user_unique = UniqueConstraint(channel_id, user_id)

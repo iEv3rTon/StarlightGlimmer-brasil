@@ -320,7 +320,7 @@ class Faction(commands.Cog):
             await ctx.send(ctx.s("faction.not_a_faction_yet"))
             return
 
-        templates = guild.templates.filter(Template.private == False)
+        templates = guild.templates.all()
         canvas_list = set([t.canvas for t in templates])
 
         canvases_pretty = []

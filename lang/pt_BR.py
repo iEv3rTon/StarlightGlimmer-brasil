@@ -17,7 +17,6 @@ STRINGS = {
     "bot.or_all_caps": "OU",
     "bot.page": "Página",
     "bot.percent": "Por cento",
-    "bot.private": "Privado",
     "bot.public": "Público",
     "bot.size": "Tamanho",
     "bot.subcommands": "Subcomandos",

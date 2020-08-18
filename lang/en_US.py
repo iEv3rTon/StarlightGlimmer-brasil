@@ -20,7 +20,6 @@ STRINGS = {
     "bot.or_all_caps": "OR",
     "bot.page": "Page",
     "bot.percent": "Percent",
-    "bot.private": "Private",
     "bot.public": "Public",
     "bot.size": "Size",
     "bot.subcommands": "Subcommands",

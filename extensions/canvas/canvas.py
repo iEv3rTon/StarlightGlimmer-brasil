@@ -283,9 +283,9 @@ class Canvas(commands.Cog):
 
         if name:
             if t:
-                log.info("(T:{} | GID:{})".format(t.name, t.gid))
-                data = await http.get_template(t.url, t.name)
+                log.info("(T:{} | GID:{})".format(t.name, t.guild_id))
                 max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
+                data = await http.get_template(t.url, t.name)
                 zoom = max(1, min(a.zoom, max_zoom))
                 template = render.gridify(data, a.color, zoom)
             else:
@@ -421,6 +421,7 @@ class Canvas(commands.Cog):
 
         for result in results:
             for t in templates:
+                ctx.session.add(t)  # Reclaim the objects from the thread executor
                 if result["tid"] == t.id:
                     t.errors = result["errors"]
 
@@ -474,7 +475,7 @@ class Canvas(commands.Cog):
 
         if name:
             gid = ctx.guild.id if not args.faction else args.faction.id
-            t = ctx.session.query(Template).filter_by(guild_id=gid, name=name)
+            t = ctx.session.query(Template).filter_by(guild_id=gid, name=name).first()
             if t:
                 data = await http.get_template(t.url, t.name)
                 await self._diff(

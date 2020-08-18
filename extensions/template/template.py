@@ -361,17 +361,16 @@ class Template(commands.Cog):
         coords = "{}, {}".format(t.x, t.y)
         dimensions = "{} x {}".format(t.width, t.height)
         size = t.size
-        visibility = ctx.s("bot.private") if bool(t.private) else ctx.s("bot.public")
-        owner = self.bot.get_user(t.owner_id)
+        owner = self.bot.get_user(t.owner)
         if owner is None:
             added_by = ctx.s("error.account_deleted")
         else:
             added_by = owner.name + "#" + owner.discriminator
-        date_added = datetime.date.fromtimestamp(t.date_created).strftime("%d %b, %Y")
-        date_modified = datetime.date.fromtimestamp(t.date_updated).strftime("%d %b, %Y")
+        date_added = datetime.date.fromtimestamp(t.date_added).strftime("%d %b, %Y")
+        date_modified = datetime.date.fromtimestamp(t.date_modified).strftime("%d %b, %Y")
         color = faction.faction_color
         description = "[__{}__]({})".format(ctx.s("template.link_to_canvas"),
-                                            canvases.url_templates[t.canvas].format(*t.center()))
+                                            canvases.url_templates[t.canvas].format(*t.center))
 
         e = discord.Embed(title=t.name, color=color, description=description) \
             .set_image(url=t.url) \
@@ -379,7 +378,6 @@ class Template(commands.Cog):
             .add_field(name=ctx.s("bot.coordinates"), value=coords, inline=True) \
             .add_field(name=ctx.s("bot.dimensions"), value=dimensions, inline=True) \
             .add_field(name=ctx.s("bot.size"), value=size, inline=True) \
-            .add_field(name=ctx.s("bot.visibility"), value=visibility, inline=True) \
             .add_field(name=ctx.s("bot.added_by"), value=added_by, inline=True) \
             .add_field(name=ctx.s("bot.date_added"), value=date_added, inline=True) \
             .add_field(name=ctx.s("bot.date_modified"), value=date_modified, inline=True)
@@ -406,7 +404,7 @@ class Template(commands.Cog):
         if not t:
             raise TemplateNotFoundError(ctx, ctx.guild.id, name)
         log.info("(T:{} G:{})".format(t.name, t.guild_id))
-        if t.owner_id != ctx.author.id and not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
+        if t.owner != ctx.author.id and not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             await ctx.send(ctx.s("template.err.not_owner"))
             return
         ctx.session.delete(t)
@@ -424,18 +422,21 @@ class Template(commands.Cog):
         if not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             return await ctx.send(ctx.s("template.err.not_owner"))
 
-        snapshots = ctx.session.query(Snapshot).filter(
-            Snapshot.base_template.guild_id == ctx.guild.id)
-
         if filter:
-            snapshots = snapshots.filter(Snapshot.base_template.name.in_(filter)).all()
+            template_ids = ctx.session.query(TemplateDb.id).filter(
+                TemplateDb.guild_id == ctx.guild.id,
+                TemplateDb.name.in_(filter)).subquery()
         else:
-            snapshots = snapshots.all()
+            template_ids = ctx.session.query(TemplateDb.id).filter(
+                TemplateDb.guild_id == ctx.guild.id).subquery()
+
+        snapshots = ctx.session.query(Snapshot).filter(Snapshot.base_template_id.in_(template_ids)).all()
 
         if not snapshots:
             return await ctx.send(f"No snapshots found, add some using `{ctx.prefix}template snapshot add`")
 
         for i, snap in enumerate(snapshots):
+            snap.result = None
             snap_msg = await ctx.send(f"Checking {snap.target_template.name} for errors...")
 
             data = await http.get_template(snap.target_template.url, snap.target_template.name)
@@ -564,8 +565,8 @@ class Template(commands.Cog):
             return await ctx.send(ctx.s("template.err.not_owner"))
 
         snap = ctx.session.query(Snapshot).filter(
-            Snapshot.base_template.name == base_template,
-            Snapshot.target_template.name == snapshot_template
+            Snapshot.base_template.has(name=base_template),
+            Snapshot.target_template.has(name=snapshot_template)
         ).first()
 
         if not snap:
@@ -579,8 +580,8 @@ class Template(commands.Cog):
     @checks.template_adder_only()
     @snapshot.command(name='list', aliases=['l'])
     async def snapshot_list(self, ctx):
-        snapshots = ctx.session.query(Snapshot).filter(
-            Snapshot.base_template.guild_id == ctx.guild.id).all()
+        template_ids = ctx.session.query(TemplateDb.id).filter_by(guild_id=ctx.guild.id).subquery()
+        snapshots = ctx.session.query(Snapshot).filter(Snapshot.base_template_id.in_(template_ids)).all()
         if not snapshots:
             return await ctx.send(f"No snapshots found, add some using `{ctx.prefix}template snapshot add`")
 

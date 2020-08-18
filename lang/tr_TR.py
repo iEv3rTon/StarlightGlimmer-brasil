@@ -17,7 +17,6 @@ STRINGS = {
     "bot.or_all_caps": "Veya",
     "bot.page": "Sayfa",
     "bot.percent": "Percent",
-    "bot.private": "Özel",
     "bot.public": "Açýk",
     "bot.size": "Boyut",
     "bot.subcommands": "Alt Komutlar",

@@ -14,7 +14,7 @@ from discord.ext.commands import BucketType, HelpCommand, Group
 
 from lang import en_US, pt_BR, tr_TR
 from objects.bot_objects import GlimContext
-from objects.database_models import MenuLock
+from objects.database_models import MenuLock, Guild
 import utils
 from utils import config, http
 from utils.version import VERSION
@@ -118,8 +118,8 @@ class General(commands.Cog):
         }
 
         try:
-            language = ctx.session.query(Guild.language).get(ctx.guild.id)
-            language = language.lower()
+            guild = ctx.session.query(Guild).get(ctx.guild.id)
+            language = guild.language.lower()
             if language == "en-us":
                 tour_steps = [s for s in en_US.STRINGS if s.split(".")[:2] == ["tour", "command"]]
             elif language == "pt-br":
@@ -155,6 +155,7 @@ class General(commands.Cog):
                             break
 
                     new_ctx = await self.bot.get_context(msg, cls=GlimContext)
+                    new_ctx.session = ctx.session
                     await self.bot.invoke(new_ctx)
 
                     await asyncio.sleep(0.5)

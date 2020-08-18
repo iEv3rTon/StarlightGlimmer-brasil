@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import UniqueConstraint
 
@@ -9,7 +9,7 @@ class Template(Base):
     __tablename__ = "templates"
 
     id =            Column(Integer, primary_key=True)
-    guild_id =      Column(Integer, ForeignKey("guilds.id", ondelete="CASCADE"), nullable=False)
+    guild_id =      Column(BigInteger, ForeignKey("guilds.id", ondelete="CASCADE"), nullable=False)
     name =          Column(String(32), nullable=False)
     url =           Column(String(100), nullable=False)
     canvas =        Column(String(32), nullable=False)
@@ -21,9 +21,8 @@ class Template(Base):
     date_added =    Column(Integer, nullable=False)  # timestamp
     date_modified = Column(Integer, nullable=False)  # timestamp
     md5 =           Column(String(32), nullable=False)
-    owner =         Column(Integer, nullable=False)
-    private =       Column(Boolean, default=False, nullable=False)
-    alert_id =      Column(Integer, default=None)
+    owner =         Column(BigInteger, nullable=False)
+    alert_id =      Column(BigInteger, default=None)
 
     guild_templates_unique = UniqueConstraint(guild_id, name)
 
@@ -53,5 +52,5 @@ class Template(Base):
         return ("<Template(id={0.id}, guild={0.guild}, name={0.name}, "
                 "url={0.url}, canvas={0.canvas}, x={0.x}, y={0.y}, w={0.width}, "
                 "h={0.height}, size={0.size}, date_added={0.date_added}, "
-                "date_modified={0.date_modified}, owner={0.owner}, private={0.private}, "
+                "date_modified={0.date_modified}, owner={0.owner}, "
                 "alert_id={0.alert_id})>".format(self))

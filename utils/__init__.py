@@ -98,23 +98,26 @@ def get_templateadder_role(ctx):
 
 
 def is_admin(ctx):
+    guild = ctx.session.query(Guild).get(ctx.guild.id)
     r = dget(
         ctx.author.roles,
-        id=ctx.session.query(Guild).get(ctx.guild.id).bot_admin
+        id=guild.bot_admin
     )
     return bool(r) or ctx.author.permissions_in(ctx.channel).administrator
 
 
 def is_template_admin(ctx):
+    guild = ctx.session.query(Guild).get(ctx.guild.id)
     r = dget(
         ctx.author.roles,
-        id=ctx.session.query(Guild).get(ctx.guild.id).template_admin
+        id=guild.template_admin
     )
     return bool(r)
 
 
 def is_template_adder(ctx):
-    role_id = ctx.session.query(Guild).get(ctx.guild.id).template_adder
+    guild = ctx.session.query(Guild).get(ctx.guild.id)
+    role_id = guild.template_adder
     r = dget(ctx.author.roles, id=role_id)
     return bool(not role_id or r)
 

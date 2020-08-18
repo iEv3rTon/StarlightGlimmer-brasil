@@ -23,7 +23,7 @@ from objects.database_models.version import Version
 
 
 engine = create_engine(config.DATABASE_URI)
-session_factory = sessionmaker(bind=engine)
+session_factory = sessionmaker(bind=engine, expire_on_commit=False)
 Session = scoped_session(session_factory)
 
 Base.metadata.create_all(engine)

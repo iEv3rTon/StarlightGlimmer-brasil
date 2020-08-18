@@ -135,7 +135,7 @@ async def add_template(ctx, canvas, name, x, y, url):
     except ValueError:
         pass
 
-    if session.query(func.count(TemplateDb)).filter_by(
+    if ctx.session.query(func.count(TemplateDb.id)).filter_by(
             guild_id=ctx.guild.id).scalar() >= config.MAX_TEMPLATES_PER_GUILD:
         await ctx.send(ctx.s("template.err.max_templates"))
         return
@@ -242,7 +242,7 @@ async def check_for_duplicate_by_name(ctx, name):
     dup = ctx.session.query(TemplateDb).filter_by(
         guild_id=ctx.guild.id, name=name).first()
     if dup:
-        if dup.owner_id != ctx.author.id and not utils.is_admin(ctx):
+        if dup.owner != ctx.author.id and not utils.is_admin(ctx):
             await ctx.send(ctx.s("template.err.name_exists"))
             return False
         return dup

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import UniqueConstraint
 
@@ -9,7 +9,7 @@ class MutedTemplate(Base):
     __tablename__ = "muted_templates"
 
     id = Column(Integer, primary_key=True)
-    alert_id = Column(Integer, nullable=False)
+    alert_id = Column(BigInteger, nullable=False)
     template_id = Column(Integer, ForeignKey("templates.id", ondelete="CASCADE"), nullable=False)
     expires = Column(Integer, nullable=False)
 

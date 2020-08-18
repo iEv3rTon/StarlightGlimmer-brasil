@@ -1,5 +1,4 @@
-from discord.ext.commands import CommandError
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger
 from sqlalchemy.orm import relationship
 
 from objects.database_models import Base
@@ -8,7 +7,7 @@ from objects.database_models import Base
 class Guild(Base):
     __tablename__ = "guilds"
 
-    id =             Column(Integer, primary_key=True)
+    id =             Column(BigInteger, primary_key=True)
     name =           Column(String(100), nullable=False)
     join_date =      Column(Integer, nullable=False)  # timestamp
     prefix =         Column(String(5), default=None)
@@ -16,9 +15,9 @@ class Guild(Base):
     autoscan =       Column(Boolean, default=True, nullable=False)
     canvas =         Column(String(32), default="pixelcanvas", nullable=False)
     language =       Column(String(16), default="en-us", nullable=False)
-    template_admin = Column(Integer, default=None)
-    template_adder = Column(Integer, default=None)
-    bot_admin =      Column(Integer, default=None)
+    template_admin = Column(BigInteger, default=None)
+    template_adder = Column(BigInteger, default=None)
+    bot_admin =      Column(BigInteger, default=None)
     faction_name =   Column(String(32), default=None)
     faction_alias =  Column(String(5), default=None)
     faction_color =  Column(Integer, default=13594340, nullable=False)
