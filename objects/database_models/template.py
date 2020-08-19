@@ -11,7 +11,7 @@ class Template(Base):
     id =            Column(Integer, primary_key=True)
     guild_id =      Column(BigInteger, ForeignKey("guilds.id", ondelete="CASCADE"), nullable=False)
     name =          Column(String(32), nullable=False)
-    url =           Column(String(100), nullable=False)
+    url =           Column(String(200), nullable=False)
     canvas =        Column(String(32), nullable=False)
     x =             Column(Integer, nullable=False)
     y =             Column(Integer, nullable=False)

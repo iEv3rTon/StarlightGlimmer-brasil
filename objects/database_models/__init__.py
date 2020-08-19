@@ -4,8 +4,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 
-from utils import config
-
 Base = declarative_base()
 
 from objects.database_models.animote_user import AnimoteUser
@@ -21,6 +19,7 @@ from objects.database_models.version import Version
 # to make sure we don't get errors. see:
 # https://docs.sqlalchemy.org/en/13/core/pooling.html#using-connection-pools-with-multiprocessing-or-os-fork
 
+from utils import config
 
 engine = create_engine(config.DATABASE_URI)
 session_factory = sessionmaker(bind=engine, expire_on_commit=False)
