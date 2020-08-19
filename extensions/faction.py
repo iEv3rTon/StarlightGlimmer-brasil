@@ -308,7 +308,8 @@ class Faction(commands.Cog):
     @commands.command(name="factioninfo", aliases=['fi'])
     async def factioninfo(self, ctx, other=None):
         if other:
-            if not (guild := ctx.session.query(Guild).filter_by(faction_name=other).first()):
+            guild = ctx.session.query(Guild).filter_by(faction_name=other).first()
+            if not guild:
                 guild = ctx.session.query(Guild).filter_by(faction_alias=other.lower()).first()
         else:
             guild = ctx.session.query(Guild).get(ctx.guild.id)

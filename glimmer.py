@@ -21,9 +21,9 @@ def get_prefix(bot_, msg: discord.Message):
 
     if msg.guild:
         with session_scope() as session:
-            if (guild := session.query(Guild).get(msg.guild.id)):
-                if guild.prefix is not None:
-                    prefix_list[0] = guild.prefix
+            guild = session.query(Guild).get(msg.guild.id)
+            if guild and guild.prefix is not None:
+                prefix_list[0] = guild.prefix
 
     return prefix_list
 
@@ -117,7 +117,8 @@ class Glimmer(commands.Bot):
         with session_scope() as session:
             is_new_version = False
 
-            if not (old_version := session.query(Version).first()):
+            old_version = session.query(Version).first()
+            if not old_version:
                 print("version initialized to {}".format(VERSION))
                 version = Version(version=VERSION)
                 session.add(version)
@@ -139,7 +140,9 @@ class Glimmer(commands.Bot):
         with session_scope() as session:
             for g in bot.guilds:
                 log.info("'{0.name}' (ID: {0.id})".format(g))
-                if (db_g := session.query(Guild).get(g.id)):
+
+                db_g = session.query(Guild).get(g.id)
+                if db_g:
                     prefix = db_g.prefix if db_g.prefix else config.PREFIX
                     if g.name != db_g.name:
                         if config.CHANNEL_LOG_GUILD_RENAMES:
