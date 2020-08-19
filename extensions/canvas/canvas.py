@@ -683,7 +683,7 @@ class Canvas(commands.Cog):
 
             fetch = self.bot.fetchers[t.canvas]
             if args.templateRegion:
-                x, y = t.center()
+                x, y = t.center
 
         async with ctx.typing():
             zoom = max(min(args.zoom, 16), -8)
