@@ -1,3 +1,5 @@
+import uuid
+
 import discord
 from discord.ext import commands
 from discord.utils import get as dget
@@ -14,6 +16,8 @@ class GlimContext(commands.Context):
         self.is_autoscan = False
         self.is_default = False
         self.is_template = False
+
+        self.uuid = uuid.uuid4()
 
     langs = {
         'en-us': "English (US)",

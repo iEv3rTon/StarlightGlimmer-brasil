@@ -59,7 +59,7 @@ STRINGS = {
     "error.not_png": "That command requires a PNG image.",
     "error.template_not_found": "The template {0} could not be found.",
     "error.timed_out": "Command timed out.",
-    "error.unknown": "An unknown error occurred. The dev has been notified.",
+    "error.unknown": "An unknown error occurred. The dev has been notified. The unique code for this command was: `{0}`",
     "error.why": "But... why?",
     "error.canvas_not_supported": "Templates of that canvas are not supported for this command.",
 

@@ -32,7 +32,6 @@ class Configuration(commands.Cog):
     async def alertchannel_set(self, ctx, channel: TextChannel):
         guild = ctx.session.query(Guild).get(ctx.guild.id)
         guild.alert_channel = channel.id
-        log.info("Alert channel for {0.name} set to {1.name} (GID:{0.id} CID:{1.name})".format(ctx.guild, channel))
         await ctx.send(ctx.s("configuration.alert_channel_set").format(channel.mention))
 
     @checks.admin_only()
@@ -41,7 +40,6 @@ class Configuration(commands.Cog):
     async def alertchannel_clear(self, ctx):
         guild = ctx.session.query(Guild).get(ctx.guild.id)
         guild.alert_channel = None
-        log.info("Alert channel for {0.name} cleared (GID:{0.id})".format(ctx.guild))
         await ctx.send(ctx.s("configuration.alert_channel_cleared"))
 
     @checks.admin_only()
@@ -54,7 +52,6 @@ class Configuration(commands.Cog):
                 raise commands.BadArgument
             guild.prefix = prefix
             sql.guild_update(ctx.guild.id, prefix=prefix)
-            log.info("Prefix for {0.name} set to {1} (GID: {0.id})".format(ctx.guild, prefix))
             await ctx.send(ctx.s("configuration.prefix_set").format(prefix))
         else:
             await ctx.send(ctx.s("configuration.prefix_current").format(guild.prefix if guild.prefix else utils.config.PREFIX))
@@ -66,11 +63,9 @@ class Configuration(commands.Cog):
         guild = ctx.session.query(Guild).get(ctx.guild.id)
         if guild.autoscan is False:
             guild.autoscan = True
-            log.info("Autoscan enabled for {0.name} (GID: {0.id})".format(ctx.guild))
             await ctx.send(ctx.s("configuration.autoscan_enabled"))
         else:
             guild.autoscan = False
-            log.info("Autoscan disabled for {0.name} (GID: {0.id})".format(ctx.guild))
             await ctx.send(ctx.s("configuration.autoscan_disabled"))
 
     @checks.admin_only()
@@ -87,7 +82,6 @@ class Configuration(commands.Cog):
     async def canvas_pixelcanvas(self, ctx):
         guild = ctx.session.query(Guild).get(ctx.guild.id)
         guild.canvas = "pixelcanvas"
-        log.info("Default canvas for {0.name} set to pixelcanvas (GID:{0.id})".format(ctx.guild))
         await ctx.send(ctx.s("configuration.canvas_set").format("Pixelcanvas.io"))
 
     @checks.admin_only()
@@ -96,7 +90,6 @@ class Configuration(commands.Cog):
     async def canvas_pixelzone(self, ctx):
         guild = ctx.session.query(Guild).get(ctx.guild.id)
         guild.canvas = "pixelzone"
-        log.info("Default canvas for {0.name} set to pixelzone (GID:{0.id})".format(ctx.guild))
         await ctx.send(ctx.s("configuration.canvas_set").format("Pixelzone.io"))
 
     @checks.admin_only()
@@ -105,7 +98,6 @@ class Configuration(commands.Cog):
     async def canvas_pxlsspace(self, ctx):
         guild = ctx.session.query(Guild).get(ctx.guild.id)
         guild.canvas = "pxlsspace"
-        log.info("Default canvas for {0.name} set to pxlsspace (GID:{0.id})".format(ctx.guild))
         await ctx.send(ctx.s("configuration.canvas_set").format("Pxls.space"))
 
     @checks.admin_only()
@@ -127,7 +119,6 @@ class Configuration(commands.Cog):
             return
         guild = ctx.session.query(Guild).get(ctx.guild.id)
         guild.language = option.lower()
-        log.info("Language for {0.name} set to {1} (GID:{0.id})".format(ctx.guild, option.lower()))
         await ctx.send(ctx.s("configuration.language_set").format(ctx.langs[option.lower()]))
 
     @checks.admin_only()

@@ -136,7 +136,7 @@ class Events(commands.Cog):
                 await utils.channel_log(self.bot, f"```{chunk}```")
             log.error("An error occurred executing '{}': {}\n{}".format(
                 name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
-            await ctx.send(ctx.s("error.unknown"))
+            await ctx.send(ctx.s("error.unknown").format(ctx.uuid))
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):

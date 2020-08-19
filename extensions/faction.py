@@ -191,7 +191,7 @@ class Faction(commands.Cog):
 
         if not emblem_url:
             return
-        
+
         guild = ctx.session.query(Guild).get(ctx.guild.id)
         if not guild.is_faction:
             return await ctx.send(ctx.s("faction.must_be_a_faction"))

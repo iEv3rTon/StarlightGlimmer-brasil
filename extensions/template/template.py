@@ -63,6 +63,8 @@ class Template(commands.Cog):
         except TypeError:
             return
 
+        log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
+
         gid = ctx.guild.id
         if args.faction is not None:
             gid = args.faction.id
@@ -180,8 +182,6 @@ class Template(commands.Cog):
     @checks.template_adder_only()
     @template_update.command(name="pixelcanvas", aliases=['pc'])
     async def template_update_pixelcanvas(self, ctx, *args):
-        log.info(f"g!t update run in {ctx.guild.name} with args: {args}")
-
         try:
             name = args[0]
         except TypeError:
@@ -212,6 +212,8 @@ class Template(commands.Cog):
             args = parser.parse_args(args)
         except TypeError:
             return
+
+        log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
 
         out = []
 
@@ -330,6 +332,8 @@ class Template(commands.Cog):
             args = parser.parse_args(args)
         except TypeError:
             return
+        
+        log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
 
         try:
             gid, faction = args.faction.id, args.faction
@@ -403,7 +407,6 @@ class Template(commands.Cog):
         t = ctx.session.query(TemplateDb).filter_by(guild_id=ctx.guild.id, name=name).first()
         if not t:
             raise TemplateNotFoundError(ctx, ctx.guild.id, name)
-        log.info("(T:{} G:{})".format(t.name, t.guild_id))
         if t.owner != ctx.author.id and not utils.is_template_admin(ctx) and not utils.is_admin(ctx):
             await ctx.send(ctx.s("template.err.not_owner"))
             return

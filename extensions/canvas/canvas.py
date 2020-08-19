@@ -60,8 +60,6 @@ class Canvas(commands.Cog):
         aliases=["d"],
         case_insensitive=True)
     async def diff(self, ctx, *args):
-        log.info(f"g!diff run in {ctx.guild.name} with args: {args}")
-
         # Order Parsing
         try:
             name = args[0]
@@ -104,8 +102,6 @@ class Canvas(commands.Cog):
         aliases=["p"],
         case_insensitive=True)
     async def preview(self, ctx, *args):
-        log.info(f"g!preview run in {ctx.guild.name} with args: {args}")
-
         # Order Parsing
         try:
             name = args[0]
@@ -205,6 +201,8 @@ class Canvas(commands.Cog):
         except TypeError:
             return
 
+        log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {a}")
+
         if a.faction:
             templates = ctx.session.query(Template).filter_by(guild_id=a.faction.id).all()
         else:
@@ -254,8 +252,6 @@ class Canvas(commands.Cog):
     @commands.cooldown(2, 5, commands.BucketType.guild)
     @commands.command(name="gridify", aliases=["g"])
     async def gridify(self, ctx, *args):
-        log.info(f"g!gridify run in {ctx.guild.name} with args: {args}")
-
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
@@ -277,13 +273,14 @@ class Canvas(commands.Cog):
             a = parser.parse_args(a)
         except TypeError:
             return
+        
+        log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {a}")
 
         gid = ctx.guild.id if not a.faction else a.faction.id
         t = ctx.session.query(Template).filter_by(guild_id=gid, name=name).first()
 
         if name:
             if t:
-                log.info("(T:{} | GID:{})".format(t.name, t.guild_id))
                 max_zoom = int(math.sqrt(4000000 // (t.width * t.height)))
                 data = await http.get_template(t.url, t.name)
                 zoom = max(1, min(a.zoom, max_zoom))
@@ -472,6 +469,8 @@ class Canvas(commands.Cog):
             args = parser.parse_args(args)
         except TypeError:
             return
+
+        log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
 
         if name:
             gid = ctx.guild.id if not args.faction else args.faction.id
@@ -672,6 +671,8 @@ class Canvas(commands.Cog):
             args = parser.parse_args(args)
         except TypeError:
             return
+        
+        log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
 
         t = None
         if name:
@@ -728,6 +729,8 @@ class Canvas(commands.Cog):
             args = parser.parse_args(args)
         except TypeError:
             return
+        
+        log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
 
         gid = ctx.guild.id if not args.faction else args.faction.id
         t = ctx.session.query(Template).filter_by(guild_id=gid, name=name).first()
@@ -735,7 +738,6 @@ class Canvas(commands.Cog):
         data = None
         if name:
             if t:
-                log.info("(T:{} | GID:{})".format(t.name, t.gid))
                 if t.canvas == canvas:
                     raise IdempotentActionError
                 data = await http.get_template(t.url, t.name)

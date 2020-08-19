@@ -216,6 +216,8 @@ class Alerts(commands.Cog):
             args = parser.parse_args(args)
         except TypeError:
             return
+        
+        log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
 
         gid = ctx.guild.id
         if args.faction is not None:
