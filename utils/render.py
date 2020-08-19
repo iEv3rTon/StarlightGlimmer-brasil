@@ -217,7 +217,7 @@ async def preview_template(t, zoom, fetch):
     if zoom < -1:
         dim *= abs(zoom)
 
-    c = Coords(*t.center())
+    c = Coords(*t.center)
 
     preview_img = await fetch(c.x - dim.x // 2, c.y - dim.y // 2, *dim)
     if zoom > 1:
