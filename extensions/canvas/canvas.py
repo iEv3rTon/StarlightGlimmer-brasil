@@ -273,7 +273,7 @@ class Canvas(commands.Cog):
             a = parser.parse_args(a)
         except TypeError:
             return
-        
+
         log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {a}")
 
         gid = ctx.guild.id if not a.faction else a.faction.id
@@ -529,41 +529,51 @@ class Canvas(commands.Cog):
             out = ctx.s("canvas.diff") if bad == 0 else ctx.s("canvas.diff_bad_color")
             out = out.format(done, tot, err, perc, bad=bad)
 
-            if bad_list != []:
+            embed = discord.Embed()
+
+            if bad_list:
                 bad_out = [ctx.s("canvas.diff_bad_color_list").format(num, *color) for color, num in bad_list]
                 bad_out = "{0}{1}".format("\n".join(bad_out[:10]), "\n..." if len(bad_out) > 10 else "")
-                embed = discord.Embed(color=discord.Color.from_rgb(*bad_list[0][0]))
                 embed.add_field(name=ctx.s("canvas.diff_bad_color_title"), value=bad_out)
+
+            err = args.errors and len(err_list) > 0
+            if err:
+                error_list = []
+                for _x, _y, current, target in err_list:
+                    # Color Filtering
+                    c = current if not args.excludeTarget else target
+                    if args.excludeColors:
+                        if c in args.excludeColors:
+                            continue
+                    elif args.onlyColors:
+                        if c not in args.onlyColors:
+                            continue
+
+                    # The current x,y are in terms of the template area,
+                    # add to template start coords so they're in terms of canvas
+                    _x += x
+                    _y += y
+                    error_list.append(Pixel(current, target, _x, _y))
+
+                if not error_list:
+                    err = False
+                else:
+                    checker = Checker(
+                        self.bot, ctx, canvas, error_list, embed,
+                        0 if not bad_list else 1)
 
             with io.BytesIO() as bio:
                 diff_img.save(bio, format="PNG")
                 bio.seek(0)
                 f = discord.File(bio, "diff.png")
-                try:
-                    await ctx.send(content=out, file=f, embed=embed)
-                except UnboundLocalError:
-                    await ctx.send(content=out, file=f)
 
-        if args.errors and len(err_list) > 0:
-            error_list = []
-            for _x, _y, current, target in err_list:
-                # Color Filtering
-                c = current if not args.excludeTarget else target
-                if args.excludeColors:
-                    if c in args.excludeColors:
-                        continue
-                elif args.onlyColors:
-                    if c not in args.onlyColors:
-                        continue
+                if not embed.fields:
+                    message = await ctx.send(content=out, file=f)
+                else:
+                    message = await ctx.send(content=out, file=f, embed=embed)
 
-                # The current x,y are in terms of the template area,
-                # add to template start coords so they're in terms of canvas
-                _x += x
-                _y += y
-                error_list.append(Pixel(current, target, _x, _y))
-
-            checker = Checker(self.bot, ctx, canvas, error_list)
-            await checker.connect_websocket()
+        if err:
+            await checker.connect_websocket(message)
 
     async def _dither(self, ctx, palette, type, threshold, order):
         """Sends a message containing a dithered version of the image given.
@@ -671,7 +681,7 @@ class Canvas(commands.Cog):
             args = parser.parse_args(args)
         except TypeError:
             return
-        
+
         log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
 
         t = None
@@ -729,7 +739,7 @@ class Canvas(commands.Cog):
             args = parser.parse_args(args)
         except TypeError:
             return
-        
+
         log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
 
         gid = ctx.guild.id if not args.faction else args.faction.id

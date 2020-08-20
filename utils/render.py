@@ -111,11 +111,15 @@ def diff(x, y, data, zoom, diff_img, palette, create_snapshot=False, highlight_c
             try:
                 t_color = palette.index(template.getpixel(tuple(p)))
             except ValueError:
-                t_color = -1
+                t_color = None
             try:
                 f_color = palette.index(diff_img.getpixel(tuple(p)))
             except ValueError:
-                f_color = -1
+                f_color = None
+
+            if f_color is None or t_color is None:
+                continue
+
             error_list.append((*p, f_color, t_color))
 
         for p in bad_pixels:

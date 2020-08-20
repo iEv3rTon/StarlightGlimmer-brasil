@@ -28,7 +28,7 @@ class Pixel:
 
 
 class Checker:
-    def __init__(self, bot, ctx, canvas, pixels):
+    def __init__(self, bot, ctx, canvas, pixels, embed, index):
         self.bot = bot
         self.ctx = ctx
         self.fingerprint = uuid.uuid4().hex
@@ -36,12 +36,13 @@ class Checker:
         self.canvas = canvas
         self.pixels = pixels
         self.sending = False
+        self.embed = embed
+        self.index = index
         self.msg = None
-        self.embed = None
 
-    async def connect_websocket(self):
+    async def connect_websocket(self, msg):
+        self.msg = msg
         await self.send_err_embed()
-
         uri = f"wss://ws.pixelcanvas.io:8443/?fingerprint={self.fingerprint}"
         try:
             async with websockets.connect(uri, ssl=True) as ws:
@@ -60,7 +61,6 @@ class Checker:
             return
         self.sending = True
 
-        embed = discord.Embed()
         out = []
         for p in self.pixels:
             if p.current != p.target:
@@ -74,13 +74,23 @@ class Checker:
             out = self.ctx.s("canvas.diff_fixed")
         else:
             out = "\n".join(out)
-        embed.add_field(name=self.ctx.s("canvas.diff_error_title"), value=out)
-        self.embed = embed
 
-        if self.msg:
-            await self.msg.edit(embed=self.embed)
-        else:
-            self.msg = await self.ctx.send(embed=self.embed)
+        try:
+            current = self.embed.fields[self.index]
+            self.embed.set_field_at(
+                self.index,
+                name=self.ctx.s("canvas.diff_error_title"),
+                value=out,
+                inline=False
+            )
+        except IndexError:
+            self.embed.add_field(
+                name=self.ctx.s("canvas.diff_error_title"),
+                value=out,
+                inline=False
+            )
+
+        await self.msg.edit(embed=self.embed)
         # Release send lock
         self.sending = False
 
