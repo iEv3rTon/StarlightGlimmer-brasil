@@ -14,11 +14,6 @@ from objects.database_models.snapshot import Snapshot
 from objects.database_models.template import Template
 from objects.database_models.version import Version
 
-# whenever stuff is accessed from a thread we will need to call
-# engine.dispose()
-# to make sure we don't get errors. see:
-# https://docs.sqlalchemy.org/en/13/core/pooling.html#using-connection-pools-with-multiprocessing-or-os-fork
-
 from utils import config
 
 engine = create_engine(config.DATABASE_URI)
@@ -35,8 +30,5 @@ def session_scope():
     try:
         yield session
         session.commit()
-    except:
-        session.rollback()
-        raise
     finally:
         session.close()

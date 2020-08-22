@@ -248,12 +248,17 @@ class Template(commands.Cog):
                 return await send_end(ctx, out)
 
             # update template data
-            orig_template.url = t.url
-            orig_template.md5 = t.md5
-            orig_template.width = t.width
-            orig_template.height = t.height
-            orig_template.size = t.size
-            orig_template.date_modified = t.date_modified
+            ctx.session.query(TemplateDb)\
+                .filter_by(guild_id=ctx.guild.id, name=name)\
+                .update({
+                    "url": t.url,
+                    "md5": t.md5,
+                    "width": t.width,
+                    "height": t.height,
+                    "size": t.size,
+                    "date_modified": t.date_modified
+                })
+            ctx.session.commit()
             out.append("File updated.")
 
         if args.x:
@@ -263,8 +268,13 @@ class Template(commands.Cog):
                 out.append("Updating x failed, value provided was not a number.")
                 return await send_end(ctx, out)
 
-            orig_template.x = x
-            orig_template.date_modified = int(time.time())
+            ctx.session.query(TemplateDb)\
+                .filter_by(guild_id=ctx.guild.id, name=name)\
+                .update({
+                    "x": x,
+                    "date_modified": int(time.time())
+                })
+            ctx.session.commit()
             out.append(f"X coordinate changed from {orig_template.x} to {x}.")
 
         if args.y:
@@ -274,8 +284,13 @@ class Template(commands.Cog):
                 out.append("Updating y failed, value provided was not a number.")
                 return await send_end(ctx, out)
 
-            orig_template.y = y
-            orig_template.date_modified = int(time.time())
+            ctx.session.query(TemplateDb)\
+                .filter_by(guild_id=ctx.guild.id, name=name)\
+                .update({
+                    "y": y,
+                    "date_modified": int(time.time())
+                })
+            ctx.session.commit()
             out.append(f"Y coordinate changed from {orig_template.y} to {y}.")
 
         if args.newName:
@@ -297,8 +312,13 @@ class Template(commands.Cog):
             except ValueError:
                 pass
 
-            orig_template.name = args.newName
-            orig_template.date_modified = int(time.time())
+            ctx.session.query(TemplateDb)\
+                .filter_by(guild_id=ctx.guild.id, name=name)\
+                .update({
+                    "name": args.newName,
+                    "date_modified": int(time.time())
+                })
+            ctx.session.commit()
             out.append(f"Nickname changed from {name} to {args.newName}.")
 
         await send_end(ctx, out)
