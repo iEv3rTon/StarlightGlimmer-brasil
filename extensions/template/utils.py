@@ -188,17 +188,21 @@ async def add_template(ctx, canvas, name, x, y, url):
             return
 
         # Update template
-        d.url = t.url
-        d.canvas = t.canvas
-        d.x = t.x
-        d.y = t.y
-        d.width = t.width
-        d.height = t.height
-        d.size = t.size
-        d.date_modified = t.date_modified
-        d.md5 = t.md5
-        d.owner = t.owner
-
+        ctx.session.query(TemplateDb)\
+            .filter_by(guild_id=ctx.guild.id, name=name)\
+            .update({
+                "url": t.url,
+                "canvas": t.canvas,
+                "x": t.x,
+                "y": t.y,
+                "width": t.width,
+                "height": t.height,
+                "size": t.size,
+                "date_modified": t.date_modified,
+                "md5": t.md5,
+                "owner": t.owner
+            })
+        ctx.session.commit()
         return await ctx.send(ctx.s("template.updated").format(name))
 
     if md5_chk is not None:
@@ -209,6 +213,7 @@ async def add_template(ctx, canvas, name, x, y, url):
             return
 
     ctx.session.add(t)
+    ctx.session.commit()
     return await ctx.send(ctx.s("template.added").format(name))
 
 
