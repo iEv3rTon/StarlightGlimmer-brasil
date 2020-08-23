@@ -22,6 +22,12 @@ Session = scoped_session(session_factory)
 
 Base.metadata.create_all(engine)
 
+# Id autoincrement behaviour breaks if I don't do this apparently, hhh
+if engine.name == "postgresql":
+    with engine.connect() as con:
+        con.execute("SELECT setval('templates_id_seq', max(id)) FROM templates;")
+        con.execute("SELECT setval('snapshots_id_seq', max(id)) FROM snapshots;")
+
 
 @contextmanager
 def session_scope():
