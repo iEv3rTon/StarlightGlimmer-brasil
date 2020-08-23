@@ -105,13 +105,9 @@ async def _fetch_chunks_pixelzone(chunks: Iterable[ChunkPz]):
                 if msg == '3probe':
                     break
             await ws.send("5")
-            await ws.send("42hello")
+            await ws.send('42["hello"]')
             async for msg in ws:
                 if msg[4:11] == 'welcome':
-                    break
-            await ws.send('42["useAPI", "{}"]'.format(config.PZ_API_KEY))
-            async for msg in ws:
-                if msg[4:18] == 'useAPICallback':
                     break
             async with pz_rate_limiter:
                 for ch in chunks:
@@ -119,7 +115,7 @@ async def _fetch_chunks_pixelzone(chunks: Iterable[ChunkPz]):
                     packet = None
                     async for msg in ws:
                         if packet is None:
-                            if msg[:2] == '45':
+                            if msg[:3] == '451':
                                 packet = {}
                                 data = json.loads(msg[msg.find('-') + 1:])[1]
                                 packet['cx'] = data['cx']
@@ -127,8 +123,13 @@ async def _fetch_chunks_pixelzone(chunks: Iterable[ChunkPz]):
                         else:
                             packet['data'] = msg[1:]
                             break
+
                     ch = next((x for x in chunks if x.x == packet['cx'] and x.y == packet['cy']))
                     ch.load(packet['data'])
+
+                    # I actually cannot be arsed to get the rate limiting semaphore to work
+                    # as it should. Complicated shit is out! Just fucking sleeping for 0.1s is in!
+                    await asyncio.sleep(0.1)
         except websockets.ConnectionClosed:
             raise HttpCanvasError('pixelzone')
 
