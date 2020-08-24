@@ -10,3 +10,5 @@ psutil
 git+https://github.com/Rapptz/discord-ext-menus
 sqlalchemy
 psycopg2
+python-socketio[asyncio_client]
+requests

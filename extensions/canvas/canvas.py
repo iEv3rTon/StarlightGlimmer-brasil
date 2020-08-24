@@ -12,8 +12,7 @@ from discord.ext import commands, menus
 from PIL import Image
 
 from extensions.canvas.utils import \
-    (Checker,
-     CheckSource,
+    (CheckSource,
      select_url,
      get_dither_image,
      dither_argparse,
@@ -368,10 +367,8 @@ class Canvas(commands.Cog):
 
     @online.command(name="pixelzone", aliases=["pz"])
     async def online_pixelzone(self, ctx):
-        async with ctx.typing():
-            msg = await ctx.send(ctx.s("canvas.online_await"))
-            ct = await http.fetch_online_pixelzone()
-            await msg.edit(content=ctx.s("canvas.online").format(ct, "Pixelzone"))
+        time, ct = await http.fetch_online_pixelzone(self.bot)
+        await ctx.send(ctx.s("canvas.online").format(ct, "Pixelzone"))
 
     @online.command(name="pxlsspace", aliases=["ps"])
     async def online_pxlsspace(self, ctx):
@@ -410,7 +407,7 @@ class Canvas(commands.Cog):
             await msg.edit(content=ctx.s("canvas.fetching_data").format(canvases.pretty_print[canvas]))
         else:
             msg = await ctx.send(ctx.s("canvas.fetching_data").format(canvases.pretty_print[canvas]))
-        await http.fetch_chunks(chunks)
+        await http.fetch_chunks(self.bot, chunks)
 
         await msg.edit(content=ctx.s("canvas.calculating"))
         func = partial(process_check, templates, chunks)
@@ -508,7 +505,7 @@ class Canvas(commands.Cog):
         async with ctx.typing():
             max_zoom = int(math.sqrt(4000000 // (w * h)))
             zoom = max(1, min(args.zoom, max_zoom))
-            img = await fetch(x, y, w, h)
+            img = await fetch(self.bot, x, y, w, h)
             func = partial(
                 render.diff, x, y,
                 data, zoom, img, palette,
@@ -558,9 +555,14 @@ class Canvas(commands.Cog):
                 if not error_list:
                     err = False
                 else:
-                    checker = Checker(
-                        self.bot, ctx, canvas, error_list, embed,
-                        0 if not bad_list else 1)
+                    try:
+                        checker = http.error_trackers[canvas]
+                        checker = checker(
+                            self.bot, ctx, canvas, error_list, embed,
+                            0 if not bad_list else 1)
+                    except KeyError:
+                        await ctx.send(f"The -e option is not supported for {canvases.pretty_print[canvas]}")
+                        err = False
 
             with io.BytesIO() as bio:
                 diff_img.save(bio, format="PNG")
@@ -700,9 +702,9 @@ class Canvas(commands.Cog):
             zoom = max(min(args.zoom, 16), -8)
 
             if t:
-                preview_img = await render.preview_template(t, zoom, fetch)
+                preview_img = await render.preview_template(self.bot, t, zoom, fetch)
             else:
-                preview_img = await render.preview(x, y, zoom, fetch)
+                preview_img = await render.preview(self.bot, x, y, zoom, fetch)
 
             with io.BytesIO() as bio:
                 preview_img.save(bio, format="PNG")

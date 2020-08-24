@@ -174,7 +174,7 @@ def diff(x, y, data, zoom, diff_img, palette, create_snapshot=False, highlight_c
     return diff_img, tot, err, bad, error_list, bad_list
 
 
-async def preview(x, y, zoom, fetch):
+async def preview(bot, x, y, zoom, fetch):
     """Get a preview image from coordinates.
 
     Arguments:
@@ -192,7 +192,7 @@ async def preview(x, y, zoom, fetch):
     if zoom < -1:
         dim *= abs(zoom)
 
-    preview_img = await fetch(x - dim.x // 2, y - dim.y // 2, *dim)
+    preview_img = await fetch(bot, x - dim.x // 2, y - dim.y // 2, *dim)
     if zoom > 1:
         preview_img = preview_img.resize(tuple(zoom * x for x in preview_img.size), Image.NEAREST)
         tlp = Coords(preview_img.width // 2 - config.PREVIEW_W // 2, preview_img.height // 2 - config.PREVIEW_H // 2)
@@ -204,7 +204,7 @@ async def preview(x, y, zoom, fetch):
     return preview_img
 
 
-async def preview_template(t, zoom, fetch):
+async def preview_template(bot, t, zoom, fetch):
     """Get a preview image from a template.
 
     Arguments:
@@ -223,7 +223,7 @@ async def preview_template(t, zoom, fetch):
 
     c = Coords(*t.center)
 
-    preview_img = await fetch(c.x - dim.x // 2, c.y - dim.y // 2, *dim)
+    preview_img = await fetch(bot, c.x - dim.x // 2, c.y - dim.y // 2, *dim)
     if zoom > 1:
         preview_img = preview_img.resize(tuple(zoom * x for x in preview_img.size), Image.NEAREST)
         tlp = Coords(preview_img.width // 2 - config.PREVIEW_W // 2, preview_img.height // 2 - config.PREVIEW_H // 2)
@@ -311,7 +311,7 @@ def zoom(data, zoom):
         return template
 
 
-async def fetch_pixelcanvas(x, y, dx, dy):
+async def fetch_pixelcanvas(bot, x, y, dx, dy):
     """Fetches the current state of a given section of pixelcanvas.
 
     Arguments:
@@ -326,7 +326,7 @@ async def fetch_pixelcanvas(x, y, dx, dy):
     bigchunks, shape = BigChunk.get_intersecting(x, y, dx, dy)
     fetched = Image.new('RGB', tuple([960 * x for x in shape]), colors.pixelcanvas[1])
 
-    await http.fetch_chunks(bigchunks)
+    await http.fetch_chunks(bot, bigchunks)
 
     for i, bc in enumerate(bigchunks):
         if bc.is_in_bounds():
@@ -336,7 +336,7 @@ async def fetch_pixelcanvas(x, y, dx, dy):
     return fetched.crop((x, y, x + dx, y + dy))
 
 
-async def fetch_pixelzone(x, y, dx, dy):
+async def fetch_pixelzone(bot, x, y, dx, dy):
     """Fetches the current state of a given section of pixelzone.
 
     Arguments:
@@ -351,7 +351,7 @@ async def fetch_pixelzone(x, y, dx, dy):
     chunks, shape = ChunkPz.get_intersecting(x, y, dx, dy)
     fetched = Image.new('RGB', tuple([512 * x for x in shape]), colors.pixelzone[2])
 
-    await http.fetch_chunks(chunks)
+    await http.fetch_chunks(bot, chunks)
 
     for i, ch in enumerate(chunks):
         if ch.is_in_bounds():
@@ -360,7 +360,7 @@ async def fetch_pixelzone(x, y, dx, dy):
     return fetched.crop((x % 512, y % 512, (x % 512) + dx, (y % 512) + dy))
 
 
-async def fetch_pxlsspace(x, y, dx, dy):
+async def fetch_pxlsspace(bot, x, y, dx, dy):
     """Fetches the current state of a given section of pxlsspace.
 
     Arguments:
@@ -374,7 +374,7 @@ async def fetch_pxlsspace(x, y, dx, dy):
     """
     board = PxlsBoard()
     fetched = Image.new('RGB', (dx, dy), colors.pxlsspace[1])
-    await http.fetch_chunks([board])
+    await http.fetch_chunks(bot, [board])
     fetched.paste(board.image, (-x, -y, board.width - x, board.height - y))
     return fetched
 

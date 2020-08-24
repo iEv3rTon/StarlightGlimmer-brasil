@@ -109,6 +109,10 @@ class Glimmer(commands.Bot):
         self.set_presense.start()
         self.unmute.start()
 
+        log.info("Beginning long running connection to pixelzone...")
+        self.pz = http.PixelZoneConnection()
+        self.loop.create_task(self.pz.run())
+
         log.info('I am ready!')
         await utils.channel_log(self, "I am ready!")
         print("I am ready!")

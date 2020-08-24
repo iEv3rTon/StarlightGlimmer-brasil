@@ -1,6 +1,7 @@
 import abc
 import io
 import zlib
+import uuid
 
 from PIL import Image
 
@@ -12,6 +13,8 @@ class Chunky(abc.ABC):
         self.x = x
         self.y = y
         self._image = None
+
+        self.uuid = uuid.uuid4().hex
 
     @property
     @abc.abstractmethod
