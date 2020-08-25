@@ -12,11 +12,14 @@ import requests
 import websockets
 from typing import Iterable
 import socketio
+import numpy as np
+from PIL import Image
 
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
 from objects.errors import HttpCanvasError, HttpGeneralError, NoJpegsError, NotPngError, TemplateHttpError
 from utils.version import VERSION
-from utils.canvases import url_templates
+from utils.canvases import url_templates, PZ_CHUNK_LENGTH, PZ_MAP_LENGTH
+from utils import converter, colors
 
 
 log = logging.getLogger(__name__)
@@ -27,17 +30,49 @@ useragent = {
 }
 
 
-# TODO: Cache chunks. I think that's actually what's getting me rate limited, requesting the
-# exact same chunks in short succession.
+class CachedPZChunk:
+    def __init__(self, cx, cy, image):
+        self.cx = cx
+        self.cy = cy
+
+        image = image.convert("RGBA")
+        self.array = converter.image_to_array(image, "pixelzone")
+
+        self.created = time()
+
+    @property
+    def age(self):
+        now = time()
+        return now - self.created
+
+    def add_pixel(self, px, py, color):
+        rel_x = px % PZ_CHUNK_LENGTH
+        rel_y = py % PZ_CHUNK_LENGTH
+        self.array[rel_x, rel_y] = color
+
+    def to_image(self):
+        width, height = self.array.shape
+        pil_array = np.zeros((height, width, 3), dtype=np.uint8)
+
+        for x in range(width):
+            for y in range(height):
+                r, g, b = colors.pixelzone[self.array[x, y]]
+                pil_array[y, x, 0] = r
+                pil_array[y, x, 1] = g
+                pil_array[y, x, 2] = b
+
+        image = Image.fromarray(pil_array, "RGB")
+        return image
+
+
 class PixelZoneConnection:
     def __init__(self):
         self.sio = socketio.AsyncClient(binary=True, logger=log)
         self.ready = False
 
         self.chunk_lock = asyncio.Lock()
-        self.wanted_chunks = []
-        self.sent = []
-        self.receieved_chunks = []
+        self.chunks = {}
+        self.chunk_queue = asyncio.Queue()
 
         self.player_count = None
 
@@ -60,36 +95,64 @@ class PixelZoneConnection:
             comp = data.get("comp")
 
             async with self.chunk_lock:
-                chunk = next(c for c in self.wanted_chunks if c.x == x and c.y == y)
-                if chunk:
-                    chunk.load(comp)
-                    self.wanted_chunks = [c for c in self.wanted_chunks if c.uuid != chunk.uuid]
-                    self.receieved_chunks.append(chunk)
-                    self.sent.remove(chunk.uuid)
+                image = ChunkPz.load(comp)
+                self.chunks[f"{x}_{y}"] = CachedPZChunk(x, y, image)
 
         @self.sio.on("playerCounter")
         async def on_player(count):
             if isinstance(count, int):
                 self.player_count = [time(), count]
 
-    async def run(self):
-        await self.sio.connect("https://pixelzone.io", headers=useragent)
+        @self.sio.on("place")
+        async def on_message(pixels):
+            pixels = pixels.replace(" ", "").replace("[", "").replace("]", "")
+            pixels = [int(pixel) for pixel in pixels.split(",")]
+
+            for pixel in pixels:
+                x = ((pixel >> 17) & 0b1111111111111) - PZ_MAP_LENGTH
+                y = ((pixel >> 4) & 0b1111111111111) - PZ_MAP_LENGTH
+                color = pixel & 0b1111
+
+                cx, cy = ChunkPz.chunk_from_coords(x, y)
+
+                async with self.chunk_lock:
+                    cached = self.chunks.get(f"{cx}_{cy}", None)
+                    if cached:
+                        cached.add_pixel(x, y, color)
+
+    async def requester(self):
+        while True:
+            x, y = await self.chunk_queue.get()
+
+            while not self.ready:
+                asyncio.sleep(0.5)
+
+            try:
+                await self.sio.emit("getChunk", {"x": x, "y": y})
+                self.chunk_queue.task_done()
+            except:
+                log.exception("Error sending chunk request to pixelzone.io")
+
+    async def expirer(self):
+        _1_hour = 60 * 60
 
         while True:
-            if not self.ready:
-                await asyncio.sleep(0.5)
-            elif len(self.wanted_chunks) == 0:
-                await asyncio.sleep(0.1)
-            else:
-                async with self.chunk_lock:
-                    for chunk in self.wanted_chunks:
-                        if not [uuid for uuid in self.sent if uuid == chunk.uuid]:
-                            try:
-                                await self.sio.emit("getChunk", {"x": chunk.x, "y": chunk.y})
-                                self.sent.append(chunk.uuid)
-                            except:
-                                pass
-                await asyncio.sleep(0.1)
+            async with self.chunk_lock:
+                to_remove = []
+                for key, cached in self.chunks.items():
+                    if cached.age > _1_hour:
+                        to_remove.append(key)
+
+                for key in to_remove:
+                    del self.chunks[key]
+
+            await asyncio.sleep(60)
+
+    async def run(self):
+        await self.sio.connect("https://pixelzone.io", headers=useragent)
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.requester())
+        loop.create_task(self.expirer())
 
 
 async def fetch_chunks(bot, chunks: Iterable):
@@ -138,34 +201,40 @@ async def _fetch_chunks_pixelzone(bot, chunks: Iterable[ChunkPz]):
     chunks = [x for x in chunks if x.is_in_bounds()]
     if len(chunks) == 0:
         return
-    uuids = [c.uuid for c in chunks]
 
-    chunks_iter = iter(chunks)
+    async def check_cache(chunks):
+        async with bot.pz.chunk_lock:
+            for chunk in chunks:
+                cached = bot.pz.chunks.get(f"{chunk.x}_{chunk.y}", None)
+                if cached:
+                    chunk._image = cached.to_image()
+                    chunk.loaded = True
 
-    async def get_chunks():
+    async def get_chunks(chunks):
+        for chunk in chunks:
+            chunk.loaded = False
+
+        await check_cache(chunks)
+
+        if all(chunk.loaded for chunk in chunks):
+            return
+
+        chunks = [c for c in chunks if not c.loaded]
+
+        for chunk in chunks:
+            await bot.pz.chunk_queue.put([chunk.x, chunk.y])
+
         while True:
-            async with bot.pz.chunk_lock:
-                chunk = next(chunks_iter, None)
-                if chunk is None:
-                    break
-                bot.pz.wanted_chunks.append(chunk)
+            await check_cache(chunks)
 
-            while True:
-                async with bot.pz.chunk_lock:
-                    if chunk.uuid in [c.uuid for c in bot.pz.receieved_chunks]:
-                        break
-                await asyncio.sleep(0.1)
+            if all(chunk.loaded for chunk in chunks):
+                return
+            await asyncio.sleep(0.1)
 
     try:
-        await asyncio.wait_for(get_chunks(), timeout=60)
+        await asyncio.wait_for(get_chunks(chunks), timeout=60)
     except asyncio.TimeoutError:
-        async with bot.pz.chunk_lock:
-            bot.pz.wanted_chunks = [c for c in bot.pz.wanted_chunks if c.uuid not in uuids]
         raise HttpCanvasError('pixelzone')
-    finally:
-        # Slightly mitigate the memory leak hell I have brought upon myself
-        async with bot.pz.chunk_lock:
-            bot.pz.receieved_chunks = [c for c in bot.pz.receieved_chunks if c.uuid not in uuids]
 
 
 async def _fetch_pxlsspace(chunks: Iterable[PxlsBoard]):

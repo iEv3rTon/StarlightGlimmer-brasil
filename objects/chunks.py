@@ -6,6 +6,7 @@ import uuid
 from PIL import Image
 
 from utils import colors
+from utils.canvases import PZ_CHUNK_LENGTH, PC_CHUNK_LENGTH, PZ_MAP_LENGTH
 
 
 class Chunky(abc.ABC):
@@ -72,15 +73,15 @@ class BigChunk(Chunky):
 
     @property
     def height(self):
-        return 960
+        return PC_CHUNK_LENGTH
 
     @property
     def p_x(self):
-        return self.x * 960 - 448
+        return self.x * PC_CHUNK_LENGTH - 448
 
     @property
     def p_y(self):
-        return self.y * 960 - 448
+        return self.y * PC_CHUNK_LENGTH - 448
 
     @property
     def url(self):
@@ -88,17 +89,17 @@ class BigChunk(Chunky):
 
     @property
     def width(self):
-        return 960
+        return PC_CHUNK_LENGTH
 
     def is_in_bounds(self):
         return -1043 <= self.x < 1043 and -1043 <= self.y < 1043
 
     def load(self, data):
         with io.BytesIO(data) as bio:
-            self._image = Image.new("RGB", (960, 960), colors.pixelcanvas[1])
+            self._image = Image.new("RGB", (PC_CHUNK_LENGTH, PC_CHUNK_LENGTH), colors.pixelcanvas[1])
             bio.seek(0)
-            for cy in range(0, 960, 64):
-                for cx in range(0, 960, 64):
+            for cy in range(0, PC_CHUNK_LENGTH, 64):
+                for cx in range(0, PC_CHUNK_LENGTH, 64):
                     if not -1000000 <= self.p_x + cx < 1000000 or not -1000000 <= self.p_y + cy < 1000000:
                         bio.seek(2048, 1)
                         continue
@@ -109,10 +110,10 @@ class BigChunk(Chunky):
     @staticmethod
     def get_intersecting(x, y, dx, dy):
         bigchunks = []
-        dx = (x + dx + 448) // 960
-        dy = (y + dy + 448) // 960
-        x = (x + 448) // 960
-        y = (y + 448) // 960
+        dx = (x + dx + 448) // PC_CHUNK_LENGTH
+        dy = (y + dy + 448) // PC_CHUNK_LENGTH
+        x = (x + 448) // PC_CHUNK_LENGTH
+        y = (y + 448) // PC_CHUNK_LENGTH
         for iy in range(y, dy + 1):
             for ix in range(x, dx + 1):
                 bigchunks.append(BigChunk(ix, iy))
@@ -128,11 +129,11 @@ class ChunkPz(Chunky):
 
     @property
     def p_x(self):
-        return self.x * 512 - 4096
+        return self.x * PZ_CHUNK_LENGTH - PZ_MAP_LENGTH
 
     @property
     def p_y(self):
-        return self.y * 512 - 4096
+        return self.y * PZ_CHUNK_LENGTH - PZ_MAP_LENGTH
 
     @property
     def url(self):
@@ -140,29 +141,33 @@ class ChunkPz(Chunky):
 
     @property
     def width(self):
-        return 512
+        return PZ_CHUNK_LENGTH
 
     def is_in_bounds(self):
         return 0 <= self.x < 16 and 0 <= self.y < 16
 
-    def load(self, data):
+    @classmethod
+    def load(cls, data):
         data = zlib.decompress(data)
-        self._image = Image.frombytes('P', (512, 512), data, 'raw', 'P;4')
-        self._image.putpalette(self.palette)
+        image = Image.frombytes('P', (PZ_CHUNK_LENGTH, PZ_CHUNK_LENGTH), data, 'raw', 'P;4')
+        image.putpalette(cls.palette)
+        return image
 
     @staticmethod
     def get_intersecting(x, y, dx, dy):
-        x += 4096
-        y += 4096
+        x += PZ_MAP_LENGTH
+        y += PZ_MAP_LENGTH
         chunks = []
-        dx = (x + dx) // 512
-        dy = (y + dy) // 512
-        x = x // 512
-        y = y // 512
+        dx, dy = ChunkPz.chunk_from_coords(x + dx, y + dy)
+        x, y = ChunkPz.chunk_from_coords(x, y)
         for iy in range(y, dy + 1):
             for ix in range(x, dx + 1):
                 chunks.append(ChunkPz(ix, iy))
         return chunks, (dx - x + 1, dy - y + 1)
+
+    @staticmethod
+    def chunk_from_coords(x, y):
+        return x // PZ_CHUNK_LENGTH, y // PZ_CHUNK_LENGTH
 
 
 class PxlsBoard(Chunky):

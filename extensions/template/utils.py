@@ -460,7 +460,7 @@ class Template:
                     log.exception(f"File for {t.name} could not be downloaded, status code: {resp.status}")
                     return None
 
-        template = Template(t.id, t.name, converter.image_to_array(image), t.url, t.md5,
+        template = Template(t.id, t.name, converter.image_to_array(image, "pixelcanvas"), t.url, t.md5,
                             t.x, t.y, t.alert_id, t.guild_id)
         log.debug(f"Generated {template}.")
         return template
