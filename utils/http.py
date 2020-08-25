@@ -6,6 +6,7 @@ from time import time
 from struct import unpack_from
 import math
 import uuid
+import traceback
 
 import aiohttp
 import requests
@@ -19,7 +20,7 @@ from objects.chunks import BigChunk, ChunkPz, PxlsBoard
 from objects.errors import HttpCanvasError, HttpGeneralError, NoJpegsError, NotPngError, TemplateHttpError
 from utils.version import VERSION
 from utils.canvases import url_templates, PZ_CHUNK_LENGTH, PZ_MAP_LENGTH
-from utils import converter, colors
+from utils import converter, colors, channel_log
 
 
 log = logging.getLogger(__name__)
@@ -148,8 +149,15 @@ class PixelZoneConnection:
 
             await asyncio.sleep(60)
 
-    async def run(self):
-        await self.sio.connect("https://pixelzone.io", headers=useragent)
+    async def run(self, bot):
+        try:
+            await self.sio.connect("https://pixelzone.io", headers=useragent)
+        except Exception as e:
+            log.exception("Pixelzone connection failed to open")
+            await channel_log(
+                bot,
+                "Pixelzone connection failed to open\n{}".format(
+                    ''.join(traceback.format_exception(None, e, e.__traceback__))))
         loop = asyncio.get_event_loop()
         loop.create_task(self.requester())
         loop.create_task(self.expirer())
