@@ -156,7 +156,7 @@ class PixelZoneConnection:
             log.exception("Pixelzone connection failed to open")
             await channel_log(
                 bot,
-                "Pixelzone connection failed to open\n{}".format(
+                "Pixelzone connection failed to open\n```{}```".format(
                     ''.join(traceback.format_exception(None, e, e.__traceback__))))
         loop = asyncio.get_event_loop()
         loop.create_task(self.requester())
