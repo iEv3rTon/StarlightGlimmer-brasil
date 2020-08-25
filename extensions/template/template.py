@@ -464,7 +464,7 @@ class Template(commands.Cog):
 
             data = await http.get_template(snap.target_template.url, snap.target_template.name)
             fetch = self.bot.fetchers[snap.target_template.canvas]
-            img = await fetch(snap.target_template.x, snap.target_template.y, snap.target_template.width, snap.target_template.height)
+            img = await fetch(self.bot, snap.target_template.x, snap.target_template.y, snap.target_template.width, snap.target_template.height)
             func = partial(render.diff, snap.target_template.x, snap.target_template.y, data, 1, img, colors.by_name[snap.target_template.canvas])
             diff_img, tot, err, bad, _err, _bad = await self.bot.loop.run_in_executor(None, func)
 
@@ -515,7 +515,7 @@ class Template(commands.Cog):
 
             data = await http.get_template(snap.base_template.url, snap.base_template.name)
             fetch = self.bot.fetchers[snap.base_template.canvas]
-            img = await fetch(snap.base_template.x, snap.base_template.y, snap.base_template.width, snap.base_template.height)
+            img = await fetch(self.bot, snap.base_template.x, snap.base_template.y, snap.base_template.width, snap.base_template.height)
             func = partial(
                 render.diff, snap.base_template.x, snap.base_template.y, data, 1,
                 img, colors.by_name[snap.base_template.canvas], create_snapshot=True)
