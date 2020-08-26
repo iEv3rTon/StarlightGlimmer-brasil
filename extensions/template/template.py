@@ -120,9 +120,9 @@ class Template(commands.Cog):
                                                           ctx.s("bot.canvas"),
                                                           ctx.s("bot.coordinates"), w1=w1)
             ]
-            for t, f in ts[(page - 1) * 10:page * 10]:
+            for t in ts[(page - 1) * 10:page * 10]:
                 coords = "{}, {}".format(t.x, t.y)
-                faction = '"{}"'.format(f)
+                faction = '"{}"'.format(t.guild.faction_name)
                 name = '"{}"'.format(t.name)
                 canvas_name = canvases.pretty_print[t.canvas]
                 msg.append("{0:<{w1}}  {1:<34}  {2:<14}  {3}".format(name, faction, canvas_name, coords, w1=w1))
