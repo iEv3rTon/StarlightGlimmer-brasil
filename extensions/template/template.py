@@ -185,7 +185,7 @@ class Template(commands.Cog):
         try:
             name = args[0]
         except TypeError:
-            await ctx.send("Template not updated as no arguments were provided.")
+            await ctx.send(ctx.s("error.missing_argument"))
             return
 
         if re.match(r"-\D+", name) is not None:
@@ -231,7 +231,7 @@ class Template(commands.Cog):
             try:
                 t = await build_template(ctx, orig_template.name, orig_template.x, orig_template.y, url, "pixelcanvas")
             except TemplateHttpError:
-                out.append("Updating file failed: Could not access URL for template.")
+                out.append(ctx.s("template.url_access").format(ctx.s("template.update_file")))
                 return await send_end(ctx, out)
             except NoJpegsError:
                 out.append("Updating file failed: Seriously? A JPEG? Gross! Please create a PNG template instead.")
@@ -240,11 +240,11 @@ class Template(commands.Cog):
                 out.append("Updating file failed: That command requires a PNG image.")
                 return await send_end(ctx, out)
             except (PilImageError, UrlError):
-                out.append("Updating file failed.")
+                out.append("{0}.".format(ctx.s("template.err.update_file")))
                 return await send_end(ctx, out)
 
             if t is None:
-                out.append("Updating file failed.")
+                out.append("{0}.".format(ctx.s("template.err.update_file")))
                 return await send_end(ctx, out)
 
             # update template data
@@ -335,7 +335,7 @@ class Template(commands.Cog):
         try:
             name = args[0]
         except IndexError:
-            return await ctx.send("Error: not enough arguments were provided.")
+            return await ctx.send(ctx.s("error.missing_argument"))
 
         if re.match(r"-\D+", name) is not None:
             name = args[-1]

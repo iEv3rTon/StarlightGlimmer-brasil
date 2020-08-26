@@ -202,7 +202,6 @@ STRINGS = {
     "template.err.template_gen_error": "There was an error building the template.",
     "template.err.hyphen": "Template names cannot begin with hyphens.",
     "template.err.number": "Template names cannot be numbers.",
-    "template.err.no_arguments": "Template not updated as no arguments were provided.",
     "template.link_to_canvas": "Link to canvas",
     "template.list_all_footer_1": "Use '{0}template all <page>' to see that page",
     "template.list_all_footer_2": "Use '{0}template info -f <faction> <name>' to see more info on a template",
@@ -230,6 +229,8 @@ STRINGS = {
     "template.err.update_invalid_url": "Updating image failed, invalid url, it must be a discord attachment.",
     "template.err.update_no_attachment": "Updating image failed, no attachments could be detected.",
     "template.menu_entry": "[{0}, {1}]({2}) | [Link to file]({3})",
+    "template.err.update_file": "Updating file failed",
+    "template.err.url_access": "{0}: Could not access URL for template."
 
     # Command brief help
     "brief.alert": "Set or clear a templates alert channel.",
