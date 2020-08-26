@@ -49,21 +49,31 @@ class GlimContext(commands.Context):
 
             language = guild.language.lower()
 
-        if language == "en-us":
-            return en_US.STRINGS.get(str_id, None)
         if language == "pt-br":
-            return pt_BR.STRINGS.get(str_id, None)
+            string = pt_BR.STRINGS.get(str_id, None)
         if language == "tr-tr":
-            return tr_TR.STRINGS.get(str_id, None)
+            string = tr_TR.STRINGS.get(str_id, None)
+        if language == "en-us":
+            string = en_US.STRINGS.get(str_id, None)
+
+        if string is None:
+            return en_US.STRINGS.get(str_id, None)
+        else:
+            return string
 
     def s(self, str_id):
         language = self.lang.lower()
-        if language == "en-us":
-            return en_US.STRINGS.get(str_id, None)
         if language == "pt-br":
-            return pt_BR.STRINGS.get(str_id, None)
+            string = pt_BR.STRINGS.get(str_id, None)
         if language == "tr-tr":
-            return tr_TR.STRINGS.get(str_id, None)
+            string = tr_TR.STRINGS.get(str_id, None)
+        if language == "en-us":
+            string = en_US.STRINGS.get(str_id, None)
+
+        if string is None:
+            return en_US.STRINGS.get(str_id, None)
+        else:
+            return string
 
     async def invoke_default(self, cmd: str):
         default_canvas = self.canvas
