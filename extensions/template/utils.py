@@ -126,11 +126,11 @@ async def add_template(ctx, canvas, name, x, y, url):
         await ctx.send(ctx.s("template.err.name_too_long").format(config.MAX_TEMPLATE_NAME_LENGTH))
         return
     if name[0] == "-":
-        await ctx.send("Template names cannot begin with hyphens.")
+        await ctx.send(ctx.s("template.err.hyphen"))
         return
     try:
         _ = int(name)
-        await ctx.send("Template names cannot be numbers.")
+        await ctx.send(ctx.s("template.err.number"))
         return
     except ValueError:
         pass
@@ -255,11 +255,11 @@ async def check_for_duplicate_by_name(ctx, name):
 
 async def send_end(ctx, out):
     if out != []:
-        await ctx.send(embed=discord.Embed(description="Template updated!").add_field(
-            name="Summary of changes",
+        await ctx.send(embed=discord.Embed(description=ctx.s("template.update_header_1")).add_field(
+            name=ctx.s("template.update_header_2"),
             value="```{}```".format("\n".join(out))))
     else:
-        await ctx.send("Template not updated as no arguments were provided.")
+        await ctx.send(ctx.s("template.err.no_arguments"))
 
 
 async def select_url_update(ctx, input_url, out):
@@ -278,7 +278,7 @@ async def select_url_update(ctx, input_url, out):
         if re.search(r"^(?:https?://)cdn\.discordapp\.com/", input_url):
             return input_url
 
-        out.append("Updating image failed, invalid url, it must be a discord attachment.")
+        out.append(ctx.s("template.err.update_invalid_url"))
         await send_end(ctx, out)
         return
 
@@ -286,7 +286,7 @@ async def select_url_update(ctx, input_url, out):
     if len(ctx.message.attachments) > 0:
         return ctx.message.attachments[0].url
 
-    out.append("Updating image failed, no attachments could be detected.")
+    out.append(ctx.s("template.err.update_no_attachment"))
     await send_end(ctx, out)
     return
 
@@ -299,18 +299,21 @@ class TemplateSource(discord.ext.menus.ListPageSource):
     async def format_page(self, menu, entries):
         embed = discord.Embed(
             title=menu.ctx.s("template.list_header"),
-            description=f"Page {menu.current_page + 1} of {self.get_max_pages()}")
+            description=menu.ctx.s("bot.menu_page").format(menu.current_page + 1, self.get_max_pages()))
         embed.set_footer(
-            text="Scroll using the reactions below to see other pages.")
+            text=menu.ctx.s("bot.reaction_scroll"))
 
         offset = menu.current_page * self.per_page
         for i, template in enumerate(entries, start=offset):
             if i == offset + self.per_page:
                 break
+
+            url = canvases.url_templates[template.canvas].format(
+                template.x, template.y)
             embed.add_field(
                 name=template.name,
-                value="[{0}, {1}](https://pixelcanvas.io/@{0},{1}) | [Link to file]({2})".format(
-                    template.x, template.y, template.url),
+                value=menu.ctx.s("template.menu_entry").format(
+                    template.x, template.y, url, template.url),
                 inline=False)
         self.embed = embed
         return embed
@@ -323,9 +326,9 @@ class SnapshotSource(discord.ext.menus.ListPageSource):
 
     async def format_page(self, menu, entries):
         embed = discord.Embed(
-            description=f"Page {menu.current_page + 1} of {self.get_max_pages()}")
+            description=menu.ctx.s("bot.menu_page").format(menu.current_page + 1, self.get_max_pages()))
         embed.set_footer(
-            text="Scroll using the reactions below to see other pages.")
+            text=menu.ctx.s("bot.reaction_scroll"))
 
         offset = menu.current_page * self.per_page
         # Find which is longest: the title or one of the template names. Set w1 to that + 2.
@@ -354,9 +357,9 @@ class CheckerSource(discord.ext.menus.ListPageSource):
 
     async def format_page(self, menu, entries):
         embed = discord.Embed(
-            description=f"Page {menu.current_page + 1} of {self.get_max_pages()}")
+            description=menu.ctx.s("bot.menu_page").format(menu.current_page + 1, self.get_max_pages()))
         embed.set_footer(
-            text="Scroll using the reactions below to see other pages.")
+            text=menu.ctx.s("bot.reaction_scroll"))
 
         colors = []
         for x in range(16):
@@ -378,18 +381,17 @@ class CheckerSource(discord.ext.menus.ListPageSource):
                 continue
 
             s = round(time.time() - p.recieved)
-            h = s // 3600
-            s -= h * 3600
-            m = s // 60
-            s -= m * 60
+            h, s = s // 3600, s % 3600
+            m, s = s // 60, s % 60
             delta = f"{h}h" if h != 0 else ""
             delta += f"{m}m" if m != 0 else ""
             delta += f"{s}s" if s != 0 else ""
 
             embed.add_field(
                 name=f"{delta} ago - Template: {template.name}",
-                value="[@{0.x},{0.y}](https://pixelcanvas.io/@{0.x},{0.y}) is **{1}**, should be **{2}**.".format(
-                    p, colors[p.damage_color], template_color),
+                value=menu.ctx.s("template.alert_pixel").format(
+                    p, colors[p.damage_color], template_color,
+                    canvases.url_templates["pixelcanvas"].format(p.x, p.y)),
                 inline=False)
 
         self.embed = embed

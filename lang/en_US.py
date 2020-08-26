@@ -31,6 +31,8 @@ STRINGS = {
     "bot.visibility": "Visibility",
     "bot.yes": "Yes",
     "bot.menu_deleted": "Menu not found, was the message deleted?",
+    "bot.reaction_scroll": "Scroll using the reactions below to see other pages.",
+    "bot.menu_page": "Page {0} of {1}",
 
     # Error messages
     "error.account_deleted": "[[Account deleted]]",
@@ -66,7 +68,7 @@ STRINGS = {
     # Alerts command messages
     "alerts.alert_title": "{} took damage!",
     "alerts.alert_description": "Messages that are crossed out have been fixed.",
-    "alerts.alert_pixel": "{c}[@{0.x},{0.y}](https://pixelcanvas.io/@{0.x},{0.y}) painted **{1}**, should be **{2}**.{c}\n",
+    "alerts.alert_pixel": "{c}[@{0.x},{0.y}]({url}) painted **{1}**, should be **{2}**.{c}\n",
     "alerts.recieved": "Received:",
 
     # Animotes command messages
@@ -198,6 +200,9 @@ STRINGS = {
     "template.err.no_public_templates": "There are currently no public templates.",
     "template.err.not_owner": "You do not have permission to modify that template.",
     "template.err.template_gen_error": "There was an error building the template.",
+    "template.err.hyphen": "Template names cannot begin with hyphens.",
+    "template.err.number": "Template names cannot be numbers.",
+    "template.err.no_arguments": "Template not updated as no arguments were provided.",
     "template.link_to_canvas": "Link to canvas",
     "template.list_all_footer_1": "Use '{0}template all <page>' to see that page",
     "template.list_all_footer_2": "Use '{0}template info -f <faction> <name>' to see more info on a template",
@@ -210,6 +215,21 @@ STRINGS = {
     "template.not_quantized": "This image contains colors that are not part of this canvas's palette. Would you like to quantize it?",
     "template.remove": "Successfully removed '{0}'.",
     "template.updated": "Template '{0}' updated!",
+    "template.update_header_1": "Template updated!",
+    "template.update_header_2": "Summary of changes",
+    "template.unmuted": "Unmuted `{0}`.",
+    "template.will_alert": "`{0}` will now alert in the channel {1} when damaged.",
+    "template.will_not_alert": "`{0}` will no longer alert for damage.",
+    "template.not_muted": "`{0}` is not currently muted.",
+    "template.invalid_duration_1": "Invalid mute duration, give the number of hours or format like `1h8m`",
+    "template.invalid_duration_2": "Invalid mute duration, duplicate time suffix (eg: 1**h**8m3**h**)",
+    "template.already_muted": "`{0}` has no alert channel/is already muted",
+    "template.muted": "`{0}` muted for {1:.2f} hours.",
+    "template.no_recent_errors": "No recent errors found.",
+    "template.alert_pixel": "[@{0.x},{0.y}]({3}) is **{1}**, should be **{2}**.",
+    "template.err.update_invalid_url": "Updating image failed, invalid url, it must be a discord attachment.",
+    "template.err.update_no_attachment": "Updating image failed, no attachments could be detected.",
+    "template.menu_entry": "[{0}, {1}]({2}) | [Link to file]({3})",
 
     # Command brief help
     "brief.alert": "Set or clear a templates alert channel.",

@@ -14,7 +14,7 @@ import websockets
 
 from objects.database_models import session_scope, Template as TemplateDb, MutedTemplate
 from objects.errors import TemplateNotFoundError, CanvasNotSupportedError
-from utils import checks, GlimmerArgumentParser, FactionAction
+from utils import canvases, checks, GlimmerArgumentParser, FactionAction
 from extensions.template.utils import CheckerSource, Pixel, Template
 
 log = logging.getLogger(__name__)
@@ -136,16 +136,15 @@ class Alerts(commands.Cog):
 
         mute = ctx.session.query(MutedTemplate).filter_by(template_id=template.id).first()
         if mute:
-            mute_channel = self.bot.get_channel(mute.alert_id)
             ctx.session.delete(mute)
-            await ctx.send(f"Mute for `{name}` in {mute_channel.mention} cleared.")
+            await ctx.send(ctx.s("template.unmuted").format(name))
 
         if channel:
             template.alert_id = channel.id
-            await ctx.send(f"`{name}` will now alert in the channel {channel.mention} when damaged.")
+            await ctx.send(ctx.s("template.will_alert").format(name, channel.mention))
         else:
             template.alert_id = None
-            await ctx.send(f"`{name}` will no longer alert for damage.")
+            await ctx.send(ctx.s("template.will_not_alert").format(name))
 
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
@@ -163,16 +162,16 @@ class Alerts(commands.Cog):
 
         if not duration:
             if template.alert_id:
-                return await ctx.send(f"`{name}` is not currently muted.")
+                return await ctx.send(ctx.s("template.not_muted").format(name))
 
             mute = ctx.session.query(MutedTemplate).filter_by(template_id=template.id).first()
 
             if not mute:
-                return await ctx.send(f"`{name}` is not currently muted.")
+                return await ctx.send(ctx.s("template.not_muted").format(name))
 
             template.alert_id = mute.alert_id
             ctx.session.delete(mute)
-            await ctx.send(f"Unmuted `{name}`.")
+            await ctx.send(ctx.s("template.unmuted").format(name))
         else:
             try:
                 duration = float(duration) * 3600
@@ -180,11 +179,11 @@ class Alerts(commands.Cog):
                 matches = re.findall(r"(\d+[wdhms])", duration.lower())  # Week Day Hour Minute Second
 
                 if not matches:
-                    return await ctx.send("Invalid mute duration, give the number of hours or format like `1h8m`")
+                    return await ctx.send(ctx.s("template.invalid_duration_1"))
 
                 suffixes = [match[-1] for match in matches]
                 if len(suffixes) != len(set(suffixes)):
-                    return await ctx.send("Invalid mute duration, duplicate time suffix (eg: 1**h**8m3**h**)")
+                    return await ctx.send(ctx.s("template.invalid_duration_2"))
 
                 seconds = {
                     "w": 7 * 24 * 60 * 60,
@@ -197,12 +196,12 @@ class Alerts(commands.Cog):
                 duration = sum([int(match[:-1]) * seconds.get(match[-1]) for match in matches])
 
             if not template.alert_id:
-                return await ctx.send(f"`{name}` has no alert channel/is already muted.")
+                return await ctx.send(ctx.s("template.already_muted").format(name))
 
             mute = MutedTemplate(template=template, alert_id=template.alert_id, expires=time.time() + duration)
             ctx.session.add(mute)
             template.alert_id = None
-            await ctx.send(f"`{name}` muted for {duration / 3600:.2f} hours.")
+            await ctx.send(ctx.s("template.muted").format(name, duration / 3600))
 
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.guild)
@@ -216,7 +215,7 @@ class Alerts(commands.Cog):
             args = parser.parse_args(args)
         except TypeError:
             return
-        
+
         log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
 
         gid = ctx.guild.id
@@ -229,7 +228,7 @@ class Alerts(commands.Cog):
         pixels.sort(key=lambda p: p.recieved, reverse=True)
 
         if not pixels:
-            await ctx.send("No recent errors found.")
+            await ctx.send(ctx.s("template.no_recent_errors"))
             return
 
         checker_menu = menus.MenuPages(
@@ -330,6 +329,8 @@ class Alerts(commands.Cog):
             embed.set_thumbnail(url=template.url)
             text = ""
 
+            url = canvases.url_templates["pixelcanvas"]  # Should source this from the template obj rlly
+
             for p in template.pixels:
                 if (template.last_alert_message and p.alert_id == template.last_alert_message.id) or \
                    (p.alert_id == "flag" and template.id == p.template_id):
@@ -338,6 +339,7 @@ class Alerts(commands.Cog):
                         p,
                         template.color_string(p.damage_color),
                         template.color_string(template.color_at(p.x, p.y)),
+                        url=url.format(p.x, p.y),
                         c="~~" if p.fixed else "")
 
             embed.add_field(name=template.s("alerts.recieved"), value=text, inline=False)
