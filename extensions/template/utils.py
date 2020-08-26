@@ -447,7 +447,8 @@ class Template:
 
     @property
     def current_pixels(self):
-        return [p for p in self.pixels if p.alert_id == self.last_alert_message.id]
+        if self.last_alert_message:
+            return [p for p in self.pixels if p.alert_id == self.last_alert_message.id]
 
     @staticmethod
     async def new(t):
