@@ -53,7 +53,7 @@ class CachedPZChunk:
 
     def to_image(self):
         width, height = self.array.shape
-        pil_array = np.zeros((height, width, 3), dtype=np.uint8)
+        pil_array = np.zeros((height, width, 3), dtype=np.int8)
 
         for x in range(width):
             for y in range(height):

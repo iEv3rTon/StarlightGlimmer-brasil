@@ -9,7 +9,7 @@ def image_to_array(image: Image, canvas: str) -> np.array:
     width, height = image.size
     palette = colors.by_name[canvas]
 
-    array = np.full((width, height), -1, dtype=np.uint8)
+    array = np.full((width, height), -1, dtype=np.int8)
 
     for x in range(width):
         for y in range(height):
