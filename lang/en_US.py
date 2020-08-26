@@ -230,7 +230,7 @@ STRINGS = {
     "template.err.update_no_attachment": "Updating image failed, no attachments could be detected.",
     "template.menu_entry": "[{0}, {1}]({2}) | [Link to file]({3})",
     "template.err.update_file": "Updating file failed",
-    "template.err.url_access": "{0}: Could not access URL for template."
+    "template.err.url_access": "{0}: Could not access URL for template.",
 
     # Command brief help
     "brief.alert": "Set or clear a templates alert channel.",

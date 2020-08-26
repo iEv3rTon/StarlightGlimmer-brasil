@@ -77,6 +77,11 @@ class PixelZoneConnection:
 
         self.player_count = None
 
+        self.listener_lock = asyncio.Lock()
+        self.listeners = {}
+
+        self.loop = asyncio.get_event_loop()
+
         @self.sio.on("connect")
         async def on_connect():
             await self.sio.emit("hello")
@@ -121,6 +126,10 @@ class PixelZoneConnection:
                     if cached:
                         cached.add_pixel(x, y, color)
 
+                async with self.listener_lock:
+                    for id, listener in self.listeners.items():
+                        self.loop.create_task(listener(x, y, color))
+
     async def requester(self):
         while True:
             x, y = await self.chunk_queue.get()
@@ -161,6 +170,16 @@ class PixelZoneConnection:
         loop = asyncio.get_event_loop()
         loop.create_task(self.requester())
         loop.create_task(self.expirer())
+
+    async def add_listener(self, listener):
+        l_uuid = uuid.uuid4()
+        async with self.listener_lock:
+            self.listeners[l_uuid] = listener
+        return l_uuid
+
+    async def remove_listener(self, l_uuid):
+        async with self.listener_lock:
+            del self.listeners[l_uuid]
 
 
 async def fetch_chunks(bot, chunks: Iterable):
@@ -427,40 +446,30 @@ class PixelCanvasTracker(Tracker):
                     await self.send_err_embed()
 
 
-# TODO: Make this functional again by moving it's place event to the main connection.
-# I could maybe use asyncio.Event or asyncio.Condition to listen to the main connection
-# from here? I'll think on it a bit I guess. https://docs.python.org/3/library/asyncio-sync.html
 class PixelZoneTracker(Tracker):
     def __init__(self, *args):
         super().__init__(*args)
-        self.pz = PixelZoneConnection()
-
-        loop = asyncio.get_event_loop()
-
-        @self.pz.sio.on("place")
-        async def on_message(pixels):
-            for pixel in pixels:
-                x = ((pixel >> 17) & 0b1111111111111) - 4096
-                y = ((pixel >> 4) & 0b1111111111111) - 4096
-                color = pixel & 0b1111
-
-                for p in self.pixels:
-                    if p.x == x and p.y == y:
-                        p.current = color
-                        loop.create_task(self.send_err_embed())
+        self.loop = asyncio.get_event_loop()
 
     async def connect_websocket(self, msg):
         self.msg = msg
         await self.send_err_embed()
 
-        await self.pz.sio.connect("https://pixelzone.io")
+        l_uuid = await self.bot.pz.add_listener(self.on_message)
         await asyncio.sleep(60 * 5)
-        await self.pz.sio.disconnect()
+        await self.bot.pz.remove_listener(l_uuid)
 
         self.embed.set_footer(text=self.ctx.s("canvas.diff_timeout"))
         await self.msg.edit(embed=self.embed)
 
+    async def on_message(self, x, y, color):
+        for p in self.pixels:
+            if p.x == x and p.y == y:
+                p.current = color
+                self.loop.create_task(self.send_err_embed())
+
 
 error_trackers = {
-    "pixelcanvas": PixelCanvasTracker
+    "pixelcanvas": PixelCanvasTracker,
+    "pixelzone": PixelZoneTracker
 }
