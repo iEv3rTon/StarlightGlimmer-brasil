@@ -22,7 +22,7 @@ STRINGS = {
     "bot.subcommands": "Subcomandos",
     "bot.total": "Total",
     "bot.update": "Atualizei para a versão**{0}**! Aqui está o changelog:",
-    "bot.update_no_changelog": "Atualizei para a versão **{0}**! Visite https://github.com/DiamondIceNS/StarlightGlimmer/releases para o changelog completo.",
+    "bot.update_no_changelog": "Atualizei para a versão **{0}**! Visite https://github.com/BrickGrass/StarlightGlimmer/releases para o changelog completo.",
     "bot.usage": "Uso",
     "bot.visibility": "Visibilidade",
     "bot.yes": "Sim",
@@ -32,7 +32,7 @@ STRINGS = {
     "error.account_deleted": "[[Conta excluída]]",
     "error.bad_image": "Ocorreu um erro ao tentar abrir uma imagem. Assegure-se de que a imagem fornecida não esteja corrompida.",
     "error.bad_png": "Esta imagem parece estar corrompida. Tente salvá-la novamente com um editor de imagens ou usando`{0}quantize`.",
-    "error.cannot_fetch_template": "Não foi possível acessar o URL da template. (O anexo original foi excluído?)",
+    "error.cannot_fetch_template": "Não foi possível acessar o URL da template '{0}' . (O anexo original foi excluído?)",
     "error.cooldown": "Esse comando está em cooldown. Tente novamente em{0:.01f}s.",
     "error.faction_not_found": "Essa facção não pôde ser encontrada.",
     "error.http": "Ocorreu um erro ao recuperar dados de um local remoto. Tente mais tarde.",
@@ -50,10 +50,10 @@ STRINGS = {
     "error.no_user_permission": "Você não tem permissão para usar esse comando.",
     "error.not_png": "Esse comando requer uma imagem PNG.",
     "error.non_discord_url": "Eu só posso aceitar URLs de anexo do Discord.",
-    "error.template_not_found": "O template não foi encontrado.",
+    "error.template_not_found": "O template {0} não foi encontrado.",
     "error.template_did_you_mean": "Você quis dizer: {0}?",
     "error.timed_out": "O tempo do comando expirou.",
-    "error.unknown": "Ocorreu um erro desconhecido. O desenvolvedor foi notificado.",
+    "error.unknown": "Ocorreu um erro desconhecido. O desenvolvedor foi notificado. `{0}`",
     "error.why": "Mas... por que? o.O",
 
     # Animotes command messages
@@ -82,7 +82,7 @@ STRINGS = {
     "canvas.dither_order_and_threshold_option": "Threshold: {0}/4 Order: {1}",
     "canvas.dither_order_option": "Ordem: {0}",
     "canvas.template_report_header": "Relatório do Template",
-    "canvas.fetching_data": "Buscando dados de {}...",
+    "canvas.fetching_data": "Buscando dados de {0}...",
     "canvas.calculating": "Calculando...",
 
     # Configuration command messages
@@ -154,7 +154,7 @@ STRINGS = {
     "faction.set_name": "Facção renomeada para`{}`.",
 
     # General command messages
-    "general.err.cannot_get_changelog": "Houve um erro procurando o changelog. Acesse https://github.com/DiamondIceNS/StarlightGlimmer/releases para ver todas as versões.",
+    "general.err.cannot_get_changelog": "Houve um erro procurando o changelog. Acesse https://github.com/BrickGrass/StarlightGlimmer/releases para ver todas as versões.",
     "general.help_command_list_header": "Lista de Comandos",
     "general.help_more_info": "Use `{}help <commando>` para ver mais informações sobre um comando específico.",
     "general.help_subcommand": "# Use '{}help {} (subcommando)' para ver mais informações sobre um subcomando",
