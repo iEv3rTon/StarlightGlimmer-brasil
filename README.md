@@ -5,7 +5,7 @@ A template utility bot based on [Alastair](Make-Alastair-Great-Again) and [Pinki
 
 This bot is forked from Fawfulcopter's original [Starlight Glimmer](https://github.com/DiamondIceNS/StarlightGlimmer).
 
-Currently supports [Pixelcanvas.io](https://pixelcanvas.io), [Pixelzone](https://pixelzone.io) and [Pxlsspace.io](https://pxlsspace.io). Newer features may not be supported for sites other than pixelcanvas, but I'll be working to make them function in the near future.
+Currently supports [Pixelcanvas.io](https://pixelcanvas.io), [Pixelzone.io](https://pixelzone.io) and [Pxls.space](https://pxls.space). Newer features may not be supported for sites other than pixelcanvas, but I'll be working to make them function in the near future.
 
 **Invite:** `https://discordapp.com/oauth2/authorize?client_id=589606792926068736&permissions=35840&scope=bot`
 
