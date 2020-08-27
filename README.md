@@ -5,7 +5,7 @@ A template utility bot based on [Alastair](Make-Alastair-Great-Again) and [Pinki
 
 This bot is forked from Fawfulcopter's original [Starlight Glimmer](https://github.com/DiamondIceNS/StarlightGlimmer).
 
-Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Newer features may not be supported for other pixel sites, but I'll be working to make them work in the near future.
+Currently supports [Pixelcanvas.io](https://pixelcanvas.io), [Pixelzone](https://pixelzone.io) and [Pxlsspace.io](https://pxlsspace.io). Newer features may not be supported for sites other than pixelcanvas, but I'll be working to make them function in the near future.
 
 **Invite:** `https://discordapp.com/oauth2/authorize?client_id=589606792926068736&permissions=35840&scope=bot`
 
@@ -22,8 +22,8 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io/). Newer features may
 
 #### Installation:
 1. Install Python 3.6
-2. Run `pip install -r requirements.txt` in the main directory
-3. Put your bot token and other config info in `config/config.json.example`
+2. Run `python -m pip install -r requirements.txt` in the main directory
+3. Put your bot token, [database uri](https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls) and other config info in `config/config.json.example`
 3. Rename `config.json.example` to `config.json`
 4. Make a folder named data
 4. Run `python glimmer.py`
