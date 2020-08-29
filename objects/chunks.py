@@ -6,7 +6,7 @@ import uuid
 from PIL import Image
 
 from utils import colors
-from utils.canvases import PZ_CHUNK_LENGTH, PC_CHUNK_LENGTH, PZ_MAP_LENGTH
+from utils.canvases import PZ_CHUNK_LENGTH, PC_CHUNK_LENGTH, PZ_MAP_LENGTH_HALVED
 
 
 class Chunky(abc.ABC):
@@ -129,11 +129,11 @@ class ChunkPz(Chunky):
 
     @property
     def p_x(self):
-        return self.x * PZ_CHUNK_LENGTH - PZ_MAP_LENGTH
+        return self.x * PZ_CHUNK_LENGTH - PZ_MAP_LENGTH_HALVED
 
     @property
     def p_y(self):
-        return self.y * PZ_CHUNK_LENGTH - PZ_MAP_LENGTH
+        return self.y * PZ_CHUNK_LENGTH - PZ_MAP_LENGTH_HALVED
 
     @property
     def url(self):
@@ -155,8 +155,8 @@ class ChunkPz(Chunky):
 
     @staticmethod
     def get_intersecting(x, y, dx, dy):
-        x += PZ_MAP_LENGTH
-        y += PZ_MAP_LENGTH
+        x += PZ_MAP_LENGTH_HALVED
+        y += PZ_MAP_LENGTH_HALVED
         chunks = []
         dx, dy = ChunkPz.chunk_from_coords(x + dx, y + dy)
         x, y = ChunkPz.chunk_from_coords(x, y)

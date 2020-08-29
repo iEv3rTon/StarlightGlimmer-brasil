@@ -3,7 +3,6 @@ import math
 import time
 import os
 import re
-import traceback
 
 import discord
 from discord.ext import commands, tasks
@@ -12,7 +11,7 @@ from sqlalchemy.sql import func
 from objects.bot_objects import GlimContext
 from objects.database_models import session_scope, Guild, MenuLock, MutedTemplate, Template, Version
 import utils
-from utils import config, http, render
+from utils import config, http, render, websocket
 from utils.version import VERSION
 
 
@@ -37,6 +36,19 @@ class Glimmer(commands.Bot):
             'pixelcanvas': render.fetch_pixelcanvas,
             'pixelzone': render.fetch_pixelzone,
             'pxlsspace': render.fetch_pxlsspace
+        }
+
+        self.pc = websocket.PixelCanvasConnection(self)
+        self.pz = websocket.PixelZoneConnection(self)
+
+        # Once all the ws connections are instantiated, we can safely subscribe listeners to them
+        self.subscribers = {
+            "pixelcanvas": self.pc.add_listener,
+            "pixelzone": self.pz.add_listener
+        }
+        self.unsubscribers = {
+            "pixelcanvas": self.pc.remove_listener,
+            "pixelzone": self.pz.remove_listener
         }
 
         log.info("Loading cogs...")
@@ -75,9 +87,8 @@ class Glimmer(commands.Bot):
                 activity=discord.Activity(
                     name=pixels,
                     type=discord.ActivityType.watching))
-        except Exception as e:
-            log.exception(e)
-            await utils.channel_log(self, ''.join(traceback.format_exception(None, e, e.__traceback__)))
+        except Exception:
+            log.exception("Error during status update task.")
 
     @tasks.loop(minutes=5.0)
     async def unmute(self):
@@ -90,9 +101,13 @@ class Glimmer(commands.Bot):
                     mute.template.alert_channel = mute.alert_id
                     session.delete(mute)
 
-        except Exception as e:
-            log.exception(e)
-            await utils.channel_log(self, ''.join(traceback.format_exception(None, e, e.__traceback__)))
+        except Exception:
+            log.exception("Error during unmute task.")
+
+    async def unsubscribe_canvas_listeners(self, subscriptions):
+        for sub in subscriptions:
+            unsub = self.unsubscribers[sub["canvas"]]
+            await unsub(sub["uuid"])
 
     async def startup(self):
         await self.wait_until_ready()
@@ -109,9 +124,9 @@ class Glimmer(commands.Bot):
         self.set_presense.start()
         self.unmute.start()
 
-        log.info("Beginning long running connection to pixelzone...")
-        self.pz = http.PixelZoneConnection()
-        self.loop.create_task(self.pz.run(self))
+        log.info("Beginning canvas websocket connections...")
+        self.loop.create_task(self.pz.run())
+        self.loop.create_task(self.pc.run())
 
         log.info('I am ready!')
         await utils.channel_log(self, "I am ready!")
@@ -236,6 +251,40 @@ bot = Glimmer(
     command_prefix=get_prefix,
     case_insensitive=True,
     owner_id=255376766049320960)
+
+
+class DiscordLogger(logging.Handler):
+    def __init__(self, bot):
+        logging.Handler.__init__(self)
+        self.bot = bot
+
+    def emit(self, record):
+        if config.LOGGING_CHANNEL_ID:
+            channel = self.bot.get_channel(config.LOGGING_CHANNEL_ID)
+            if not channel:
+                log.warning("Can't find logging channel")
+            else:
+                try:
+                    message = self.format(record)
+                    if len(message) < 1990:
+                        self.bot.loop.create_task(channel.send(f"```{message}```"))
+                    else:
+                        chunks = [message[i:i + 1990] for i in range(0, len(message), 1990)]
+                        for chunk in chunks:
+                            self.bot.loop.create_task(channel.send(f"```{chunk}```"))
+                except discord.errors.Forbidden:
+                    log.warning("Forbidden from logging channel!")
+
+
+# Use a handler to try to send error level logs to my discord logging channel
+global_logger = logging.getLogger()
+
+error_log = DiscordLogger(bot)
+error_log.setLevel(logging.ERROR)
+error_log.setFormatter(config.formatter)
+
+global_logger.addHandler(error_log)
+
 
 # Delete all old menu locks
 with session_scope() as session:

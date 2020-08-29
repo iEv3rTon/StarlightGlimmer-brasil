@@ -1,5 +1,4 @@
 import logging
-import traceback
 
 import discord
 from discord.ext import commands, menus
@@ -128,14 +127,8 @@ class Events(commands.Cog):
         # Uncaught error
         else:
             name = ctx.command.qualified_name if ctx.command else "None"
-            await utils.channel_log(
-                self.bot, "An error occurred executing `{0}` in server **{1.name}** (ID: `{1.id}`):".format(name, ctx.guild))
-            tb_text = "{}\n{}".format(error, ''.join(traceback.format_exception(None, error, error.__traceback__)))
-            tb_text = [tb_text[i:i + 1500] for i in range(0, len(tb_text), 1500)]
-            for chunk in tb_text:
-                await utils.channel_log(self.bot, f"```{chunk}```")
-            log.error("An error occurred executing '{}': {}\n{}".format(
-                name, error, ''.join(traceback.format_exception(None, error, error.__traceback__))))
+            log.exception("An error occured executing '{0}' in server {1.name} (GID: {1.id})".format(
+                name, ctx.guild))
             await ctx.send(ctx.s("error.unknown").format(ctx.uuid))
 
     @commands.Cog.listener()

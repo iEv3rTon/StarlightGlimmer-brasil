@@ -389,9 +389,12 @@ class CheckerSource(discord.ext.menus.ListPageSource):
 
             embed.add_field(
                 name=f"{delta} ago - Template: {template.name}",
-                value=menu.ctx.s("template.alert_pixel").format(
-                    p, colors[p.damage_color], template_color,
-                    canvases.url_templates["pixelcanvas"].format(p.x, p.y)),
+                value=menu.ctx.s("bot.pixel").format(
+                    x=p.x,
+                    y=p.y,
+                    current=colors[p.damage_color],
+                    target=template_color,
+                    url=canvases.url_templates["pixelcanvas"].format(p.x, p.y)),
                 inline=False)
 
         self.embed = embed
@@ -399,11 +402,19 @@ class CheckerSource(discord.ext.menus.ListPageSource):
 
 
 class Pixel:
-    colors = []
+    # Messy, but like w/e
+    colors = {
+        "pixelcanvas": [],
+        "pixelzone": [],
+        "pxlsspace": []
+    }
     for x in range(16):
-        colors.append(en_US.STRINGS.get(f"color.pixelcanvas.{x}", None))
+        for canvas in ["pixelcanvas", "pixelzone", "pxlsspace"]:
+            colors[canvas].append(en_US.STRINGS.get(f"color.{canvas}.{x}", None))
+    for x in range(16, 24):
+        colors["pxlsspace"].append(en_US.STRINGS.get(f"color.pxlsspace.{x}", None))
 
-    def __init__(self, damage_color, x, y, alert_id, template_id):
+    def __init__(self, damage_color, x, y, alert_id, template_id, canvas):
         self.damage_color = damage_color  # int from 0-15, corresponds to an index in colors
         self.x = x
         self.y = y
@@ -418,13 +429,13 @@ class Pixel:
 
     @property
     def log_color(self):
-        return Pixel.colors[self.damage_color]
+        return Pixel.colors[self.canvas][self.damage_color]
 
 
 class Template:
     def __init__(self,
                  id: int, name: str, array: np.array, url: str, md5: str, sx: int, sy: int,
-                 alert_channel: int, gid):
+                 alert_channel: int, gid, canvas):
 
         self.gid = gid
         self.id = id  # Unique identifier for each template, never changes, sourced from db
@@ -432,6 +443,7 @@ class Template:
         self.array = array  # Image array
         self.url = url  # Image url
         self.md5 = md5
+        self.canvas = canvas
 
         self.sx, self.sy = sx, sy  # sx = start x, ex = end x
         self.ex, self.ey = sx + array.shape[0], sy + array.shape[1]
@@ -445,7 +457,7 @@ class Template:
     def __repr__(self):
         return ("Template(id={0.id}, gid={0.gid}, name={0.name}, url={0.url}, md5={0.md5}, sx={0.sx}, sy={0.sy} "
                 "ex={0.ex}, ey={0.ey}, aid={0.alert_channel}, message={0.last_alert_message}, sending={0.sending}, "
-                "pixels={0.pixels})".format(self))
+                "pixels={0.pixels}, canvas={0.canvas})".format(self))
 
     @property
     def current_pixels(self):
@@ -463,8 +475,8 @@ class Template:
                     log.exception(f"File for {t.name} could not be downloaded, status code: {resp.status}")
                     return None
 
-        template = Template(t.id, t.name, converter.image_to_array(image, "pixelcanvas"), t.url, t.md5,
-                            t.x, t.y, t.alert_id, t.guild_id)
+        template = Template(t.id, t.name, converter.image_to_array(image, t.canvas), t.url, t.md5,
+                            t.x, t.y, t.alert_id, t.guild_id, t.canvas)
         log.debug(f"Generated {template}.")
         return template
 
@@ -472,7 +484,7 @@ class Template:
         return GlimContext.get_from_guild(self.gid, str_id)
 
     def color_string(self, index):
-        return self.s(f"color.pixelcanvas.{index}")
+        return self.s(f"color.{self.canvas}.{index}")
 
     def in_range(self, x, y):
         return self.sx <= x < self.ex and self.sy <= y < self.ey
@@ -492,6 +504,6 @@ class Template:
             alert_id = self.last_alert_message.id
         except AttributeError:
             alert_id = "flag"
-        pixel = Pixel(color, x, y, alert_id, self.id)
+        pixel = Pixel(color, x, y, alert_id, self.id, self.canvas)
         self.pixels.append(pixel)
         return pixel

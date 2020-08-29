@@ -28,6 +28,7 @@ from objects.errors import \
      PilImageError,
      TemplateTooLargeError,
      UrlError)
+from objects.tracker import Tracker
 from utils import \
     (autoscan,
      canvases,
@@ -555,12 +556,10 @@ class Canvas(commands.Cog):
                 if not error_list:
                     err = False
                 else:
-                    try:
-                        checker = http.error_trackers[canvas]
-                        checker = checker(
-                            self.bot, ctx, canvas, error_list, embed,
-                            0 if not bad_list else 1)
-                    except KeyError:
+                    if canvas in ["pixelcanvas", "pixelzone"]:
+                        checker = Tracker(self.bot, ctx, canvas, error_list, embed,
+                                          0 if not bad_list else 1)
+                    else:
                         await ctx.send(f"The -e option is not supported for {canvases.pretty_print[canvas]}")
                         err = False
 
@@ -575,7 +574,7 @@ class Canvas(commands.Cog):
                     message = await ctx.send(content=out, file=f, embed=embed)
 
         if err:
-            await checker.connect_websocket(message)
+            await checker.connect(message)
 
     async def _dither(self, ctx, palette, type, threshold, order):
         """Sends a message containing a dithered version of the image given.

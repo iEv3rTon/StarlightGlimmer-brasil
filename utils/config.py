@@ -12,7 +12,8 @@ class WebsocketLogFilter(logging.Filter):
 
 log = logging.getLogger()
 handler = TimedRotatingFileHandler(filename='data/discord.log', encoding='utf-8', when='midnight', backupCount=7)
-handler.setFormatter(logging.Formatter('{asctime} [{levelname}] {name}: {message}', style='{'))
+formatter = logging.Formatter('{asctime} [{levelname}] {name}: {message}', style='{')
+handler.setFormatter(formatter)
 handler.addFilter(WebsocketLogFilter())
 log.addHandler(handler)
 

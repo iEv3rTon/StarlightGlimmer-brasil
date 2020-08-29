@@ -33,6 +33,7 @@ STRINGS = {
     "bot.menu_deleted": "Menu not found, was the message deleted?",
     "bot.reaction_scroll": "Scroll using the reactions below to see other pages.",
     "bot.menu_page": "Page {0} of {1}",
+    "bot.pixel": "[{x},{y}]({url}) is {current} should be {target}.",
 
     # Error messages
     "error.account_deleted": "[[Account deleted]]",
@@ -68,7 +69,6 @@ STRINGS = {
     # Alerts command messages
     "alerts.alert_title": "{} took damage!",
     "alerts.alert_description": "Messages that are crossed out have been fixed.",
-    "alerts.alert_pixel": "{c}[@{0.x},{0.y}]({url}) painted **{1}**, should be **{2}**.{c}\n",
     "alerts.recieved": "Received:",
 
     # Animotes command messages
@@ -81,7 +81,6 @@ STRINGS = {
     "canvas.diff_bad_color": "{0}/{1} | {2} errors | {bad} bad color | {3} complete",
     "canvas.diff_bad_color_list": "{0} pixels of bad color #{1:02x}{2:02x}{3:02x}",
     "canvas.diff_bad_color_title": "Bad Colors:",
-    "canvas.diff_error_list": "({0}, {1}) is {2}, should be {3}",
     "canvas.diff_error_title": "Errors",
     "canvas.diff_fixed": "All fixed!",
     "canvas.diff_timeout": "Message timed out.",
@@ -225,7 +224,6 @@ STRINGS = {
     "template.already_muted": "`{0}` has no alert channel/is already muted",
     "template.muted": "`{0}` muted for {1:.2f} hours.",
     "template.no_recent_errors": "No recent errors found.",
-    "template.alert_pixel": "[@{0.x},{0.y}]({3}) is **{1}**, should be **{2}**.",
     "template.err.update_invalid_url": "Updating image failed, invalid url, it must be a discord attachment.",
     "template.err.update_no_attachment": "Updating image failed, no attachments could be detected.",
     "template.menu_entry": "[{0}, {1}]({2}) | [Link to file]({3})",

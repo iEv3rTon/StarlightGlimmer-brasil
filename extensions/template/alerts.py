@@ -1,16 +1,10 @@
-import asyncio
 import datetime
 import logging
-import math
 import time
 import re
-import uuid
-import socket
-from struct import unpack_from
 
 import discord
 from discord.ext import commands, menus, tasks
-import websockets
 
 from objects.database_models import session_scope, Template as TemplateDb, MutedTemplate
 from objects.errors import TemplateNotFoundError, CanvasNotSupportedError
@@ -24,21 +18,39 @@ class Alerts(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.templates = []
-        self.fingerprint = uuid.uuid4().hex
+        self.subscriptions = []
 
         self.bot.loop.create_task(self.start_checker())
 
     def cog_unload(self):
+        self.subscribe.cancel()
         self.update.cancel()
         self.cleanup.cancel()
-        self.websocket_task.cancel()
+
+        self.bot.loop.create_task(
+            self.bot.unsubscribe_canvas_listeners(
+                self.subscriptions))
 
     async def start_checker(self):
         await self.bot.wait_until_ready()
         log.info("Starting template checker...")
+        self.subscribe.start()
         self.update.start()
         self.cleanup.start()
-        self.websocket_task = self.bot.loop.create_task(self.run_websocket())
+
+    @tasks.loop(seconds=30.0)
+    async def subscribe(self):
+        subs = [sub["canvas"] for sub in self.subscriptions]
+        new_subs = set()
+
+        for template in self.templates:
+            if template.canvas not in subs:
+                new_subs.add(template.canvas)
+
+        for canvas in new_subs:
+            sub_func = self.bot.subscribers[canvas]
+            s_uuid = await sub_func(self.on_message)
+            self.subscriptions.append({"canvas": canvas, "uuid": s_uuid})
 
     @tasks.loop(minutes=5.0)
     async def update(self):
@@ -131,7 +143,7 @@ class Alerts(commands.Cog):
         if not template:
             raise TemplateNotFoundError(ctx, ctx.guild.id, name)
 
-        if template.canvas != "pixelcanvas":
+        if template.canvas not in ["pixelcanvas", "pixelzone"]:
             raise CanvasNotSupportedError()
 
         mute = ctx.session.query(MutedTemplate).filter_by(template_id=template.id).first()
@@ -157,7 +169,7 @@ class Alerts(commands.Cog):
         if not template:
             raise TemplateNotFoundError(ctx, ctx.guild.id, name)
 
-        if template.canvas != "pixelcanvas":
+        if template.canvas not in ["pixelcanvas", "pixelzone"]:
             raise CanvasNotSupportedError()
 
         if not duration:
@@ -243,42 +255,14 @@ class Alerts(commands.Cog):
         except discord.NotFound:
             await ctx.send(ctx.s("bot.menu_deleted"))
 
-    async def run_websocket(self):
-        while True:
-            log.debug("Connecting to websocket...")
-            try:
-                url = f"wss://ws.pixelcanvas.io:8443/?fingerprint={self.fingerprint}"
-                async with websockets.connect(url) as ws:
-                    async for message in ws:
-                        await self.on_message(message)
-            except websockets.exceptions.ConnectionClosed:
-                log.debug("Websocket disconnected.")
-            except socket.gaierror:
-                log.debug("Temporary failure in name resolution.")
-            except Exception as e:
-                log.exception(f"Error launching! {e}")
+    async def on_message(self, x, y, color, canvas):
+        for template in self.templates:
+            if template.canvas != canvas:
+                continue
+            if not template.in_range(x, y):
+                continue
 
-            await asyncio.sleep(0.5)
-
-    async def on_message(self, message):
-        try:
-            if unpack_from('B', message, 0)[0] == 193:
-                x = unpack_from('!h', message, 1)[0]
-                y = unpack_from('!h', message, 3)[0]
-                a = unpack_from('!H', message, 5)[0]
-                number = (65520 & a) >> 4
-                x = int(x * 64 + ((number % 64 + 64) % 64))
-                y = int(y * 64 + math.floor(number / 64))
-                color = 15 & a
-
-                # log.debug("Pixel placed, ({0},{1}) colour:{2}".format(x, y, colors[color]))
-
-                for template in self.templates:
-                    if not template.in_range(x, y):
-                        continue
-                    self.bot.loop.create_task(self.check_template(template, x, y, color))
-        except Exception as e:
-            log.exception(f"Error with pixel. {e}")
+            self.bot.loop.create_task(self.check_template(template, x, y, color))
 
     async def check_template(self, template, x, y, color):
         template_color = template.color_at(x, y)
@@ -287,7 +271,7 @@ class Alerts(commands.Cog):
             for p in template.pixels:
                 if p.x == x and p.y == y:
                     p.fixed = True
-                    log.debug(f"Tracked pixel {p.x},{p.y} fixed to {Pixel.colors[color]}, was {p.log_color}. On {template}")
+                    log.debug(f"Tracked pixel {p.x},{p.y} fixed to {Pixel.colors[template.canvas][color]}, was {p.log_color}. On {template}")
                     await self.send_embed(template)
         elif color != template_color and template_color > -1:
             if not template.last_alert_message:
@@ -329,18 +313,18 @@ class Alerts(commands.Cog):
             embed.set_thumbnail(url=template.url)
             text = ""
 
-            url = canvases.url_templates["pixelcanvas"]  # Should source this from the template obj rlly
+            url = canvases.url_templates[template.canvas]
 
             for p in template.pixels:
                 if (template.last_alert_message and p.alert_id == template.last_alert_message.id) or \
                    (p.alert_id == "flag" and template.id == p.template_id):
 
-                    text += template.s("alerts.alert_pixel").format(
-                        p,
-                        template.color_string(p.damage_color),
-                        template.color_string(template.color_at(p.x, p.y)),
-                        url=url.format(p.x, p.y),
-                        c="~~" if p.fixed else "")
+                    out = "~~{0}~~\n" if p.fixed else "{0}\n"
+                    text += out.format(
+                        template.s("bot.pixel").format(
+                            x=p.x, y=p.y, url=url.format(p.x, p.y),
+                            current=template.color_string(p.damage_color),
+                            target=template.color_string(template.color_at(p.x, p.y))))
 
             embed.add_field(name=template.s("alerts.recieved"), value=text, inline=False)
             embed.timestamp = datetime.datetime.now()
@@ -355,10 +339,10 @@ class Alerts(commands.Cog):
                         if p.alert_id == "flag":
                             p.alert_id = template.last_alert_message.id
             except discord.errors.HTTPException as e:
-                log.debug(f"Exception sending message for {template}, {e}")
+                log.debug(f"Exception sending message for {template}")
 
             # Release send lock
             template.sending = False
         except Exception as e:
             template.sending = False
-            log.exception(f"Error sending/editing an embed. {e}")
+            log.exception("Error sending/editing an embed.")
