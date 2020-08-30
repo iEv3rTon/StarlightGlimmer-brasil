@@ -151,7 +151,7 @@ class PixelZoneConnection(LongrunningWSConnection):
                     await self.sio.connect("https://pixelzone.io", headers=http.useragent)
                     self.retry = False
                 await self.sio.wait()
-            except socketio.exceptions.ConnectionRefusedError:
+            except socketio.exceptions.ConnectionError:
                 log.exception("Pixelzone connection refused.")
                 self.retry = True
 

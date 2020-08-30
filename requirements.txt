@@ -12,3 +12,4 @@ sqlalchemy
 psycopg2
 python-socketio[asyncio_client]
 requests
+matplotlib
