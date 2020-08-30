@@ -384,7 +384,8 @@ class Alerts(commands.Cog):
         elif type == "gain":
             ax = fig.subplots()
 
-            ax.scatter(x_values, gain_values, c=gain_colors)
+            ax.plot(x_values, gain_values, color="grey", zorder=2)
+            ax.scatter(x_values, gain_values, c=gain_colors, zorder=3)
             ax.grid(True)
             ax.set_ylabel(ctx.s("alerts.gain_y_label"))
             format_date(ax)
