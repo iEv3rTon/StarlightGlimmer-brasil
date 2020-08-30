@@ -128,7 +128,7 @@ class Events(commands.Cog):
         else:
             name = ctx.command.qualified_name if ctx.command else "None"
             log.exception("An error occured executing '{0}' in server {1.name} (GID: {1.id})".format(
-                name, ctx.guild))
+                name, ctx.guild), exc_info=error)
             await ctx.send(ctx.s("error.unknown").format(ctx.uuid))
 
     @commands.Cog.listener()

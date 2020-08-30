@@ -67,9 +67,25 @@ STRINGS = {
     "error.canvas_not_supported": "Templates of that canvas are not supported for this command.",
 
     # Alerts command messages
-    "alerts.alert_title": "{} took damage!",
     "alerts.alert_description": "Messages that are crossed out have been fixed.",
-    "alerts.recieved": "Received:",
+    "alerts.alert_title": "{0} took damage!",
+    "alerts.allies": "Allies",
+    "alerts.already_muted": "`{0}` has no alert channel/is already muted",
+    "alerts.comparision_title": "Comparision of allied vs enemy pixels placed on {0} in the past {1} day(s).",
+    "alerts.comparision_y_label": "Pixels placed per hour",
+    "alerts.enemies": "Enemies",
+    "alerts.gain_title": "Overall gain or loss of progress on {0} in the past {1} day(s).",
+    "alerts.gain_y_label": "Gain/loss of pixels per hour",
+    "alerts.invalid_duration_1": "Invalid mute duration, give the number of hours or format like `1h8m`",
+    "alerts.invalid_duration_2": "Invalid mute duration, duplicate time suffix (eg: 1**h**8m3**h**)",
+    "alerts.muted": "`{0}` muted for {1:.2f} hours.",
+    "alerts.no_recent_errors": "No recent errors found.",
+    "alerts.no_stats": "No alert statistics found for that template",
+    "alerts.not_muted": "`{0}` is not currently muted.",
+    "alerts.received": "Received:",
+    "alerts.unmuted": "Unmuted `{0}`.",
+    "alerts.will_alert": "`{0}` will now alert in the channel {1} when damaged.",
+    "alerts.will_not_alert": "`{0}` will no longer alert for damage.",
 
     # Animotes command messages
     "animotes.opt_in": "You have successfully **opted-in** to emoji conversion.",
@@ -190,6 +206,7 @@ STRINGS = {
     "template.added": "Template '{0}' added!",
     "template.duplicate_list_close": "Create a new template anyway?",
     "template.duplicate_list_open": "The following templates already match this image:",
+    "template.err.hyphen": "Template names cannot begin with hyphens.",
     "template.err.invalid_coords": "Coordinates must be numbers!",
     "template.err.max_templates": "This guild already has the maximum number of templates. Please remove a template before adding another.",
     "template.err.name_exists": "A template with that name already exists. Please choose a different name.",
@@ -198,43 +215,34 @@ STRINGS = {
     "template.err.no_image": "An image is required to add a template.",
     "template.err.no_public_templates": "There are currently no public templates.",
     "template.err.not_owner": "You do not have permission to modify that template.",
-    "template.err.template_gen_error": "There was an error building the template.",
-    "template.err.hyphen": "Template names cannot begin with hyphens.",
     "template.err.number": "Template names cannot be numbers.",
+    "template.err.template_gen_error": "There was an error building the template.",
+    "template.err.update_file": "Updating file failed",
+    "template.err.update_invalid_url": "Updating image failed, invalid url, it must be a discord attachment.",
+    "template.err.update_no_attachment": "Updating image failed, no attachments could be detected.",
+    "template.err.url_access": "{0}: Could not access URL for template.",
     "template.link_to_canvas": "Link to canvas",
     "template.list_all_footer_1": "Use '{0}template all <page>' to see that page",
     "template.list_all_footer_2": "Use '{0}template info -f <faction> <name>' to see more info on a template",
     "template.list_footer_1": "Use '{0}template <page>' to see that page or scroll using the reactions below",
     "template.list_footer_2": "Use '{0}template info <name>' to see more info on a template",
     "template.list_header": "Template List",
+    "template.menu_entry": "[{0}, {1}]({2}) | [Link to file]({3})",
     "template.menuclose": "Menu exited!",
     "template.name_exists_ask_replace": "A template with the name '{0}' already exists for {1} at ({2}, {3}).",
-    "template.replace": "Replace it?",
     "template.not_quantized": "This image contains colors that are not part of this canvas's palette. Would you like to quantize it?",
     "template.remove": "Successfully removed '{0}'.",
-    "template.updated": "Template '{0}' updated!",
+    "template.replace": "Replace it?",
     "template.update_header_1": "Template updated!",
     "template.update_header_2": "Summary of changes",
-    "template.unmuted": "Unmuted `{0}`.",
-    "template.will_alert": "`{0}` will now alert in the channel {1} when damaged.",
-    "template.will_not_alert": "`{0}` will no longer alert for damage.",
-    "template.not_muted": "`{0}` is not currently muted.",
-    "template.invalid_duration_1": "Invalid mute duration, give the number of hours or format like `1h8m`",
-    "template.invalid_duration_2": "Invalid mute duration, duplicate time suffix (eg: 1**h**8m3**h**)",
-    "template.already_muted": "`{0}` has no alert channel/is already muted",
-    "template.muted": "`{0}` muted for {1:.2f} hours.",
-    "template.no_recent_errors": "No recent errors found.",
-    "template.err.update_invalid_url": "Updating image failed, invalid url, it must be a discord attachment.",
-    "template.err.update_no_attachment": "Updating image failed, no attachments could be detected.",
-    "template.menu_entry": "[{0}, {1}]({2}) | [Link to file]({3})",
-    "template.err.update_file": "Updating file failed",
-    "template.err.url_access": "{0}: Could not access URL for template.",
+    "template.updated": "Template '{0}' updated!",
 
     # Command brief help
     "brief.alert": "Set or clear a templates alert channel.",
     "brief.alertchannel": "Set or clear the channel used for receiving bot update alerts from my github page.",
     "brief.alertchannel.clear": "Clears the alert channel.",
     "brief.alertchannel.set": "Sets the alert channel.",
+    "brief.alerts-stats": "Shows statistics about a template I monitor.",
     "brief.assemble": "Assemble this guild into a faction.",
     "brief.autoscan": "Toggles automatic preview and diff.",
     "brief.canvas": "Sets the default canvas website for this guild.",
@@ -331,6 +339,14 @@ STRINGS = {
     # Command long help
     "help.alert": "With an alert channel set, I will monitor your template constantly and alert for damage in that channel.",
     "help.alertchannel.set": "Use the #channel mention syntax with this command to ensure the correct channel is set.",
+    "help.alert-stats": """
+        When template alerts are enabled (see `{p}alert`) I will begin to gather statistics about pixels placed on it.
+        You can retrieve graphs displaying that data with this command. No data older than a week old is kept.
+
+        Graph types:
+        `comparision` - The comparision graph displays the total number of pixels placed each hour by allies or enemies. Allies being pixels that are correct to the template, enemies being pixels that are damaging to the template. Anywhere on the template that is transparent will be ignored.
+        `gain` - The gain graph displays the overall gain or loss in progress on a template in each hour recorded. So if 2 pixels were placed by your allies, and 4 by your enemies, the overall gain for that hour would be -2.
+    """,
     "help.assemble": "Faction names and aliases must be unique. Names must be between 6 and 32 characters, case sensitive. Aliases must be between 1 and 5 characters, case insensitive.",
     "help.autoscan": """
         If enabled, I will watch all messages for coordinates and automatically create previews and diffs according to these rules:
@@ -409,6 +425,12 @@ STRINGS = {
     "help.update": "Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.",
     "help.unregister": "You only need to unregister once for this to apply to all guilds.",
 
+    "args.alert-stats": """
+        `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
+        `-d` or `--days` - Controls how many days worth of data gets shown, default is 1.
+        `-t` or `--type` - Selects the type of graph to display. Default is comparision.
+            options: comparision, gain
+    """,
     "args.check": """
         `-e` or `--onlyErrors` - This argument filters the results and only shows templates with errors.
         `-f` or `--faction` - Searches for the faction name provided and tries to check it's templates.
@@ -453,6 +475,7 @@ STRINGS = {
     "signature.alert": "<template_name> (alert_channel)",
     "signature.alertchannel": "(subcommand)",
     "signature.alertchannel.set": "<channel>",
+    "signature.alert-stats": "<template_name> (-f|--faction) (-d|--days) (-t|--type)",
     "signature.assemble": "<name> (alias)",
     "signature.canvas": "(subcommand)",
     "signature.check": "(-e|--onlyErrors) (-f|--faction) (-s|--sort)",
@@ -514,6 +537,9 @@ STRINGS = {
         [("clear", "Clear the alert channel if there is one"),
          ("set #bot-spam", "Set the alert channel to a channel named 'bot-spam'")],
     "example.alertchannel.set": [("#bot-spam", "Set the alert channel to a channel named 'bot-spam'")],
+    "example.alert-stats":
+        [("my_template", "Fetches a comparision graph for the template named 'my_template' for the past day"),
+         ("cool_flower_art --days 7 --type gain", "Fetches a gain graph for the template named 'cool_flower_art' for the past 7 days")],
     "example.assemble":
         [("CoolFaction", "Assembles your guild into a faction named 'CoolFaction'"),
          ("\"Cool Faction\" cf", "Assembles your guild into a faction named 'Cool Faction' with alias 'cf'")],

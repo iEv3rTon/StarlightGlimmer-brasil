@@ -46,6 +46,7 @@ class PixelZoneConnection(LongrunningWSConnection):
         self.sio = socketio.AsyncClient(binary=True, logger=log)
         self.ready = False
 
+        self.retry = True
         self.last_failure = None
         self.failures = 0
 
@@ -144,12 +145,15 @@ class PixelZoneConnection(LongrunningWSConnection):
                 else:
                     self.failures = 0
 
-            log.debug("Connecting to pixelzone.io websocket...")
             try:
-                await self.sio.connect("https://pixelzone.io", headers=http.useragent)
+                if self.retry:
+                    log.debug("Connecting to pixelzone.io websocket...")
+                    await self.sio.connect("https://pixelzone.io", headers=http.useragent)
+                    self.retry = False
                 await self.sio.wait()
-            except Exception:
-                log.exception("Pixelzone connection failed to open.")
+            except socketio.exceptions.ConnectionRefusedError:
+                log.exception("Pixelzone connection refused.")
+                self.retry = True
 
             self.last_failure = time()
 

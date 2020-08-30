@@ -1,2 +1,2 @@
-VERSION = 3.0
+VERSION = 3.1
 AUTHORS = ["DiamondIceNS", "BrickGrass"]
