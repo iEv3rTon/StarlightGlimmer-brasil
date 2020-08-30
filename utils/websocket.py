@@ -46,6 +46,9 @@ class PixelZoneConnection(LongrunningWSConnection):
         self.sio = socketio.AsyncClient(binary=True, logger=log)
         self.ready = False
 
+        self.last_failure = None
+        self.failures = 0
+
         self.chunk_lock = asyncio.Lock()
         self.chunks = {}
         self.chunk_queue = asyncio.Queue()
@@ -129,14 +132,26 @@ class PixelZoneConnection(LongrunningWSConnection):
             await asyncio.sleep(60)
 
     async def run(self):
-        try:
-            # Once the connection initially succeeds, sio handles all reconnects
-            log.debug("Connecting to pixelzone.io websocket...")
-            await self.sio.connect("https://pixelzone.io", headers=http.useragent)
-        except Exception:
-            log.exception("Pixelzone connection failed to open")
         self.bot.loop.create_task(self.requester())
         self.bot.loop.create_task(self.expirer())
+
+        while True:
+            if self.last_failure:
+                failure_delta = time() - self.last_failure
+                if failure_delta > 60 * 5:
+                    self.failures += 1
+                    await asyncio.sleep(2 ** self.failures)
+                else:
+                    self.failures = 0
+
+            log.debug("Connecting to pixelzone.io websocket...")
+            try:
+                await self.sio.connect("https://pixelzone.io", headers=http.useragent)
+                await self.sio.wait()
+            except Exception:
+                log.exception("Pixelzone connection failed to open.")
+
+            self.last_failure = time()
 
 
 class CachedPZChunk:
