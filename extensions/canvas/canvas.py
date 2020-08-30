@@ -162,7 +162,7 @@ class Canvas(commands.Cog):
     #         DITHER
     # =======================
 
-    @commands.max_concurrency(2, per=commands.BucketType.default)
+    @commands.max_concurrency(1, per=commands.BucketType.default)
     @commands.group(
         name="dither",
         invoke_without_command=True,
@@ -180,12 +180,22 @@ class Canvas(commands.Cog):
         dither_type, threshold, order = dither_argparse(ctx, args)
         await self._dither(ctx, colors.pixelcanvas, dither_type, threshold, order)
 
+    @dither.command(name="pixelzone", aliases=["pz"])
+    async def dither_pixelzone(self, ctx, *args):
+        dither_type, threshold, order = dither_argparse(ctx, args)
+        await self._dither(ctx, colors.pixelzone, dither_type, threshold, order)
+
+    @dither.command(name="pxlsspace", aliases=["ps"])
+    async def dither_pxlsspace(self, ctx, *args):
+        dither_type, threshold, order = dither_argparse(ctx, args)
+        await self._dither(ctx, colors.pxlsspace, dither_type, threshold, order)
+
     # =======================
     #          CHECK
     # =======================
 
     @commands.guild_only()
-    @commands.cooldown(1, 10, commands.BucketType.guild)
+    @commands.cooldown(1, 30, commands.BucketType.guild)
     @commands.command(name='check', aliases=['c'])
     async def check(self, ctx, *args):
 
@@ -352,7 +362,7 @@ class Canvas(commands.Cog):
     #         ONLINE
     # ======================
 
-    @commands.cooldown(1, 5, commands.BucketType.guild)
+    @commands.cooldown(2, 5, commands.BucketType.guild)
     @commands.group(
         name="online",
         aliases=["o"],
@@ -373,10 +383,8 @@ class Canvas(commands.Cog):
 
     @online.command(name="pxlsspace", aliases=["ps"])
     async def online_pxlsspace(self, ctx):
-        async with ctx.typing():
-            msg = await ctx.send(ctx.s("canvas.online_await"))
-            ct = await http.fetch_online_pxlsspace()
-            await msg.edit(content=ctx.s("canvas.online").format(ct, "Pxls.space"))
+        time, ct = await http.fetch_online_pxlsspace(self.bot)
+        await ctx.send(ctx.s("canvas.online").format(ct, "Pxls.space"))
 
     # -- Methods --
 
@@ -556,12 +564,8 @@ class Canvas(commands.Cog):
                 if not error_list:
                     err = False
                 else:
-                    if canvas in ["pixelcanvas", "pixelzone"]:
-                        checker = Tracker(self.bot, ctx, canvas, error_list, embed,
-                                          0 if not bad_list else 1)
-                    else:
-                        await ctx.send(f"The -e option is not supported for {canvases.pretty_print[canvas]}")
-                        err = False
+                    checker = Tracker(self.bot, ctx, canvas, error_list, embed,
+                                      0 if not bad_list else 1)
 
             with io.BytesIO() as bio:
                 diff_img.save(bio, format="PNG")

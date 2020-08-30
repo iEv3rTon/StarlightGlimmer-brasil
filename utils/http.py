@@ -136,13 +136,12 @@ async def fetch_online_pixelzone(bot):
         raise HttpCanvasError('pixelzone')
 
 
-async def fetch_online_pxlsspace():
+async def fetch_online_pxlsspace(bot):
     """Returns the number of users who are currently online pxls.space, integer."""
-    async with websockets.connect("wss://pxls.space/ws", extra_headers=useragent) as ws:
-        async for msg in ws:
-            d = json.loads(msg)
-            if d['type'] == 'users':
-                return d['count']
+    if bot.px.player_count:
+        return bot.px.player_count
+    else:
+        raise HttpCanvasError('pxlsspace')
 
 
 async def get_changelog(version):

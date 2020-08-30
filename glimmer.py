@@ -40,15 +40,18 @@ class Glimmer(commands.Bot):
 
         self.pc = websocket.PixelCanvasConnection(self)
         self.pz = websocket.PixelZoneConnection(self)
+        self.px = websocket.PxlsSpaceConnection(self)
 
         # Once all the ws connections are instantiated, we can safely subscribe listeners to them
         self.subscribers = {
             "pixelcanvas": self.pc.add_listener,
-            "pixelzone": self.pz.add_listener
+            "pixelzone": self.pz.add_listener,
+            "pxlsspace": self.px.add_listener
         }
         self.unsubscribers = {
             "pixelcanvas": self.pc.remove_listener,
-            "pixelzone": self.pz.remove_listener
+            "pixelzone": self.pz.remove_listener,
+            "pxlsspace": self.px.remove_listener
         }
 
         log.info("Loading cogs...")
@@ -127,6 +130,7 @@ class Glimmer(commands.Bot):
         log.info("Beginning canvas websocket connections...")
         self.loop.create_task(self.pz.run())
         self.loop.create_task(self.pc.run())
+        self.loop.create_task(self.px.run())
 
         log.info('I am ready!')
         await utils.channel_log(self, "I am ready!")

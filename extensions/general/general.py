@@ -10,7 +10,6 @@ import psutil
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import BucketType, HelpCommand, Group
 
 from lang import en_US, pt_BR, tr_TR
 from objects.bot_objects import GlimContext
@@ -31,6 +30,7 @@ class General(commands.Cog):
         # To initialise cpu measurement
         psutil.cpu_percent(interval=None, percpu=True)
 
+    @commands.cooldown(1, 5, commands.BucketType.guild)
     @commands.command()
     async def changelog(self, ctx):
         data = await http.get_changelog(VERSION)
@@ -43,21 +43,24 @@ class General(commands.Cog):
             .set_footer(text="Released {}".format(data['published_at']))
         await ctx.send(embed=e)
 
-    @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    @commands.command(name="github")
     async def github(self, ctx):
         await ctx.send("https://github.com/BrickGrass/StarlightGlimmer")
 
-    @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    @commands.command(name="invite")
     async def invite(self, ctx):
         await ctx.send(config.INVITE)
 
-    @commands.command()
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    @commands.command(name="ping")
     async def ping(self, ctx):
         ping_start = time()
         ping_msg = await ctx.send(ctx.s("general.ping"))
         await ping_msg.edit(content=ctx.s("general.pong").format(int((time() - ping_start) * 1000)))
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(1, 5, commands.BucketType.guild)
     @commands.command(name="stats")
     async def stats(self, ctx):
         system_uptime = datetime.timedelta(seconds=time() - psutil.boot_time())
@@ -91,7 +94,7 @@ class General(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.cooldown(1, 5, commands.BucketType.guild)
     @commands.command(name="suggest")
     async def suggest(self, ctx, *, suggestion: str):
         log.info("Suggestion: {0}".format(suggestion))
@@ -100,11 +103,13 @@ class General(commands.Cog):
         await utils.channel_log(self.bot, "> `{}`".format(suggestion))
         await ctx.send(ctx.s("general.suggest"))
 
+    @commands.cooldown(1, 5, commands.BucketType.guild)
     @commands.command(name="version")
     async def version(self, ctx):
         await ctx.send(ctx.s("general.version").format(VERSION))
 
-    @commands.cooldown(1, 5, BucketType.guild)
+    @commands.max_concurrency(1, per=commands.BucketType.channel)
+    @commands.cooldown(1, 5, commands.BucketType.guild)
     @commands.command(name="quickstart")
     async def quickstart(self, ctx):
         menu_lock = MenuLock(channel_id=ctx.channel.id, user_id=ctx.author.id)
@@ -197,7 +202,7 @@ async def quickstart_wait(bot, ctx, next, image=None):
     return False
 
 
-class GlimmerHelpCommand(HelpCommand):
+class GlimmerHelpCommand(commands.HelpCommand):
 
     async def send_bot_help(self, mapping):
 
@@ -245,7 +250,7 @@ class GlimmerHelpCommand(HelpCommand):
         return out
 
     def subcommand_not_found(self, command, string):
-        if isinstance(command, Group) and len(command.all_commands) > 0:
+        if isinstance(command, commands.Group) and len(command.all_commands) > 0:
             subcommands = [f"`{c.name}`" for c in command.commands]
             subcommands = self.context.s("bot.or").format(", ".join(subcommands[:-1]), subcommands[-1]) if len(subcommands) > 1 else subcommands[0]
             return self.context.s("general.help_no_subcommand_named").format(command.qualified_name, string, subcommands)
@@ -289,7 +294,7 @@ class GlimmerHelpCommand(HelpCommand):
                 value="{}".format(inspect.cleandoc(long_doc)).format(p=self.clean_prefix),
                 inline=False)
 
-        if isinstance(command_or_group, Group):
+        if isinstance(command_or_group, commands.Group):
             filtered = await self.filter_commands(command_or_group.commands, sort=True)
             s = []
             for cmd in filtered:

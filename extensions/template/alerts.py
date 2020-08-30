@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands, menus, tasks
 
 from objects.database_models import session_scope, Template as TemplateDb, MutedTemplate
-from objects.errors import TemplateNotFoundError, CanvasNotSupportedError
+from objects.errors import TemplateNotFoundError
 from utils import canvases, checks, GlimmerArgumentParser, FactionAction
 from extensions.template.utils import CheckerSource, Pixel, Template
 
@@ -143,9 +143,6 @@ class Alerts(commands.Cog):
         if not template:
             raise TemplateNotFoundError(ctx, ctx.guild.id, name)
 
-        if template.canvas not in ["pixelcanvas", "pixelzone"]:
-            raise CanvasNotSupportedError()
-
         mute = ctx.session.query(MutedTemplate).filter_by(template_id=template.id).first()
         if mute:
             ctx.session.delete(mute)
@@ -168,9 +165,6 @@ class Alerts(commands.Cog):
 
         if not template:
             raise TemplateNotFoundError(ctx, ctx.guild.id, name)
-
-        if template.canvas not in ["pixelcanvas", "pixelzone"]:
-            raise CanvasNotSupportedError()
 
         if not duration:
             if template.alert_id:

@@ -5,6 +5,7 @@ import uuid
 import socket
 from struct import unpack_from
 import math
+import json
 
 import numpy as np
 import socketio
@@ -109,7 +110,7 @@ class PixelZoneConnection(LongrunningWSConnection):
             try:
                 await self.sio.emit("getChunk", {"x": x, "y": y})
                 self.chunk_queue.task_done()
-            except Exception as e:
+            except Exception:
                 log.exception("Error sending chunk request to pixelzone.io")
 
     async def expirer(self):
@@ -132,7 +133,7 @@ class PixelZoneConnection(LongrunningWSConnection):
             # Once the connection initially succeeds, sio handles all reconnects
             log.debug("Connecting to pixelzone.io websocket...")
             await self.sio.connect("https://pixelzone.io", headers=http.useragent)
-        except Exception as e:
+        except Exception:
             log.exception("Pixelzone connection failed to open")
         self.bot.loop.create_task(self.requester())
         self.bot.loop.create_task(self.expirer())
@@ -178,25 +179,33 @@ class PixelCanvasConnection(LongrunningWSConnection):
         super().__init__(*args)
         self.fingerprint = uuid.uuid4().hex
 
-    async def on_message(self, message):
-        try:
-            if unpack_from("B", message, 0)[0] == 193:
-                x = unpack_from('!h', message, 1)[0]
-                y = unpack_from('!h', message, 3)[0]
-                a = unpack_from('!H', message, 5)[0]
-                number = (65520 & a) >> 4
-                x = int(x * 64 + ((number % 64 + 64) % 64))
-                y = int(y * 64 + math.floor(number / 64))
-                color = 15 & a
+        self.last_failure = None
+        self.failures = 0
 
-                async with self.listener_lock:
-                    for _, listener in self.listeners.items():
-                        self.bot.loop.create_task(listener(x, y, color, "pixelcanvas"))
-        except Exception as e:
-            log.exception("Error with pixelcanvas.io pixel")
+    async def on_message(self, message):
+        if unpack_from("B", message, 0)[0] == 193:
+            x = unpack_from('!h', message, 1)[0]
+            y = unpack_from('!h', message, 3)[0]
+            a = unpack_from('!H', message, 5)[0]
+            number = (65520 & a) >> 4
+            x = int(x * 64 + ((number % 64 + 64) % 64))
+            y = int(y * 64 + math.floor(number / 64))
+            color = 15 & a
+
+            async with self.listener_lock:
+                for _, listener in self.listeners.items():
+                    self.bot.loop.create_task(listener(x, y, color, "pixelcanvas"))
 
     async def run(self):
         while True:
+            if self.last_failure:
+                failure_delta = time() - self.last_failure
+                if failure_delta > 60 * 5:
+                    self.failures += 1
+                    await asyncio.sleep(2 ** self.failures)
+                else:
+                    self.failures = 0
+
             log.debug("Connecting to pixelcanvas.io websocket...")
             try:
                 url = f"wss://ws.pixelcanvas.io:8443/?fingerprint={self.fingerprint}"
@@ -204,9 +213,63 @@ class PixelCanvasConnection(LongrunningWSConnection):
                     async for message in ws:
                         self.bot.loop.create_task(self.on_message(message))
             except websockets.exceptions.ConnectionClosed:
-                log.debug("Pixelcanvas.io websocket disconnected, reconnecting...")
+                log.debug("Pixelcanvas.io websocket disconnected.")
             except socket.gaierror:
-                log.debug("Temporary failure in name resolution for pixelcanvas.io, reconnecting...")
-            except Exception as e:
-                log.exception("Error with pixelcanvas websocket! Reconnecting...")
-                await asyncio.sleep(0.5)
+                log.debug("Temporary failure in name resolution for pixelcanvas.io.")
+            except Exception:
+                log.exception("Error with pixelcanvas websocket!")
+
+            self.last_failure = time()
+
+
+class PxlsSpaceConnection(LongrunningWSConnection):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.player_count = None
+
+        self.last_failure = None
+        self.failures = 0
+
+    async def on_message(self, data):
+        try:
+            message = json.loads(data)
+        except json.JSONDecodeError:
+            log.debug("Error decoding pxls.space websocket message.")
+            return
+
+        if message["type"] == "pixel":
+            for pixel in message["pixels"]:
+                x = int(pixel["x"])
+                y = int(pixel["y"])
+                color = int(pixel["color"])
+
+                async with self.listener_lock:
+                    for _, listener in self.listeners.items():
+                        self.bot.loop.create_task(listener(x, y, color, "pxlsspace"))
+
+        elif message["type"] == "users":
+            self.player_count = [time(), int(message["count"])]
+
+    async def run(self):
+        while True:
+            if self.last_failure:
+                failure_delta = time() - self.last_failure
+                if failure_delta > 60 * 5:
+                    self.failures += 1
+                    await asyncio.sleep(2 ** self.failures)
+                else:
+                    self.failures = 0
+
+            log.debug("Connecting to pxls.space websocket...")
+            try:
+                async with websockets.connect("wss://pxls.space/ws", extra_headers=http.useragent) as ws:
+                    async for message in ws:
+                        self.bot.loop.create_task(self.on_message(message))
+            except websockets.exceptions.ConnectionClosed:
+                log.debug("Pxls.space websocket disconnected.")
+            except socket.gaierror:
+                log.debug("Temporary failure in name resolution for Pxls.space.")
+            except Exception:
+                log.exception("Error with Pxls.space websocket!")
+
+            self.last_failure = time()

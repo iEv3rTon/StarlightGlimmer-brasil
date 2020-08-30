@@ -463,6 +463,8 @@ class Template:
     def current_pixels(self):
         if self.last_alert_message:
             return [p for p in self.pixels if p.alert_id == self.last_alert_message.id]
+        else:
+            return []
 
     @staticmethod
     async def new(t):
