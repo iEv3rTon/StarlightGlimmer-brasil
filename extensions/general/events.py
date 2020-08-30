@@ -61,7 +61,7 @@ class Events(commands.Cog):
         elif isinstance(error, commands.NoPrivateMessage):
             await ctx.send(ctx.s("error.no_dm"))
         elif isinstance(error, commands.MaxConcurrencyReached):
-            await ctx.send(ctx.s("error.max_concurrency").format(error.number))
+            await ctx.send(ctx.s("error.max_concurrency"))
         elif isinstance(error, commands.CheckFailure):
             await ctx.send(ctx.s("error.no_user_permission"))
 

@@ -24,11 +24,17 @@ log = logging.getLogger(__name__)
 class General(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        bot.help_command = GlimmerHelpCommand(command_attrs={"aliases": ["h"]})
+        self._original_help_command = bot.help_command
+        bot.help_command = GlimmerHelpCommand(command_attrs={
+            "aliases": ["h"],
+            "cooldown": commands.cooldowns.Cooldown(1, 5, commands.BucketType.guild)})
         bot.help_command.cog = self
 
         # To initialise cpu measurement
         psutil.cpu_percent(interval=None, percpu=True)
+
+    def cog_unload(self):
+        self.bot.help_command = self._original_help_command
 
     @commands.cooldown(1, 5, commands.BucketType.guild)
     @commands.command()
