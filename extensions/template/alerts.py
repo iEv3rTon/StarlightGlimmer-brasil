@@ -380,6 +380,7 @@ class Alerts(commands.Cog):
             ax_1.set_ylabel(ctx.s("alerts.comparision_y_label"))
             ax_2.set_ylabel(ctx.s("alerts.comparision_y_label"))
             format_date(ax_2)
+            ax_2.set_ylim(bottom=0)
         elif type == "gain":
             ax = fig.subplots()
 
@@ -387,6 +388,11 @@ class Alerts(commands.Cog):
             ax.grid(True)
             ax.set_ylabel(ctx.s("alerts.gain_y_label"))
             format_date(ax)
+
+            # Center y axis at zero
+            bottom, top = ax.get_ylim()
+            biggest = max(abs(bottom), abs(top))
+            ax.set_ylim(bottom=0 - biggest, top=biggest)
 
         buf = BytesIO()
         fig.savefig(buf, format="png")
