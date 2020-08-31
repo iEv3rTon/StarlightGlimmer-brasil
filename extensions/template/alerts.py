@@ -369,11 +369,16 @@ class Alerts(commands.Cog):
         fig = Figure()
         _ = FigureCanvasAgg(fig)  # Strange API, this is binding the figure to a canvas so stuff can get drawn
 
+        # Bar chart width for datetimes is appx width of 1 = 1 day (https://github.com/matplotlib/matplotlib/issues/13236#issuecomment-457394944), so...
+        # 1/24 = 0.041
+        # 0.041 * 0.8 = 0.033
+
         if type == "comparision":
             ax_1, ax_2 = fig.subplots(2, sharex=True, sharey=True)
 
-            ax_1.plot(x_values, ally_values, color="green")
-            ax_2.plot(x_values, enemy_values, color="red")
+            ax_1.bar(x_values, ally_values, width=0.033, color="green")
+            ax_2.bar(x_values, enemy_values, width=0.033, color="red")
+
             ax_1.grid(True)
             ax_2.grid(True)
             ax_1.set_title(ctx.s("alerts.allies"))
@@ -385,8 +390,8 @@ class Alerts(commands.Cog):
         elif type == "gain":
             ax = fig.subplots()
 
-            ax.plot(x_values, gain_values, color="grey", zorder=2)
-            ax.scatter(x_values, gain_values, c=gain_colors, zorder=3)
+            ax.bar(x_values, gain_values, width=0.033, color=gain_colors)
+
             ax.grid(True)
             ax.set_ylabel(ctx.s("alerts.gain_y_label"))
             format_date(ax)
