@@ -118,13 +118,13 @@ class PixelZoneConnection(LongrunningWSConnection):
                 log.exception("Error sending chunk request to pixelzone.io")
 
     async def expirer(self):
-        _1_hour = 60 * 60
+        _5_hours = 60 * 60 * 5
 
         while True:
             async with self.chunk_lock:
                 to_remove = []
                 for key, cached in self.chunks.items():
-                    if cached.age > _1_hour:
+                    if cached.age > _5_hours:
                         to_remove.append(key)
 
                 for key in to_remove:
