@@ -2,7 +2,7 @@ import asyncio
 import itertools
 import inspect
 import logging
-from time import time, strftime
+from time import time, strftime, gmtime
 import datetime
 from functools import partial
 from fuzzywuzzy import fuzz
@@ -15,7 +15,7 @@ from lang import en_US, pt_BR, tr_TR
 from objects.bot_objects import GlimContext
 from objects.database_models import MenuLock, Guild
 import utils
-from utils import config, http
+from utils import config, http, canvases
 from utils.version import VERSION
 
 log = logging.getLogger(__name__)
@@ -98,15 +98,16 @@ class General(commands.Cog):
             name="CPU usage (per core)",
             value=" - ".join([f"{core}%" for core in cpu]))
 
-        connections = [self.bot.pc, self.bot.pz, self.bot.px]
+        connections = [(self.bot.pc, "pixelcanvas"), (self.bot.pz, "pixelzone"), (self.bot.px, "pxlsspace")]
         out = []
-        for c in connections:
-            then = "Never" if not c.alive else strftime("%d %b %H:%M:%S UTC")
-            out.append(f"Last message received at: {then}")
+        for c, canvas in connections:
+            then = "Never" if not c.alive else strftime("%d %b %H:%M:%S UTC", gmtime(c.alive))
+            out.append(f"Last message from {canvases.pretty_print[canvas]} received at: {then}")
 
         embed.add_field(
             name="Websocket connections",
-            value="\n".join(out))
+            value="\n".join(out),
+            inline=False)
         embed.add_field(
             name="Cached pixelzone chunks",
             value=len(self.bot.pz.chunks))
