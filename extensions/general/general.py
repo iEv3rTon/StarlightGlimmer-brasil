@@ -101,8 +101,8 @@ class General(commands.Cog):
         connections = [self.bot.pc, self.bot.pz, self.bot.px]
         out = []
         for c in connections:
-            time = "Never" if not c.alive else strftime("%d %b %H:%M:%S UTC")
-            out.append(f"Last message received at: {time}")
+            then = "Never" if not c.alive else strftime("%d %b %H:%M:%S UTC")
+            out.append(f"Last message received at: {then}")
 
         embed.add_field(
             name="Websocket connections",
