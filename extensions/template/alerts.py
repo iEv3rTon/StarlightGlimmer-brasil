@@ -116,9 +116,10 @@ class Alerts(commands.Cog):
                     channel_messages[t.alert_channel] = messages
 
                 # Clear the alert message if it isn't recent anymore so new alerts will be at the bottom of the channel
-                if not any(m.id == t.last_alert_message.id for m in messages):
-                    log.debug(f"Alert message for {t} is more than 5 messages ago, clearing.")
-                    t.last_alert_message = None
+                if t.last_alert_message:
+                    if not any(m.id == t.last_alert_message.id for m in messages):
+                        log.debug(f"Alert message for {t} is more than 5 messages ago, clearing.")
+                        t.last_alert_message = None
 
             # Clean up old pixels
             _5_mins = 60 * 30
