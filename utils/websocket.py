@@ -23,6 +23,8 @@ class LongrunningWSConnection:
     def __init__(self, bot):
         self.bot = bot
 
+        self.alive = None
+
         self.listener_lock = asyncio.Lock()
         self.listeners = {}
 
@@ -58,6 +60,7 @@ class PixelZoneConnection(LongrunningWSConnection):
 
         @self.sio.on("connect")
         async def on_connect():
+            self.alive = time()
             await self.sio.emit("hello")
 
         @self.sio.on("disconnect")
@@ -66,10 +69,12 @@ class PixelZoneConnection(LongrunningWSConnection):
 
         @self.sio.on("welcome")
         async def on_welcome():
+            self.alive = time()
             self.ready = True
 
         @self.sio.on("chunkBuffer")
         async def on_chunk(data):
+            self.alive = time()
             x = data.get("cx")
             y = data.get("cy")
             comp = data.get("comp")
@@ -80,11 +85,13 @@ class PixelZoneConnection(LongrunningWSConnection):
 
         @self.sio.on("playerCounter")
         async def on_player(count):
+            self.alive = time()
             if isinstance(count, int):
                 self.player_count = [time(), count]
 
         @self.sio.on("place")
         async def on_message(pixels):
+            self.alive = time()
             pixels = pixels.replace(" ", "").replace("[", "").replace("]", "")
             pixels = [int(pixel) for pixel in pixels.split(",")]
 
@@ -202,6 +209,7 @@ class PixelCanvasConnection(LongrunningWSConnection):
         self.failures = 0
 
     async def on_message(self, message):
+        self.alive = time()
         if unpack_from("B", message, 0)[0] == 193:
             x = unpack_from('!h', message, 1)[0]
             y = unpack_from('!h', message, 3)[0]
@@ -250,6 +258,7 @@ class PxlsSpaceConnection(LongrunningWSConnection):
         self.failures = 0
 
     async def on_message(self, data):
+        self.alive = time()
         try:
             message = json.loads(data)
         except json.JSONDecodeError:

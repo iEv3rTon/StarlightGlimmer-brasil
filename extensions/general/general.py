@@ -2,7 +2,7 @@ import asyncio
 import itertools
 import inspect
 import logging
-from time import time
+from time import time, strftime
 import datetime
 from functools import partial
 from fuzzywuzzy import fuzz
@@ -81,7 +81,7 @@ class General(commands.Cog):
             func = partial(psutil.cpu_percent, interval=2, percpu=True)
             cpu = await self.bot.loop.run_in_executor(None, func)
 
-        embed = discord.Embed(description="System statistics")
+        embed = discord.Embed(description="Bot statistics")
         embed.add_field(
             name="System uptime",
             value=str(system_uptime).split(".")[0])
@@ -97,6 +97,19 @@ class General(commands.Cog):
         embed.add_field(
             name="CPU usage (per core)",
             value=" - ".join([f"{core}%" for core in cpu]))
+
+        connections = [self.bot.pc, self.bot.pz, self.bot.px]
+        out = []
+        for c in connections:
+            time = "Never" if not c.alive else strftime("%d %b %H:%M:%S UTC")
+            out.append(f"Last message received at: {time}")
+
+        embed.add_field(
+            name="Websocket connections",
+            value="\n".join(out))
+        embed.add_field(
+            name="Cached pixelzone chunks",
+            value=len(self.bot.pz.chunks))
 
         await ctx.send(embed=embed)
 
