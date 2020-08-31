@@ -55,6 +55,7 @@ class PixelZoneConnection(LongrunningWSConnection):
         self.chunk_lock = asyncio.Lock()
         self.chunks = {}
         self.chunk_queue = asyncio.Queue()
+        self.requested_queue = asyncio.Queue()
 
         self.player_count = None
 
@@ -121,8 +122,25 @@ class PixelZoneConnection(LongrunningWSConnection):
             try:
                 await self.sio.emit("getChunk", {"x": x, "y": y})
                 self.chunk_queue.task_done()
+                self.bot.loop.create_task(self.followup(x, y))
             except Exception:
                 log.exception("Error sending chunk request to pixelzone.io")
+
+    async def followup(self, x, y):
+        await asyncio.sleep(0.5)
+        await self.requested_queue.put([x, y])
+
+    async def nanny(self):
+        while True:
+            x, y = await self.requested_queue.get()
+
+            chunk_key = f"{x}_{y}"
+
+            async with self.chunk_lock:
+                if chunk_key not in list(self.chunks.keys()):
+                    await self.chunk_queue.put([x, y])
+
+            self.requested_queue.task_done()
 
     async def expirer(self):
         _5_hours = 60 * 60 * 5
@@ -142,6 +160,7 @@ class PixelZoneConnection(LongrunningWSConnection):
     async def run(self):
         self.bot.loop.create_task(self.requester())
         self.bot.loop.create_task(self.expirer())
+        self.bot.loop.create_task(self.nanny())
 
         while True:
             if self.last_failure:
