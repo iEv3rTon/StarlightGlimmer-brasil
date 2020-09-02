@@ -9,6 +9,7 @@ from discord.ext import commands, tasks
 from sqlalchemy.sql import func
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from objects.bot_objects import GlimContext
 from objects.database_models import session_scope, Guild, MenuLock, MutedTemplate, Template, Version
@@ -22,7 +23,7 @@ if config.SENTRY_DSN:
         event_level=logging.ERROR)
     sentry_sdk.init(
         dsn=config.SENTRY_DSN,
-        integrations=[sentry_logging])
+        integrations=[sentry_logging, SqlalchemyIntegration()])
 
 
 def get_prefix(bot_, msg: discord.Message):
