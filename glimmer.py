@@ -272,9 +272,16 @@ class DiscordLogger(logging.Handler):
     def __init__(self, bot):
         logging.Handler.__init__(self)
         self.bot = bot
+        self.disconnected_msg = "Discord websocket connection closed, exception was not sent"
 
     def emit(self, record):
+        if record.msg == self.disconnected_msg:
+            return  # Don't recurse with this one
+
         if config.LOGGING_CHANNEL_ID:
+            if self.bot.is_closed():
+                log.warning(self.disconnected_msg)
+
             channel = self.bot.get_channel(config.LOGGING_CHANNEL_ID)
             if not channel:
                 log.warning("Can't find logging channel")
