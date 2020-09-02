@@ -15,6 +15,7 @@
     "channel_log_guild_renames": false,
     "channel_log_guild_joins": false,
     "channel_log_guild_kicks": false,
+    "sentry_dsn": null,
 
     "invert": false,
 

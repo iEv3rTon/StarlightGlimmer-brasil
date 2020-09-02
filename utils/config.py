@@ -58,6 +58,7 @@ LOGGING_CHANNEL_ID = data.get('logging_channel_id', None)
 CHANNEL_LOG_GUILD_RENAMES = data.get('channel_log_guild_renames', False)
 CHANNEL_LOG_GUILD_JOINS = data.get('channel_log_guild_joins', False)
 CHANNEL_LOG_GUILD_KICKS = data.get('channel_log_guild_kicks', False)
+SENTRY_DSN = data.get('sentry_dsn', None)
 
 INVERT = data.get('invert', False)
 
