@@ -275,12 +275,13 @@ class DiscordLogger(logging.Handler):
         self.disconnected_msg = "Discord websocket connection closed, exception was not sent"
 
     def emit(self, record):
-        if record.msg == self.disconnected_msg:
+        if record.message == self.disconnected_msg:
             return  # Don't recurse with this one
 
         if config.LOGGING_CHANNEL_ID:
             if self.bot.is_closed():
                 log.warning(self.disconnected_msg)
+                return
 
             channel = self.bot.get_channel(config.LOGGING_CHANNEL_ID)
             if not channel:
