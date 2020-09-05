@@ -7,6 +7,7 @@ import time
 
 import aiohttp
 import discord
+from discord.ext import commands
 from PIL import Image
 import numpy as np
 from sqlalchemy.sql import func
@@ -169,7 +170,7 @@ async def add_template(ctx, canvas, name, x, y, url):
             dup_msg.append("{0:<{w}} {1:>15} {2}, {3}\n".format(name, canvas_name, d.x, d.y, w=w))
         dup_msg.append("```")
 
-    if name_chk is not None:
+    if name_chk:
         d = name_chk
         msg = [ctx.s("template.name_exists_ask_replace").format(
             d.name, canvases.pretty_print[d.canvas], d.x, d.y)]
@@ -247,9 +248,9 @@ async def check_for_duplicate_by_name(ctx, name):
     dup = ctx.session.query(TemplateDb).filter_by(
         guild_id=ctx.guild.id, name=name).first()
     if dup:
-        if dup.owner != ctx.author.id and not utils.is_admin(ctx):
+        if dup.owner != ctx.author.id and not utils.is_admin(ctx) or utils.is_template_admin(ctx):
             await ctx.send(ctx.s("template.err.name_exists"))
-            return False
+            raise commands.BadArgument
         return dup
 
 
