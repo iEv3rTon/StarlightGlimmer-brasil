@@ -243,12 +243,12 @@ async def check_for_duplicate_by_name(ctx, name):
     name - Template name.
 
     Returns:
-    A template object, False or None.
+    A template object, or None.
     """
     dup = ctx.session.query(TemplateDb).filter_by(
         guild_id=ctx.guild.id, name=name).first()
     if dup:
-        if dup.owner != ctx.author.id and not utils.is_admin(ctx) or utils.is_template_admin(ctx):
+        if dup.owner != ctx.author.id and not utils.is_admin or not utils.is_template_admin(ctx):
             await ctx.send(ctx.s("template.err.name_exists"))
             raise commands.BadArgument
         return dup
