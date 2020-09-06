@@ -15,6 +15,13 @@ class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def send_err_img(self, ctx, image, error_txt):
+        try:
+            f = discord.File(f"assets/{image}", image)
+            await ctx.send(error_txt, file=f)
+        except IOError:
+            await ctx.send(error_txt)
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         # Check for original exceptions raised and sent to CommandInvokeError.
@@ -77,19 +84,11 @@ class Events(commands.Cog):
         elif isinstance(error, errors.FactionNotFoundError):
             await ctx.send(ctx.s("error.faction_not_found"))
         elif isinstance(error, errors.IdempotentActionError):
-            try:
-                f = discord.File("assets/y_tho.png", "y_tho.png")
-                await ctx.send(ctx.s("error.why"), file=f)
-            except IOError:
-                await ctx.send(ctx.s("error.why"))
+            await self.send_err_img(ctx, "y_tho.png", ctx.s("error.why"))
         elif isinstance(error, errors.NoAttachmentError):
             await ctx.send(ctx.s("error.no_attachment"))
         elif isinstance(error, errors.NoJpegsError):
-            try:
-                f = discord.File("assets/disdain_for_jpegs.gif", "disdain_for_jpegs.gif")
-                await ctx.send(ctx.s("error.jpeg"), file=f)
-            except IOError:
-                await ctx.send(ctx.s("error.jpeg"))
+            await self.send_err_img(ctx, "disdain_for_jpegs.gif", ctx.s("error.jpeg"))        
         elif isinstance(error, errors.NoSelfPermissionError):
             await ctx.send(ctx.s("error.no_self_permission"))
         elif isinstance(error, errors.NoTemplatesError):
