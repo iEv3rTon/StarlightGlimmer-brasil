@@ -4,6 +4,7 @@ import time
 import re
 from functools import partial
 from io import BytesIO
+from copy import deepcopy
 
 import discord
 from discord.ext import commands, menus, tasks
@@ -508,7 +509,7 @@ class Alerts(commands.Cog):
             if not db_template:
                 return
 
-            stats = db_template.alert_stats
+            stats = deepcopy(db_template.alert_stats)
             stats = stats if stats else {}
             now = datetime.datetime.now(datetime.timezone.utc)
 
