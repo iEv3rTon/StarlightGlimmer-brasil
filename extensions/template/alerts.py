@@ -537,9 +537,13 @@ class Alerts(commands.Cog):
                 time = now - datetime.timedelta(days=x)
                 valid_days.append(f"{time.day}/{time.month}/{time.year}")
 
+            to_delete = []
             for key in stats.keys():
                 if key not in valid_days:
-                    del stats[key]
+                    to_delete.append(key)
+            
+            for key in to_delete:
+                del stats[key]
 
             session.query(TemplateDb).filter_by(id=template.id).update({
                 "alert_stats": stats})
