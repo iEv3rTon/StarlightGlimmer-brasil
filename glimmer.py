@@ -257,7 +257,7 @@ class Glimmer(commands.Bot):
                 log.info(f"Canvas {nick} not found in database, creating...")
                 session.add(Canvas(nick=nick, url=url))
 
-    @functools.lru_cache
+    @functools.lru_cache(maxsize=128, typed=False)
     def get_guild_language(self, guild):
         with session_scope() as session:
             if isinstance(guild, discord.Guild):
