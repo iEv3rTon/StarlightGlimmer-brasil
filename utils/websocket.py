@@ -199,28 +199,38 @@ class PixelZoneConnection(LongrunningWSConnection):
         self.bot.loop.create_task(self.nanny())
 
         while True:
-            if self.last_failure:
-                failure_delta = time() - self.last_failure
-                if failure_delta > 60 * 5:
-                    self.failures += 1
-                    sleep_time = min(2 ** self.failures, (60 * 5) - 10)
-                    self.bot.loop.create_task(channel_log(self.bot, f"Sleeping for {sleep_time} seconds before attempting reconnection to pixelzone.io websocket..."))
-                    await asyncio.sleep(sleep_time)
-                else:
-                    self.failures = 0
+            await self.connect()
+
+            while True:
+                await self.sio.wait()
+                await asyncio.sleep(60 * 5)  # Give the built-in reconnect time to work
+
+                if not self.sio.connected and not self.ready:
+                    await self.sio.disconnect()
+                    break
+
+    async def connect(self):
+        failure_count = 0
+
+        # Retry until initial connection succeeds.
+        while True:
+            if failure_count:
+                sleep_time = min(60 * 5, 2 ** failure_count)
+                self.bot.loop.create_task(channel_log(self.bot, f"Failure {failure_count} to connect to pixelzone.io, waiting {sleep_time} seconds before attempting reconnection..."))
+                await asyncio.sleep(sleep_time)
 
             try:
-                if self.retry:
-                    log.debug("Connecting to pixelzone.io websocket...")
-                    self.bot.loop.create_task(channel_log(self.bot, "Connecting to pixelzone.io websocket..."))
-                    await self.sio.connect("https://pixelzone.io", headers=http.useragent)
-                    self.retry = False
-                await self.sio.wait()
+                log.debug("Connecting to pixelzone.io websocket...")
+                self.bot.loop.create_task(channel_log(self.bot, "Connecting to pixelzone.io websocket..."))
+                await self.sio.connect("https://pixelzone.io", headers=http.useragent)
             except socketio.exceptions.ConnectionError:
                 log.exception("Pixelzone connection refused.")
-                self.retry = True
+            except Exception:
+                log.exception("Other error during initial pixelzone connection.")
+            else:
+                break
 
-            self.last_failure = time()
+            failure_count += 1
 
 
 class CachedPZChunk:
