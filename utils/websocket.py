@@ -15,7 +15,7 @@ import websockets
 
 from objects.chunks import ChunkPz
 from objects.database_models import session_scope, Pixel, Canvas, Online
-from utils import converter, canvases, colors, http
+from utils import converter, canvases, colors, http, channel_log
 
 
 log = logging.getLogger(__name__)
@@ -203,13 +203,16 @@ class PixelZoneConnection(LongrunningWSConnection):
                 failure_delta = time() - self.last_failure
                 if failure_delta > 60 * 5:
                     self.failures += 1
-                    await asyncio.sleep(2 ** self.failures)
+                    sleep_time = min(2 ** self.failures, (60 * 5) - 10)
+                    self.bot.loop.create_task(channel_log(self.bot, f"Sleeping for {sleep_time} seconds before attempting reconnection to pixelzone.io websocket..."))
+                    await asyncio.sleep(sleep_time)
                 else:
                     self.failures = 0
 
             try:
                 if self.retry:
                     log.debug("Connecting to pixelzone.io websocket...")
+                    self.bot.loop.create_task(channel_log(self.bot, "Connecting to pixelzone.io websocket..."))
                     await self.sio.connect("https://pixelzone.io", headers=http.useragent)
                     self.retry = False
                 await self.sio.wait()
