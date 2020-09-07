@@ -6,6 +6,7 @@ import socket
 from struct import unpack_from
 import math
 import json
+import datetime
 
 import numpy as np
 import socketio
@@ -13,13 +14,17 @@ from PIL import Image
 import websockets
 
 from objects.chunks import ChunkPz
+from objects.database_models import session_scope, Pixel, Canvas, Online
 from utils import converter, canvases, colors, http
 
 
 log = logging.getLogger(__name__)
+SEVEN_DAYS = 7 * 24 * 60 * 60
 
 
 class LongrunningWSConnection:
+    canvas = None
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -32,18 +37,42 @@ class LongrunningWSConnection:
         l_uuid = uuid.uuid4()
         async with self.listener_lock:
             self.listeners[l_uuid] = listener
-            log.debug(f"Listener {listener} added with uuid {l_uuid}")
+            log.debug(f"Listener {listener} for canvas {self.canvas} added with uuid {l_uuid}")
         return l_uuid
 
     async def remove_listener(self, l_uuid):
         async with self.listener_lock:
             del self.listeners[l_uuid]
-            log.debug(f"Listener with uuid {l_uuid} removed")
+            log.debug(f"Listener for canvas {self.canvas} with uuid {l_uuid} removed")
+
+    def update_online(self, time, count):
+        with session_scope() as session:
+            canvas_query = session.query(Canvas).filter_by(nick=self.canvas)
+            canvas = canvas_query.first()
+            if not canvas:
+                log.exception(f"No row found for canvas {self.canvas}, online stats were not updated.")
+                return
+
+            session.add(Online(
+                time=datetime.datetime.fromtimestamp(time, tz=datetime.timezone.utc),
+                count=count,
+                canvas=canvas))
+
+    @staticmethod
+    async def update_placements(x, y, color, canvas_name):
+        with session_scope() as session:
+            canvas = session.query(Canvas).filter_by(nick=canvas_name).first()
+            if not canvas:
+                log.exception(f"No row found for canvas {canvas_name}, placement stats were not updated.")
+                return
+
+            session.add(Pixel(x=x, y=y, color=color, canvas=canvas))
 
 
 class PixelZoneConnection(LongrunningWSConnection):
     def __init__(self, *args):
         super().__init__(*args)
+        self.canvas = "pixelzone"
 
         self.sio = socketio.AsyncClient(binary=True, logger=log)
         self.ready = False
@@ -86,9 +115,14 @@ class PixelZoneConnection(LongrunningWSConnection):
 
         @self.sio.on("playerCounter")
         async def on_player(count):
-            self.alive = time()
-            if isinstance(count, int):
-                self.player_count = [time(), count]
+            now = time()
+
+            self.alive = now
+
+            count = int(count)
+            self.player_count = [now, count]
+
+            self.update_online(now, count)
 
         @self.sio.on("place")
         async def on_message(pixels):
@@ -117,7 +151,7 @@ class PixelZoneConnection(LongrunningWSConnection):
             x, y = await self.chunk_queue.get()
 
             while not self.ready:
-                asyncio.sleep(0.5)
+                await asyncio.sleep(0.5)
 
             try:
                 await self.sio.emit("getChunk", {"x": x, "y": y})
@@ -158,6 +192,8 @@ class PixelZoneConnection(LongrunningWSConnection):
             await asyncio.sleep(60)
 
     async def run(self):
+        await self.add_listener(self.update_placements)
+
         self.bot.loop.create_task(self.requester())
         self.bot.loop.create_task(self.expirer())
         self.bot.loop.create_task(self.nanny())
@@ -222,6 +258,8 @@ class CachedPZChunk:
 class PixelCanvasConnection(LongrunningWSConnection):
     def __init__(self, *args):
         super().__init__(*args)
+        self.canvas = "pixelcanvas"
+
         self.fingerprint = uuid.uuid4().hex
 
         self.last_failure = None
@@ -243,6 +281,8 @@ class PixelCanvasConnection(LongrunningWSConnection):
                     self.bot.loop.create_task(listener(x, y, color, "pixelcanvas"))
 
     async def run(self):
+        await self.add_listener(self.update_placements)
+
         while True:
             if self.last_failure:
                 failure_delta = time() - self.last_failure
@@ -271,13 +311,16 @@ class PixelCanvasConnection(LongrunningWSConnection):
 class PxlsSpaceConnection(LongrunningWSConnection):
     def __init__(self, *args):
         super().__init__(*args)
+        self.canvas = "pxlsspace"
+
         self.player_count = None
 
         self.last_failure = None
         self.failures = 0
 
     async def on_message(self, data):
-        self.alive = time()
+        now = time()
+        self.alive = now
         try:
             message = json.loads(data)
         except json.JSONDecodeError:
@@ -290,14 +333,22 @@ class PxlsSpaceConnection(LongrunningWSConnection):
                 y = int(pixel["y"])
                 color = int(pixel["color"])
 
+                # Undo mechanism. Implement caching here too so we can track and emit for these properly.
+                if color == -1:
+                    return
+
                 async with self.listener_lock:
                     for _, listener in self.listeners.items():
                         self.bot.loop.create_task(listener(x, y, color, "pxlsspace"))
 
         elif message["type"] == "users":
-            self.player_count = [time(), int(message["count"])]
+            count = int(message["count"])
+            self.player_count = [now, count]
+            self.update_online(now, count)
 
     async def run(self):
+        await self.add_listener(self.update_placements)
+
         while True:
             if self.last_failure:
                 failure_delta = time() - self.last_failure

@@ -78,24 +78,28 @@ pxlsspace = [
     ( 85,  85,  85),  # Med Dark Grey
     ( 34,  34,  34),  # Dark Grey
     (  0,   0,   0),  # Black
-    (255, 167, 209),  # Pink
-    (229,   0,   0),  # Red
+    (255, 167, 209),  # Light Pink
+    (253,  70,  89),  # Dark Pink
+    (229,   0,   0),  # Light Red
     (128,   0,   0),  # Dark Red
     (255, 221, 202),  # Beige
     (246, 179, 137),  # Tan
-    (229, 149,   0),  # Orange
+    (229, 149,   0),  # Light Orange
+    (255,  91,   0),  # Dark Orange
     (160, 106,  66),  # Light Brown
     ( 96,  64,  40),  # Dark Brown
-    (229, 217,   0),  # Yellow
+    (255, 255,   0),  # Dark Yellow
+    (253, 253, 150),  # Light Yellow
     (148, 224,  68),  # Light Green
     (  2, 190,   1),  # Green
     (  0,  95,   0),  # Dark Green
     (  0, 211, 221),  # Cyan
     (  0, 131, 199),  # Teal
     (  0,   0, 234),  # Blue
+    (  3,   7, 100),  # Dark Blue
     (207, 110, 228),  # Lavender
     (255,   0, 255),  # Magenta
-    (102,   3,  60)   # Purple
+    (130,   0, 128),  # Purple
 ]
 
 by_name = {

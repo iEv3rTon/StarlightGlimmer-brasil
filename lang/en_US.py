@@ -34,6 +34,8 @@ STRINGS = {
     "bot.reaction_scroll": "Scroll using the reactions below to see other pages.",
     "bot.menu_page": "Page {0} of {1}",
     "bot.pixel": "[{x},{y}]({url}) is {current} should be {target}.",
+    "bot.time_label": "Time in UTC",
+    "bot.not_enough_data": "Not enough data found.",
 
     # Error messages
     "error.account_deleted": "[[Account deleted]]",
@@ -65,6 +67,8 @@ STRINGS = {
     "error.unknown": "An unknown error occurred. The dev has been notified. The unique code for this command was: `{0}`",
     "error.why": "But... why?",
     "error.canvas_not_supported": "Templates of that canvas are not supported for this command.",
+    "error.invalid_duration_1": "Invalid duration, format like `1h8m`",
+    "error.invalid_duration_2": "Invalid duration, duplicate time suffix (eg: 1**h**8m3**h**)",
 
     # Alerts command messages
     "alerts.alert_description": "Messages that are crossed out have been fixed.",
@@ -76,8 +80,6 @@ STRINGS = {
     "alerts.enemies": "Enemies",
     "alerts.gain_title": "Pixels gained or lost per hour on {0} in the past {1} day(s).",
     "alerts.gain_y_label": "Pixels gained or lost",
-    "alerts.invalid_duration_1": "Invalid mute duration, give the number of hours or format like `1h8m`",
-    "alerts.invalid_duration_2": "Invalid mute duration, duplicate time suffix (eg: 1**h**8m3**h**)",
     "alerts.muted": "`{0}` muted for {1:.2f} hours.",
     "alerts.no_recent_errors": "No recent errors found.",
     "alerts.no_stats": "No alert statistics found for that template",
@@ -116,6 +118,19 @@ STRINGS = {
     "canvas.quantize": "Fixed {0} pixels.",
     "canvas.repeat_not_found": "Could not find a valid command to repeat, do I have the **Read Message History** permission?",
     "canvas.template_report_header": "Template Report",
+    "canvas.pie_color_title": "Pie chart of the most popular colors on {0} from `{1}` to `{2}`",
+    "canvas.hexbin_title": "Hexbin plot of the density of pixels placed on {0} from `{1}` to `{2}`",
+    "canvas.hexbin_colorbar_count": "Pixels placed",
+    "canvas.hexbin_colorbar_log": "Pixels placed - log10(count)",
+    "canvas.hexbin_xlabel": "X Coordinate",
+    "canvas.hexbin_ylabel": "Y Coordinate",
+    "canvas.csv_placement": "CSV file of placement data from `{0}` to `{1}` for canvas {2}.",
+    "canvas.csv_online": "CSV file of online data from `{0}` to `{1}` for canvas {2}.",
+    "canvas.online_line_title": "Users online on {0} from `{1}` to `{2}`",
+    "canvas.online_line_ylabel": "Online users",
+    "canvas.online_line_mean": "Mean: {:.2f}",
+    "canvas.radius_toolarge": "Radius value cannot be greater than {0}.",
+    "canvas.hist2d_title": "2d histogram of the density of pixels placed on {0} from `{1}` to `{1}`",
 
     # Configuration command messages
     "configuration.alert_channel_cleared": "Alert channel has been cleared.",
@@ -335,6 +350,10 @@ STRINGS = {
     "brief.template.update": "Updates a template.",
     "brief.unregister": "Opt-out of animated emoji replacement.",
     "brief.version": "Gets my version number.",
+    "brief.canvas-stats": "Shows statistics about a canvas I monitor",
+    "brief.canvas-stats.pixelcanvas": "Shows statistics about Pixelcanvas.io",
+    "brief.canvas-stats.pixelzone": "Shows statistics about Pixelzone.io",
+    "brief.canvas-stats.pxlsspace": "Shows statistics about Pxls.space",
 
     # Command long help
     "help.alert": "With an alert channel set, I will monitor your template constantly and alert for damage in that channel.",
@@ -424,10 +443,34 @@ STRINGS = {
     "help.snapshot.add": "Base is what you want the template to look like, snapshot is what it looks like currently.",
     "help.update": "Update an existing template. The only required argument is <name> which is the name of the template you wish to update. All other arguments are optional and can be used in any order as long as <name> is before all of them.",
     "help.unregister": "You only need to unregister once for this to apply to all guilds.",
+    "help.canvas-stats": """
+        This command can either display various graphs using the statistics I gather, or it can output the raw data to csv.
+        I keep data no longer than a week, so if you want to plot data over a greater timespan, you will have to manually request csv's periodically and piece together the data yourself.
+        To see the default value for any optional argument, or the full list of choices available, use the `--help` argument.
 
+        Also: The `--center` + `--radius` arguments only apply for the hexbin/2dhist plot types, all other plots and also the raw option use the entire area of the canvas.
+    """,
+
+    "args.canvas-stats": """
+        `-t` or `--type` - Selects the kind of graph to plot. NOTE: Not compatible with the `--raw` argument.
+            options: hexbin, color-pie, online-line, 2dhist
+        `-r` or `--raw` - Dumps the kind of data you specify for a canvas from my database to csv. NOTE: Not compatible with the `--type` argument.
+            options: placement, online
+        `-d` or `--duration` - The duration of time counting backwards from the current moment to fetch or plot. Given in `1d2h` type format, where 5 suffixes are available. w - Week, d - Day, h - Hour, m - Minute, s - Second.
+        `-c` or `--center` - Where to center the data (if area restriction applies).
+        `-a` or `--radius` - The Radius (in pixels) of the data (if area restriction applies).
+        `--nooverlay` - Disable the canvas preview overlay on plots that use it.
+        `--bins` - Select the binning strategy for plots that use it. The 2dhist's binning strategy is not currently controllable.
+            options: log, count
+        `--mean` - Toggle on a mean line for a line plot.
+    """,
+    "args.canvas-stats2": """
+        `--colormap` - Select the colormap for plots that use it.
+            options: see `{p}canvas-stats --help`
+    """,
     "args.alert-stats": """
         `-f` or `--faction` - Searches for the faction name that you provide and tries to find the template you specify in that faction.
-        `-d` or `--days` - Controls how many days worth of data gets shown, default is 1.
+        `-d` or `--duration` - The duration of time counting backwards from the current moment to plot. Given in `1d2h` type format, where 5 suffixes are available. w - Week, d - Day, h - Hour, m - Minute, s - Second.
         `-t` or `--type` - Selects the type of graph to display. Default is comparision.
             options: comparision, gain
     """,
@@ -472,6 +515,7 @@ STRINGS = {
         `-i` or `--image` - This argument can be used without any input after it to tell the bot to check for image attachments or with a discord image url to use that to update the image.""",
 
     # Command signatures
+    "signature.canvas-stats": "(subcommand) (-t) (-r) (-d) (-c) (-a) (--nooverlay) (--bins) (--mean) (--colormap)",
     "signature.alert": "<template_name> (alert_channel)",
     "signature.alertchannel": "(subcommand)",
     "signature.alertchannel.set": "<channel>",
@@ -749,24 +793,28 @@ STRINGS = {
     "color.pxlsspace.3": "Mid Dark Grey",
     "color.pxlsspace.4": "Darkest Grey",
     "color.pxlsspace.5": "Black",
-    "color.pxlsspace.6": "Pink",
-    "color.pxlsspace.7": "Red",
-    "color.pxlsspace.8": "Maroon",
-    "color.pxlsspace.9": "Beige",
-    "color.pxlsspace.10": "Tan",
-    "color.pxlsspace.11": "Orange",
-    "color.pxlsspace.12": "Light Brown",
-    "color.pxlsspace.13": "Dark Brown",
-    "color.pxlsspace.14": "Yellow",
-    "color.pxlsspace.15": "Light Green",
-    "color.pxlsspace.16": "Mid Green",
-    "color.pxlsspace.17": "Dark Green",
-    "color.pxlsspace.18": "Cyan",
-    "color.pxlsspace.19": "Teal",
-    "color.pxlsspace.20": "Blue",
-    "color.pxlsspace.21": "Lavender",
-    "color.pxlsspace.22": "Magenta",
-    "color.pxlsspace.23": "Purple",
+    "color.pxlsspace.6": "Light Pink",
+    "color.pxlsspace.7": "Dark Pink",
+    "color.pxlsspace.8": "Light Red",
+    "color.pxlsspace.9": "Dark Red",
+    "color.pxlsspace.10": "Beige",
+    "color.pxlsspace.11": "Tan",
+    "color.pxlsspace.12": "Light Orange",
+    "color.pxlsspace.13": "Dark Orange",
+    "color.pxlsspace.14": "Light Brown",
+    "color.pxlsspace.15": "Dark Brown",
+    "color.pxlsspace.16": "Dark Yellow",
+    "color.pxlsspace.17": "Light Yellow",
+    "color.pxlsspace.18": "Light Green",
+    "color.pxlsspace.19": "Green",
+    "color.pxlsspace.20": "Dark Green",
+    "color.pxlsspace.21": "Cyan",
+    "color.pxlsspace.22": "Teal",
+    "color.pxlsspace.23": "Blue",
+    "color.pxlsspace.24": "Dark Blue",
+    "color.pxlsspace.25": "Lavender",
+    "color.pxlsspace.26": "Magenta",
+    "color.pxlsspace.27": "Purple",
 
     # Quickstart tour text
     "tour.intro": "Welcome to my quickstart tour, say `cancel` at any time to exit. Hope you enjoy!",

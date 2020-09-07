@@ -35,7 +35,7 @@ class Events(commands.Cog):
         # Command errors
         if isinstance(error, commands.BadArgument):
             pass
-        elif isinstance(error, discord.HTTPException) and error.original.code == 50013:
+        elif isinstance(error, discord.HTTPException) and error.code == 50013:
             pass
         elif isinstance(error, commands.CommandOnCooldown):
             await ctx.send(ctx.s("error.cooldown").format(error.retry_after))
@@ -122,6 +122,8 @@ class Events(commands.Cog):
             await ctx.send(ctx.s("canvas.dither_toolarge").format(error.limit))
         elif isinstance(error, errors.CanvasNotSupportedError):
             await ctx.send(ctx.s("error.canvas_not_supported"))
+        elif isinstance(error, errors.NotEnoughDataError):
+            await ctx.send(ctx.s("bot.not_enough_data"))
 
         # Uncaught error
         else:

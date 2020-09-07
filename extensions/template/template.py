@@ -69,7 +69,7 @@ class Template(commands.Cog):
         if args.faction is not None:
             gid = args.faction.id
 
-        templates = ctx.session.query(TemplateDb).filter_by(guild_id=gid).all()
+        templates = ctx.session.query(TemplateDb).filter_by(guild_id=gid).order_by(TemplateDb.name).all()
         if len(templates) < 1:
             raise NoTemplatesError()
 
@@ -187,17 +187,24 @@ class Template(commands.Cog):
         except TypeError:
             await ctx.send(ctx.s("error.missing_argument"))
             return
+        
+        skip = False
+        for arg in args:
+            if any(h == arg for h in ["--help", "-h"]):
+                args = ["--help"]
+                skip = True
 
-        if re.match(r"-\D+", name) is not None:
-            name = args[-1]
-            args = args[:-1]
-        else:
-            args = args[1:]
+        if not skip:
+            if re.match(r"-\D+", name) is not None:
+                name = args[-1]
+                args = args[:-1]
+            else:
+                args = args[1:]
 
-        orig_template = ctx.session.query(TemplateDb).filter_by(
-            guild_id=ctx.guild.id, name=name).first()
-        if not orig_template:
-            raise TemplateNotFoundError(ctx, ctx.guild.id, name)
+            orig_template = ctx.session.query(TemplateDb).filter_by(
+                guild_id=ctx.guild.id, name=name).first()
+            if not orig_template:
+                raise TemplateNotFoundError(ctx, ctx.guild.id, name)
 
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
@@ -337,11 +344,18 @@ class Template(commands.Cog):
         except IndexError:
             return await ctx.send(ctx.s("error.missing_argument"))
 
-        if re.match(r"-\D+", name) is not None:
-            name = args[-1]
-            args = args[:-1]
-        else:
-            args = args[1:]
+        skip = False
+        for arg in args:
+            if any(h == arg for h in ["--help", "-h"]):
+                args = ["--help"]
+                skip = True
+
+        if not skip:
+            if re.match(r"-\D+", name) is not None:
+                name = args[-1]
+                args = args[:-1]
+            else:
+                args = args[1:]
 
         # Argument Parsing
         parser = GlimmerArgumentParser(ctx)
@@ -352,7 +366,7 @@ class Template(commands.Cog):
             args = parser.parse_args(args)
         except TypeError:
             return
-        
+
         log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
 
         try:

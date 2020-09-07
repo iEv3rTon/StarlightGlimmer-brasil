@@ -1,15 +1,16 @@
+import datetime
 import asyncio
 import logging
 import re
 import time
 import argparse
+from functools import partial
 
 import discord
-from discord.ext import menus
-from discord.ext.commands.view import StringView
+from discord.ext import menus, commands
 from discord.utils import get as dget
 
-from objects.errors import NoAttachmentError, NoJpegsError, NotPngError, FactionNotFoundError, ColorError
+from objects.errors import NoAttachmentError, NoJpegsError, NotPngError, FactionNotFoundError, ColorError, BadArgumentErrorWithMessage
 from utils import config
 from objects.database_models import Guild
 
@@ -52,7 +53,7 @@ async def autoscan(ctx):
     if cmd:
         view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
         ctx.command = cmd
-        ctx.view = StringView(view)
+        ctx.view = commands.StringView(view)
         ctx.is_autoscan = True
         await ctx.bot.invoke(ctx)
         return True
@@ -188,14 +189,79 @@ async def yes_no(ctx, question, cancel=False):
     return answer if answer is not None else False
 
 
-class GlimmerArgumentParser(argparse.ArgumentParser):
+def chunkstring(string, length):
+    return (string[0 + i:length + i] for i in range(0, len(string), length))
 
+
+def parse_duration(ctx, duration: str) -> int:
+    matches = re.findall(r"(\d+[wdhms])", duration.lower())
+
+    if not matches:
+        raise BadArgumentErrorWithMessage(ctx.s("error.invalid_duration_1"))
+
+    matches = {match[-1]: int(match[:-1]) for match in matches}
+
+    suffixes = list(matches.keys())
+    if len(suffixes) != len(set(suffixes)):
+        raise BadArgumentErrorWithMessage(ctx.s("error.invalid_duration_2"))
+
+    seconds = {
+        "w": 7 * 24 * 60 * 60,
+        "d": 24 * 60 * 60,
+        "h": 60 * 60,
+        "m": 60,
+        "s": 1
+    }
+
+    return sum(num * seconds.get(suffix) for suffix, num in matches.items())
+
+
+class HelpAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        paginator = commands.Paginator()
+        help_txt = parser.format_help()
+        for line in help_txt.split("\n"):
+            try:
+                paginator.add_line(line)
+            except RuntimeError:
+                for subline in chunkstring(line, paginator.max_size - 10):
+                    paginator.add_line(subline)
+
+        for page in paginator.pages:
+            parser.loop.create_task(parser.ctx.send(page))
+        raise commands.BadArgument  # To exit silently
+
+
+class MutExcGroup(argparse._MutuallyExclusiveGroup):
+    def __init__(self, *args, **kwargs):
+        super(MutExcGroup, self).__init__(*args, **kwargs)
+        add_argument = partial(self.add_argument, help=" ")
+        setattr(self, "add_argument", add_argument)
+
+
+class GlimmerArgumentParser(argparse.ArgumentParser):
     def __init__(self, ctx):
-        argparse.ArgumentParser.__init__(self, add_help=False)
+        command = f"{ctx.prefix}{ctx.invoked_with}"
+        super(GlimmerArgumentParser, self).__init__(
+            prog=command, add_help=False,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
         self.ctx = ctx
+        self.loop = asyncio.get_event_loop()
+
+        # Override the default value of add_argument's help kwarg so all default values show up
+        # if help=None, ArgumentDefaultsHelpFormatter just ignores the arg in the help text :<
+        add_argument = partial(self.add_argument, help=" ")
+        setattr(self, "add_argument", add_argument)
+
+        self.add_argument("-h", "--help", action=HelpAction, nargs=0)
 
     def error(self, message):
-        asyncio.ensure_future(self.ctx.send(f"Error: {message}"))
+        self.loop.create_task(self.ctx.send(f"Error: {message}"))
+
+    def add_mutually_exclusive_group(self, **kwargs):
+        group = MutExcGroup(self, **kwargs)
+        self._mutually_exclusive_groups.append(group)
+        return group
 
 
 class FactionAction(argparse.Action):
@@ -216,6 +282,44 @@ class ColorAction(argparse.Action):
             setattr(namespace, self.dest, color)
         except ValueError:
             raise ColorError
+
+
+class Duration:
+    hour = 60 * 60
+
+    def __init__(self, start, end, input):
+        self.start = start
+        self.end = end
+        self.duration = end - start
+        self.input = input
+
+    def __str__(self):
+        return self.input
+
+    @property
+    def days(self):
+        return self.duration.days
+    
+    @property
+    def hours(self):
+        return self.duration.total_seconds() // self.hour
+
+
+class DurationAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        duration = self.get_duration(parser.ctx, values)
+        setattr(namespace, self.dest, duration)
+
+    @staticmethod
+    def get_duration(ctx, duration_string):
+        end = datetime.datetime.now(datetime.timezone.utc)
+        seven_days_ago = end - datetime.timedelta(days=7)
+
+        duration = parse_duration(ctx, duration_string)
+        start = end - datetime.timedelta(seconds=duration)
+
+        start = max(start, seven_days_ago)
+        return Duration(start, end, duration_string)
 
 
 async def print_welcome_message(guild):

@@ -1,22 +1,29 @@
 import io
 import re
-import math
-from struct import unpack_from
-import time
-import uuid
 import logging
 
 import aiohttp
 import discord
 import numpy as np
 from PIL import Image, ImageChops
-import websockets
 
 from objects.database_models import session_scope
 from objects.errors import UrlError, TemplateHttpError
 from utils import GlimmerArgumentParser, http, canvases
 
 log = logging.getLogger(__name__)
+
+
+class MockTemplate:
+    def __init__(self, axes):
+        self.x = axes[0]
+        self.y = axes[2]
+        self.width = axes[1] - axes[0] + 1
+        self.height = axes[3] - axes[2] + 1
+
+    @property
+    def center(self):
+        return (2 * self.x + self.width) // 2, (2 * self.y + self.height) // 2
 
 
 class Pixel:

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger
+from sqlalchemy.types import JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import UniqueConstraint
-from sqlalchemy.dialects.postgresql import JSONB
 
 from objects.database_models import Base
 
@@ -24,7 +24,7 @@ class Template(Base):
     md5 =           Column(String(32), nullable=False)
     owner =         Column(BigInteger, nullable=False)
     alert_id =      Column(BigInteger, default=None)
-    alert_stats =   Column(JSONB, default={})
+    alert_stats =   Column(JSON, default={})
 
     guild_templates_unique = UniqueConstraint(guild_id, name)
 

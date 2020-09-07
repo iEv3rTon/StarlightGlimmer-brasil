@@ -10,6 +10,8 @@ import aiohttp
 import discord
 from discord.ext import commands, menus
 from PIL import Image
+from matplotlib.cm import _cmap_registry as cmaps
+import numpy as np
 
 from extensions.canvas.utils import \
     (CheckSource,
@@ -17,9 +19,10 @@ from extensions.canvas.utils import \
      get_dither_image,
      dither_argparse,
      Pixel,
-     process_check)
+     process_check,
+     MockTemplate)
 from objects.bot_objects import GlimContext
-from objects.database_models import Template
+from objects.database_models import Template, Online, Canvas as CanvasDb
 from objects.chunks import BigChunk, ChunkPz, PxlsBoard
 from objects.errors import \
     (NoTemplatesError,
@@ -36,9 +39,12 @@ from utils import \
      colors,
      FactionAction,
      GlimmerArgumentParser,
+     DurationAction,
      http,
      render,
-     verify_attachment)
+     verify_attachment,
+     parse_duration,
+     plot)
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +73,11 @@ class Canvas(commands.Cog):
             await ctx.send("Error: no arguments were provided.")
             return
 
+        help = False
+        for arg in args:
+            if any(h == arg for h in ["--help", "-h"]):
+                help = True
+
         if re.match(r"-\D+", name) is not None:
             name = args[-1]
             args = args[:-1]
@@ -77,7 +88,7 @@ class Canvas(commands.Cog):
             await ctx.invoke_default("diff")
             return
 
-        await self._pre_diff(ctx, args, name=name)
+        await self._pre_diff(ctx, args, name=name, help=help)
 
     @diff.command(name="pixelcanvas", aliases=["pc"])
     async def diff_pixelcanvas(self, ctx, *args):
@@ -109,6 +120,11 @@ class Canvas(commands.Cog):
             await ctx.send("Error: no arguments were provided.")
             return
 
+        help = False
+        for arg in args:
+            if any(h == arg for h in ["--help", "-h"]):
+                help = True
+
         if re.match(r"-\D+", name) is not None:
             name = args[-1]
             args = args[:-1]
@@ -119,7 +135,7 @@ class Canvas(commands.Cog):
             await ctx.invoke_default("preview")
             return
 
-        await self._preview(ctx, args, name=name)
+        await self._preview(ctx, args, name=name, help=help)
 
     @preview.command(name="pixelcanvas", aliases=["pc"])
     async def preview_pixelcanvas(self, ctx, *args):
@@ -386,7 +402,157 @@ class Canvas(commands.Cog):
         time, ct = await http.fetch_online_pxlsspace(self.bot)
         await ctx.send(ctx.s("canvas.online").format(ct, "Pxls.space"))
 
+    # ======================
+    #     CANVAS-STATS
+    # ======================
+
+    @commands.cooldown(2, 5, commands.BucketType.guild)
+    @commands.group(
+        name="canvas-stats",
+        invoke_without_command=True,
+        case_insensitive=True)
+    async def canvas_stats(self, ctx):
+        await ctx.invoke_default("canvas-stats")
+
+    @canvas_stats.command(name="pixelcanvas", aliases=["pc"])
+    async def canvas_stats_pixelcanvas(self, ctx, *args):
+        await self.send_stats(ctx, args, "pixelcanvas")
+
+    @canvas_stats.command(name="pixelzone", aliases=["pz"])
+    async def canvas_stats_pixelzone(self, ctx, *args):
+        await self.send_stats(ctx, args, "pixelzone")
+
+    @canvas_stats.command(name="pxlsspace", aliases=["ps"])
+    async def canvas_stats_pxlsspace(self, ctx, *args):
+        await self.send_stats(ctx, args, "pxlsspace")
+
     # -- Methods --
+
+    async def send_stats(self, ctx, args, canvas):
+        parser = GlimmerArgumentParser(ctx)
+        output = parser.add_mutually_exclusive_group()
+        output.add_argument(
+            "-t", "--type",
+            default="hexbin",
+            choices=["color-pie", "hexbin", "online-line", "2dhist"])
+        output.add_argument("-r", "--raw", default=False, choices=["placement", "online"])
+        parser.add_argument(
+            "-d", "--duration",
+            default=DurationAction.get_duration(ctx, "1d"),
+            action=DurationAction)
+        parser.add_argument("-c", "--center", nargs=2, type=int)
+        parser.add_argument("-a", "--radius", type=int, default=500)
+        parser.add_argument("--nooverlay", action="store_true")
+        parser.add_argument("--bins", default="log", choices=["log", "count"])
+        parser.add_argument("--mean", action="store_true")
+        parser.add_argument(
+            "--colormap",
+            default="plasma",
+            choices=[cmap for cmap in cmaps.keys() if not cmap.endswith("_r")],
+            help="See: https://matplotlib.org/tutorials/colors/colormaps.html for visualisations.")
+
+        try:
+            args = parser.parse_args(args)
+        except TypeError:
+            return
+
+        # Verify coordinate info.
+        if args.center:
+            center = args.center
+        else:
+            center = canvases.center[canvas]
+
+        if args.radius > 1000:
+            return await ctx.send(ctx.s(canvas.radius_toolarge).format(1000))
+
+        start_x, start_y = center[0] - args.radius, center[1] - args.radius
+        end_x, end_y = center[0] + args.radius, center[1] + args.radius
+
+        axes = [start_x, end_x, start_y, end_y]
+
+        start = args.duration.start
+        end = args.duration.end
+
+        start_str = args.duration.start.strftime("%d %b %Y %H:%M:%S UTC")
+        end_str = args.duration.end.strftime("%d %b %Y %H:%M:%S UTC")
+
+        log.debug(f"[uuid:{ctx.uuid}] Parsed arguments: {args}")
+
+        # NOTE: Could definitely think about using processes rather than threads
+        # for both the collection+processing and plotting of our data here.
+        # I'm pretty sure none of these functions are actually sharing sqlalchemy
+        # objects across (minus the session, but we can just ditch that and access
+        # the db via the engine directly after calling engine.dispose()).
+        # Threading means we don't block the event loop, but it's gonna for sure slow
+        # stuff down.
+
+        if args.raw:
+            process_func = partial(plot.process_raw, ctx, canvas, args.duration.start, args.duration.end, args.raw)
+            buf = await self.bot.loop.run_in_executor(None, process_func)
+
+            content = ctx.s(f"canvas.csv_{args.raw}").format(
+                start_str, end_str, canvases.pretty_print[canvas])
+            file = discord.File(buf, "{0}-from-{1}-to-{2}.csv".format(
+                canvas,
+                int(args.duration.start.timestamp()),
+                int(args.duration.end.timestamp())))
+            await ctx.send(content, file=file)
+            return
+
+        if args.type == "color-pie":
+            process_func = partial(plot.process_color_pie, canvas, args.duration.start, args.duration.end)
+            data = await self.bot.loop.run_in_executor(None, process_func)
+
+            plot_func = partial(plot.color_pie, data, canvas)
+            image = await self.bot.loop.run_in_executor(None, plot_func)
+
+            content = ctx.s("canvas.pie_color_title").format(
+                canvases.pretty_print[canvas], start_str, end_str)
+        elif args.type == "hexbin":
+            preview_img = not args.nooverlay
+            if not args.nooverlay:
+                t = MockTemplate(axes)
+                fetch = self.bot.fetchers[canvas]
+                preview_img = await render.preview_template(self.bot, t, 1, fetch)
+
+            process_func = partial(plot.process_histogram, canvas, start, end, axes)
+            x_values, y_values = await self.bot.loop.run_in_executor(None, process_func)
+
+            plot_func = partial(plot.hexbin_placement_density, ctx, x_values, y_values, args.colormap, args.bins, axes, center, overlay=preview_img)
+            image = await self.bot.loop.run_in_executor(None, plot_func)
+            content = ctx.s("canvas.hexbin_title").format(
+                canvases.pretty_print[canvas], start_str, end_str)
+        elif args.type == "2dhist":
+            preview_img = not args.nooverlay
+            if not args.nooverlay:
+                t = MockTemplate(axes)
+                fetch = self.bot.fetchers[canvas]
+                preview_img = await render.preview_template(self.bot, t, 1, fetch)
+
+            process_func = partial(plot.process_histogram, canvas, start, end, axes)
+            x_values, y_values = await self.bot.loop.run_in_executor(None, process_func)
+
+            axes = start_x, end_x, end_y, start_y
+            plot_func = partial(plot.histogram_2d_placement_density, ctx, x_values, y_values, args.colormap, axes, center, overlay=preview_img)
+            image = await self.bot.loop.run_in_executor(None, plot_func)
+            content = ctx.s("canvas.hist2d_title").format(
+                canvases.pretty_print[canvas], start_str, end_str)
+
+        elif args.type == "online-line":
+            process_func = partial(
+                plot.process_online_line,
+                ctx, canvas, start, end)
+            x_values, y_values = await self.bot.loop.run_in_executor(None, process_func)
+
+            plot_func = partial(
+                plot.online_line,
+                ctx, x_values, y_values, args.duration,
+                mean=y_values.mean() if args.mean else args.mean)
+            image = await self.bot.loop.run_in_executor(None, plot_func)
+            content = ctx.s("canvas.online_line_title").format(
+                canvases.pretty_print[canvas], start_str, end_str)
+
+        await ctx.send(content, file=discord.File(image, "stats.png"))
 
     async def check_canvas(self, ctx, templates, canvas, msg=None):
         """Update the current total errors for a list of templates.
@@ -430,8 +596,12 @@ class Canvas(commands.Cog):
 
         return msg
 
-    async def _pre_diff(self, ctx, args, name=None, canvas=None, fetch=None, palette=None):
-        if not name:
+    async def _pre_diff(self, ctx, args, name=None, canvas=None, fetch=None, palette=None, help=False):
+        for arg in args:
+            if any(h == arg for h in ["--help", "-h"]):
+                help = True
+
+        if not help and not name:
             att = await verify_attachment(ctx)
 
             # Order Parsing
@@ -472,6 +642,8 @@ class Canvas(commands.Cog):
             parser.add_argument("-f", "--faction", default=None, action=FactionAction)
 
         try:
+            if help:
+                args = ["--help"]
             args = parser.parse_args(args)
         except TypeError:
             return
@@ -640,7 +812,7 @@ class Canvas(commands.Cog):
             except IOError:
                 raise PilImageError
 
-    async def _preview(self, ctx, args, name=None, fetch=None):
+    async def _preview(self, ctx, args, name=None, fetch=None, help=False):
         """Sends a preview of the image or template provided.
 
         Arguments:
@@ -651,7 +823,11 @@ class Canvas(commands.Cog):
         name - The name of the template to preview.
         fetch - A function to fetch from a specific canvas.
         """
-        if not name:
+        for arg in args:
+            if any(h == arg for h in ["--help", "-h"]):
+                help = True
+
+        if not help and not name:
             # Order Parsing
             try:
                 x, y = args[0], args[1]
@@ -683,6 +859,8 @@ class Canvas(commands.Cog):
             parser.add_argument("-f", "--faction", default=None, action=FactionAction)
 
         try:
+            if help:
+                args = ["--help"]
             args = parser.parse_args(args)
         except TypeError:
             return

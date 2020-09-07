@@ -3,6 +3,7 @@ import math
 import time
 import os
 import re
+import datetime
 
 import discord
 from discord.ext import commands, tasks
@@ -12,9 +13,9 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from objects.bot_objects import GlimContext
-from objects.database_models import session_scope, Guild, MenuLock, MutedTemplate, Template, Version
+from objects.database_models import session_scope, Guild, MenuLock, MutedTemplate, Template, Version, Pixel, Canvas, Online
 import utils
-from utils import config, http, render, websocket
+from utils import config, http, render, websocket, canvases
 from utils.version import VERSION
 
 if config.SENTRY_DSN:
@@ -48,6 +49,9 @@ class Glimmer(commands.Bot):
             'pixelzone': render.fetch_pixelzone,
             'pxlsspace': render.fetch_pxlsspace
         }
+
+        log.info("Performing canvas check...")
+        self.canvas_check()
 
         self.pc = websocket.PixelCanvasConnection(self)
         self.pz = websocket.PixelZoneConnection(self)
@@ -118,6 +122,29 @@ class Glimmer(commands.Bot):
         except Exception:
             log.exception("Error during unmute task.")
 
+    @tasks.loop(minutes=30.0)
+    async def pc_online_stats(self):
+        try:
+            count = int(await http.fetch_online_pixelcanvas())
+            if not count:
+                log.warning("Error fetching pixelcanvas online count for stats.")
+                return
+
+            self.pc.update_online(time.time(), count)
+        except Exception:
+            log.exception("Error during pixelcanvas online stats update task.")
+
+    @tasks.loop(hours=24.0)
+    async def clear_old_stats(self):
+        try:
+            now = datetime.datetime.now(datetime.timezone.utc)
+            seven_days_ago = now - datetime.timedelta(days=7)
+            with session_scope() as session:
+                session.query(Pixel).filter(Pixel.placed < seven_days_ago).delete()
+                session.query(Online).filter(Online.time < seven_days_ago).delete()
+        except Exception:
+            log.exception("Error during old stats clearing task.")
+
     async def unsubscribe_canvas_listeners(self, subscriptions):
         for sub in subscriptions:
             unsub = self.unsubscribers[sub["canvas"]]
@@ -137,6 +164,10 @@ class Glimmer(commands.Bot):
         log.info("Beginning status and unmute tasks...")
         self.set_presense.start()
         self.unmute.start()
+
+        log.info("Beginning canvas statistics tasks...")
+        self.pc_online_stats.start()
+        self.clear_old_stats.start()
 
         log.info("Beginning canvas websocket connections...")
         self.loop.create_task(self.pz.run())
@@ -214,6 +245,16 @@ class Glimmer(commands.Bot):
                         if config.CHANNEL_LOG_GUILD_KICKS:
                             await utils.channel_log(bot, "Kicked from guild **{0}** (ID: `{1}`)".format(g.name, g.id))
                         session.delete(g)
+
+    def canvas_check(self):
+        with session_scope() as session:
+            for nick, url in canvases.pretty_print.items():
+                canvas = session.query(Canvas).filter_by(nick=nick).first()
+                if canvas:
+                    continue
+
+                log.info(f"Canvas {nick} not found in database, creating...")
+                session.add(Canvas(nick=nick, url=url))
 
     async def on_message(self, message):
         # Ignore channels that can't be posted in

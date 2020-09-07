@@ -95,3 +95,7 @@ class TemplateTooLargeError(commands.CommandError):
 
 class CanvasNotSupportedError(commands.CommandError):
     pass
+
+
+class NotEnoughDataError(commands.CommandError):
+    pass

@@ -10,6 +10,12 @@ url_templates = {
     'pxlsspace': "https://pxls.space/#x={0}&y={1}"
 }
 
+center = {
+    'pixelcanvas': [0, 0],
+    'pixelzone': [0, 0],
+    'pxlsspace': [1000, 1000]
+}
+
 PZ_CHUNK_LENGTH = 512
 PC_CHUNK_LENGTH = 960
 

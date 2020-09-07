@@ -3,18 +3,20 @@ import logging
 import time
 import re
 from functools import partial
-from io import BytesIO
-from copy import deepcopy
+from itertools import groupby
 
 import discord
 from discord.ext import commands, menus, tasks
-import matplotlib
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-from matplotlib.figure import Figure
+import numpy as np
 
-from objects.database_models import session_scope, Template as TemplateDb, MutedTemplate
-from objects.errors import TemplateNotFoundError
-from utils import canvases, checks, GlimmerArgumentParser, FactionAction
+from objects.database_models import \
+    (session_scope,
+     MutedTemplate,
+     Canvas,
+     Template as TemplateDb,
+     Pixel as PixelDb)
+from objects.errors import TemplateNotFoundError, NotEnoughDataError
+from utils import canvases, checks, GlimmerArgumentParser, FactionAction, parse_duration, plot, DurationAction
 from extensions.template.utils import CheckerSource, Pixel, Template
 
 log = logging.getLogger(__name__)
@@ -189,24 +191,7 @@ class Alerts(commands.Cog):
             try:
                 duration = float(duration) * 3600
             except ValueError:
-                matches = re.findall(r"(\d+[wdhms])", duration.lower())  # Week Day Hour Minute Second
-
-                if not matches:
-                    return await ctx.send(ctx.s("alerts.invalid_duration_1"))
-
-                suffixes = [match[-1] for match in matches]
-                if len(suffixes) != len(set(suffixes)):
-                    return await ctx.send(ctx.s("alerts.invalid_duration_2"))
-
-                seconds = {
-                    "w": 7 * 24 * 60 * 60,
-                    "d": 24 * 60 * 60,
-                    "h": 60 * 60,
-                    "m": 60,
-                    "s": 1
-                }
-
-                duration = sum([int(match[:-1]) * seconds.get(match[-1]) for match in matches])
+                duration = parse_duration(ctx, duration)
 
             if not template.alert_id:
                 return await ctx.send(ctx.s("alerts.already_muted").format(name))
@@ -266,15 +251,22 @@ class Alerts(commands.Cog):
             await ctx.send(ctx.s("error.missing_argument"))
             return
 
-        if re.match(r"-\D+", name) is not None:
-            name = args[-1]
-            args = args[:-1]
-        else:
-            args = args[1:]
+        skip = False
+        for arg in args:
+            if any(h == arg for h in ["--help", "-h"]):
+                args = ["--help"]
+                skip = True
+
+        if not skip:
+            if re.match(r"-\D+", name) is not None:
+                name = args[-1]
+                args = args[:-1]
+            else:
+                args = args[1:]
 
         parser = GlimmerArgumentParser(ctx)
         parser.add_argument("-f", "--faction", default=None, action=FactionAction)
-        parser.add_argument("-d", "--days", type=int, default=1, choices=range(1, 8))
+        parser.add_argument("-d", "--duration", default=DurationAction.get_duration(ctx, "1d"), action=DurationAction)
         parser.add_argument("-t", "--type", default="comparision", choices=["comparision", "gain"])
         try:
             args = parser.parse_args(args)
@@ -287,125 +279,93 @@ class Alerts(commands.Cog):
         if args.faction is not None:
             gid = args.faction.id
 
-        template = ctx.session.query(TemplateDb).filter_by(
-            guild_id=gid, name=name).first()
+        template = ctx.session.query(TemplateDb)\
+            .filter_by(guild_id=gid, name=name).first()
         if not template:
             raise TemplateNotFoundError(ctx, gid, name)
 
-        if not template.alert_stats:
-            await ctx.send(ctx.s("alerts.no_stats"))
+        alert_template = None
+        for t in self.templates:
+            if t.id == template.id:
+                alert_template = t
+                break
+
+        if not alert_template:
+            await ctx.send("Error fetching data, is that template an alert template? (See `{0}help alert` for more info).".format(ctx.prefix))
             return
 
+        start = args.duration.start
+        end = args.duration.end
+
+        sq = ctx.session.query(Canvas.id).filter_by(nick=template.canvas).subquery()
+        q = ctx.session.query(PixelDb).filter(
+            PixelDb.placed.between(start, end),
+            PixelDb.canvas_id.in_(sq),
+            PixelDb.x.between(template.x, template.x + template.width - 1),
+            PixelDb.y.between(template.y, template.y + template.height - 1))
+        q = q.order_by(PixelDb.placed)
+        pixels = q.all()
+
+        if not len(pixels):
+            raise NotEnoughDataError
+
         async with ctx.typing():
-            func = partial(
-                self.plot,
+            process_func = partial(
+                self.process,
+                pixels,
+                alert_template,
+                args.duration.days)
+            x_data, y_data = await self.bot.loop.run_in_executor(None, process_func)
+
+            plot_types = {
+                "comparision": plot.alert_comparision,
+                "gain": plot.alert_gain
+            }
+
+            plot_func = partial(
+                plot_types.get(args.type),
                 ctx,
-                template.alert_stats,
-                args.days,
-                args.type)
-            image = await self.bot.loop.run_in_executor(None, func)
+                x_data,
+                y_data[:, 0],
+                y_data[:, 1],
+                args.duration)
+            image = await self.bot.loop.run_in_executor(None, plot_func)
 
             if args.type == "comparision":
-                out = ctx.s("alerts.comparision_title").format(template.name, args.days)
+                out = ctx.s("alerts.comparision_title").format(template.name, args.duration.days)
             elif args.type == "gain":
-                out = ctx.s("alerts.gain_title").format(template.name, args.days)
+                out = ctx.s("alerts.gain_title").format(template.name, args.duration.days)
 
             await ctx.send(out, file=discord.File(image, "stats.png"))
 
-    def plot(self, ctx, data, days, type):
-        now = datetime.datetime.now(datetime.timezone.utc)
+    def process(self, pixels, alert_template, days):
+        # We need to begin a new session for this thread and migrate all
+        # the pixel objects over to it so we can use them safely!
+        with session_scope() as session:
+            ps = [session.merge(p) for p in pixels]
 
-        x_values = []
-        ally_values = []
-        enemy_values = []
-        gain_values = []
-        gain_colors = []
-        datemin = None
-        datemax = None
+            x_data = []
+            # Uses up wayyy more space than it's gonna need, maybe I should aim low and expand?
+            y_data = np.zeros((len(ps), 2), dtype=np.int16)
+            for i, (_, pixels) in enumerate(groupby(ps, key=lambda p: f"{p.placed.day} {p.placed.hour}")):
+                counter = {"ally": 0, "enemy": 0}
+                for pixel in pixels:
+                    color = alert_template.color_at(pixel.x, pixel.y)
+                    if color == -1:
+                        continue
+                    elif color == pixel.color:
+                        counter["ally"] += 1
+                    else:
+                        counter["enemy"] += 1
 
-        deltas = [x for x in range(days + 1)]
-        deltas.reverse()
-        for i, x in enumerate(deltas):
-            time = now - datetime.timedelta(days=x)
+                x_data.append(datetime.datetime(
+                    pixel.placed.year, pixel.placed.month,
+                    pixel.placed.day, hour=pixel.placed.hour))
+                y_data[i, 0] = counter["ally"]
+                y_data[i, 1] = counter["enemy"]
 
-            if i == 0:
-                datemin = time
-            datemax = time
-
-            for hour in range(24):
-                time_hour = datetime.datetime(time.year, time.month, time.day, hour=hour, tzinfo=datetime.timezone.utc)
-
-                try:
-                    pixels = data["{0.day}/{0.month}/{0.year}".format(time_hour)][str(time_hour.hour)]
-                except KeyError:
-                    continue
-
-                x_values.append(time_hour)
-
-                if type == "comparision":
-                    ally_values.append(pixels["ally"])
-                    enemy_values.append(pixels["enemy"])
-                elif type == "gain":
-                    gain = pixels["ally"] - pixels["enemy"]
-                    gain_values.append(gain)
-                    gain_colors.append("r" if gain < 0 else "g")
-
-        d = matplotlib.dates.DayLocator()
-        h = matplotlib.dates.HourLocator(byhour=[6, 12, 18])
-        day_formatter = matplotlib.dates.DateFormatter("%d/%m/%Y" if days <= 4 else "%d/%m/%y")
-        hour_formatter = matplotlib.dates.DateFormatter("%I%p")
-
-        def format_date(ax):
-            if days <= 4:
-                ax.xaxis.set_minor_formatter(hour_formatter)
-                ax.xaxis.set_tick_params(which='minor', labelsize=7.0)
-
-            ax.xaxis.set_minor_locator(h)
-            ax.xaxis.set_major_locator(d)
-            ax.xaxis.set_major_formatter(day_formatter)
-            ax.xaxis.set_tick_params(which='major', pad=15, labelsize=9.0)
-            ax.set_xlim(datemin, datemax)
-
-        # Creating the figure this way because plt isn't garbage collected (It should be, what the fuck matplotlib)
-        fig = Figure()
-        _ = FigureCanvasAgg(fig)  # Strange API, this is binding the figure to a canvas so stuff can get drawn
-
-        # Bar chart width for datetimes is appx width of 1 = 1 day (https://github.com/matplotlib/matplotlib/issues/13236#issuecomment-457394944), so...
-        # 1/24 = 0.041
-        # 0.041 * 0.8 = 0.033
-
-        if type == "comparision":
-            ax_1, ax_2 = fig.subplots(2, sharex=True, sharey=True)
-
-            ax_1.bar(x_values, ally_values, width=0.033, color="green")
-            ax_2.bar(x_values, enemy_values, width=0.033, color="red")
-
-            ax_1.grid(True)
-            ax_2.grid(True)
-            ax_1.set_title(ctx.s("alerts.allies"))
-            ax_2.set_title(ctx.s("alerts.enemies"))
-            ax_1.set_ylabel(ctx.s("alerts.comparision_y_label"))
-            ax_2.set_ylabel(ctx.s("alerts.comparision_y_label"))
-            format_date(ax_2)
-            ax_2.set_ylim(bottom=0)
-        elif type == "gain":
-            ax = fig.subplots()
-
-            ax.bar(x_values, gain_values, width=0.033, color=gain_colors)
-
-            ax.grid(True)
-            ax.set_ylabel(ctx.s("alerts.gain_y_label"))
-            format_date(ax)
-
-            # Center y axis at zero
-            bottom, top = ax.get_ylim()
-            biggest = max(abs(bottom), abs(top))
-            ax.set_ylim(bottom=0 - biggest, top=biggest)
-
-        buf = BytesIO()
-        fig.savefig(buf, format="png")
-        buf.seek(0)
-        return buf
+            y_data = y_data[0:i + 1, :]
+            return x_data, y_data
 
     async def on_message(self, x, y, color, canvas):
         for template in self.templates:
@@ -419,8 +379,6 @@ class Alerts(commands.Cog):
     async def check_template(self, template, x, y, color):
         template_color = template.color_at(x, y)
         if color == template_color:
-            self.bot.loop.create_task(self.update_stats(template, True))
-
             # Is this pixel in the most recent alert?
             for p in template.pixels:
                 if p.x == x and p.y == y:
@@ -428,8 +386,6 @@ class Alerts(commands.Cog):
                     log.debug(f"Tracked pixel {p.x},{p.y} fixed to {Pixel.colors[template.canvas][color]}, was {p.log_color}. On {template}")
                     await self.send_embed(template)
         elif color != template_color and template_color > -1:
-            self.bot.loop.create_task(self.update_stats(template, False))
-
             if not template.last_alert_message:
                 # No current alert message, make a new one
                 p = template.add_pixel(color, x, y)
@@ -502,48 +458,3 @@ class Alerts(commands.Cog):
         except Exception as e:
             template.sending = False
             log.exception("Error sending/editing an embed.")
-
-    async def update_stats(self, template, ally):
-        with session_scope() as session:
-            db_template = session.query(TemplateDb).get(template.id)
-            if not db_template:
-                return
-
-            stats = deepcopy(db_template.alert_stats)
-            stats = stats if stats else {}
-            now = datetime.datetime.now(datetime.timezone.utc)
-
-            day = f"{now.day}/{now.month}/{now.year}"
-            hour = f"{now.hour}"
-
-            try:
-                _ = stats[day]
-            except KeyError:
-                stats[day] = {}
-
-            try:
-                _ = stats[day][hour]
-            except KeyError:
-                stats[day][hour] = {"ally": 0, "enemy": 0}
-
-            if ally:
-                stats[day][hour]["ally"] += 1
-            else:
-                stats[day][hour]["enemy"] += 1
-
-            # Remove data that's more than a week old
-            valid_days = []
-            for x in range(7):
-                time = now - datetime.timedelta(days=x)
-                valid_days.append(f"{time.day}/{time.month}/{time.year}")
-
-            to_delete = []
-            for key in stats.keys():
-                if key not in valid_days:
-                    to_delete.append(key)
-            
-            for key in to_delete:
-                del stats[key]
-
-            session.query(TemplateDb).filter_by(id=template.id).update({
-                "alert_stats": stats})
