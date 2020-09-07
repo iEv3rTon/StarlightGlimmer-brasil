@@ -420,8 +420,8 @@ class Alerts(commands.Cog):
             template.sending = True
 
             embed = discord.Embed(
-                title=template.s("alerts.alert_title").format(template.name),
-                description=template.s("alerts.alert_description"))
+                title=template.s(self.bot, "alerts.alert_title").format(template.name),
+                description=template.s(self.bot, "alerts.alert_description"))
             embed.set_thumbnail(url=template.url)
             text = ""
 
@@ -433,12 +433,12 @@ class Alerts(commands.Cog):
 
                     out = "~~{0}~~\n" if p.fixed else "{0}\n"
                     text += out.format(
-                        template.s("bot.pixel").format(
+                        template.s(self.bot, "bot.pixel").format(
                             x=p.x, y=p.y, url=url.format(p.x, p.y),
                             current=template.color_string(self.bot, p.damage_color),
                             target=template.color_string(self.bot, template.color_at(p.x, p.y))))
 
-            embed.add_field(name=template.s("alerts.received"), value=text, inline=False)
+            embed.add_field(name=template.s(self.bot, "alerts.received"), value=text, inline=False)
             embed.timestamp = datetime.datetime.now(datetime.timezone.utc)
 
             try:
