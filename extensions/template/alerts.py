@@ -435,8 +435,8 @@ class Alerts(commands.Cog):
                     text += out.format(
                         template.s("bot.pixel").format(
                             x=p.x, y=p.y, url=url.format(p.x, p.y),
-                            current=template.color_string(p.damage_color),
-                            target=template.color_string(template.color_at(p.x, p.y))))
+                            current=template.color_string(self.bot, p.damage_color),
+                            target=template.color_string(self.bot, template.color_at(p.x, p.y))))
 
             embed.add_field(name=template.s("alerts.received"), value=text, inline=False)
             embed.timestamp = datetime.datetime.now(datetime.timezone.utc)

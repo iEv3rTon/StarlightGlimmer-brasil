@@ -4,6 +4,7 @@ import time
 import os
 import re
 import datetime
+import functools
 
 import discord
 from discord.ext import commands, tasks
@@ -223,9 +224,9 @@ class Glimmer(commands.Bot):
                                     .set_author(name=data['author']['login']) \
                                     .set_thumbnail(url=data['author']['avatar_url']) \
                                     .set_footer(text="Released " + data['published_at'])
-                                await ch.send(GlimContext.get_from_guild(g, "bot.update").format(VERSION, prefix), embed=e)
+                                await ch.send(GlimContext.get_from_guild(self, g, "bot.update").format(VERSION, prefix), embed=e)
                             else:
-                                await ch.send(GlimContext.get_from_guild(g, "bot.update_no_changelog").format(VERSION, prefix))
+                                await ch.send(GlimContext.get_from_guild(self, g, "bot.update_no_changelog").format(VERSION, prefix))
                             log.info("- Sent update message")
                         else:
                             log.info("- Could not send update message: alert channel not found.")
@@ -255,6 +256,16 @@ class Glimmer(commands.Bot):
 
                 log.info(f"Canvas {nick} not found in database, creating...")
                 session.add(Canvas(nick=nick, url=url))
+
+    @functools.lru_cache
+    def get_guild_language(self, guild):
+        with session_scope() as session:
+            if isinstance(guild, discord.Guild):
+                guild = session.query(Guild).get(guild.id)
+            else:
+                guild = session.query(Guild).get(guild)
+
+            return guild.language.lower()
 
     async def on_message(self, message):
         # Ignore channels that can't be posted in

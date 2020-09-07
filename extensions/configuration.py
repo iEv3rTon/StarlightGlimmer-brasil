@@ -119,6 +119,8 @@ class Configuration(commands.Cog):
             return
         guild = ctx.session.query(Guild).get(ctx.guild.id)
         guild.language = option.lower()
+        ctx.session.commit()
+        self.bot.get_guild_language.cache_clear()
         await ctx.send(ctx.s("configuration.language_set").format(ctx.langs[option.lower()]))
 
     @checks.admin_only()

@@ -36,18 +36,12 @@ class GlimContext(commands.Context):
 
     @property
     def lang(self):
-        guild = self.session.query(Guild).get(self.guild.id)
-        return guild.language
+        return self.bot.get_guild_language(self.guild.id)
 
     @staticmethod
-    def get_from_guild(guild, str_id):
-        with session_scope() as session:
-            if isinstance(guild, discord.Guild):
-                guild = session.query(Guild).get(guild.id)
-            else:
-                guild = session.query(Guild).get(guild)
-
-            language = guild.language.lower()
+    def get_from_guild(bot, guild, str_id):
+        string = None
+        language = bot.get_guild_language(guild)
 
         if language == "pt-br":
             string = pt_BR.STRINGS.get(str_id, None)
@@ -62,7 +56,9 @@ class GlimContext(commands.Context):
             return string
 
     def s(self, str_id):
-        language = self.lang.lower()
+        language = self.lang
+        string = None
+
         if language == "pt-br":
             string = pt_BR.STRINGS.get(str_id, None)
         if language == "tr-tr":

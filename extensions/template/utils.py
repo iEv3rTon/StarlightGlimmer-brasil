@@ -484,11 +484,11 @@ class Template:
         log.debug(f"Generated {template}.")
         return template
 
-    def s(self, str_id):
-        return GlimContext.get_from_guild(self.gid, str_id)
+    def s(self, bot, str_id):
+        return GlimContext.get_from_guild(bot, self.gid, str_id)
 
-    def color_string(self, index):
-        return self.s(f"color.{self.canvas}.{index}")
+    def color_string(self, bot, index):
+        return self.s(bot, f"color.{self.canvas}.{index}")
 
     def in_range(self, x, y):
         return self.sx <= x < self.ex and self.sy <= y < self.ey
