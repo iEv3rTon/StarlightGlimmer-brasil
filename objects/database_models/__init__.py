@@ -59,10 +59,10 @@ def upgrade(version):
         print("Unsupported backend for db migrations, look at objects/database_models/__init__.py and execute equivalent sql for your database.")
         sys.exit(1)
 
-    if version > 3.0:
+    if version < 3.0:
         with engine.connect() as con:
             con.execute("ALTER TABLE templates ADD alert_stats jsonb;")
-    elif version > 3.1:
+    elif version < 3.1:
         with engine.connect() as con:
             con.execute("ALTER TABLE templates DROP COLUMN alert_stats;")
 
