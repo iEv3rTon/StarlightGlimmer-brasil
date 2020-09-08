@@ -317,11 +317,11 @@ def process_online_line(ctx, canvas, start, end):
     if len(data) < 2:
         raise NotEnoughDataError
 
-    x_values = []
+    x_values = np.zeros(len(data))
     y_values = np.zeros(len(data))
 
     for i, (time, count) in enumerate(data):
-        x_values.append(time)
+        x_values[i] = matplotlib.dates.date2num(time)
         y_values[i] = count
 
     return x_values, y_values
@@ -376,11 +376,42 @@ def histogram_2d_placement_density(ctx, x_values, y_values, color_map, axes, cen
     ax.set_ylabel(ctx.s("canvas.hexbin_ylabel"))
 
     # Make sure the labels on the x axis don't run into one another
-    x, y = center
+    x, _ = center
     if x > 10000:
         locator = matplotlib.ticker.MaxNLocator(nbins=3)
         formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
         ax.xaxis.set_major_locator(locator)
         ax.xaxis.set_major_formatter(formatter)
+
+    return save_fig(fig)
+
+
+def process_placement_hist(ctx, canvas, duration):
+    sq = ctx.session.query(Canvas.id).filter_by(nick=canvas).subquery()
+    q = ctx.session.query(Pixel.placed).filter(
+        Pixel.canvas_id.in_(sq),
+        Pixel.placed.between(duration.start, duration.end))
+    data = q.order_by(Pixel.placed).all()
+
+    times = np.empty(len(data))
+    for i, time in enumerate(data):
+        times[i] = matplotlib.dates.date2num(time)
+
+    return times
+
+
+def placement_hist(ctx, times, duration, bins):
+    fig = create_fig()
+    ax = fig.subplots()
+
+    log = True if bins == "log" else False
+
+    start = matplotlib.dates.date2num(duration.start)
+    end = matplotlib.dates.date2num(duration.end)
+
+    ax.hist(times, bins="auto", range=[start, end], log=log, edgecolor="Black")
+    format_date(ctx, ax, duration)
+
+    ax.set_ylabel("Pixels placed log10(count)" if log else "Pixels placed")
 
     return save_fig(fig)

@@ -5,6 +5,7 @@ import logging
 import math
 import re
 import time
+import copy
 
 import discord
 from discord.ext import commands, menus
@@ -187,7 +188,7 @@ class Template(commands.Cog):
         except TypeError:
             await ctx.send(ctx.s("error.missing_argument"))
             return
-        
+
         skip = False
         for arg in args:
             if any(h == arg for h in ["--help", "-h"]):
@@ -269,6 +270,8 @@ class Template(commands.Cog):
             out.append("File updated.")
 
         if args.x:
+            orig_x = copy.copy(orig_template.x)
+
             try:
                 x = int(re.sub('[^0-9-]', '', args.x))
             except ValueError:
@@ -282,9 +285,11 @@ class Template(commands.Cog):
                     "date_modified": int(time.time())
                 })
             ctx.session.commit()
-            out.append(f"X coordinate changed from {orig_template.x} to {x}.")
+            out.append(f"X coordinate changed from {orig_x} to {x}.")
 
         if args.y:
+            orig_y = copy.copy(orig_template.y)
+
             try:
                 y = int(re.sub('[^0-9-]', '', args.y))
             except ValueError:
@@ -298,7 +303,7 @@ class Template(commands.Cog):
                     "date_modified": int(time.time())
                 })
             ctx.session.commit()
-            out.append(f"Y coordinate changed from {orig_template.y} to {y}.")
+            out.append(f"Y coordinate changed from {orig_y} to {y}.")
 
         if args.newName:
             dup_check = ctx.session.query(TemplateDb.name).filter_by(

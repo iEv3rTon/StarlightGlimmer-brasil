@@ -434,7 +434,7 @@ class Canvas(commands.Cog):
         output.add_argument(
             "-t", "--type",
             default="hexbin",
-            choices=["color-pie", "hexbin", "online-line", "2dhist"])
+            choices=["color-pie", "hexbin", "online-line", "2dhist", "placement-hist"])
         output.add_argument("-r", "--raw", default=False, choices=["placement", "online"])
         parser.add_argument(
             "-d", "--duration",
@@ -537,7 +537,6 @@ class Canvas(commands.Cog):
             image = await self.bot.loop.run_in_executor(None, plot_func)
             content = ctx.s("canvas.hist2d_title").format(
                 canvases.pretty_print[canvas], start_str, end_str)
-
         elif args.type == "online-line":
             process_func = partial(
                 plot.process_online_line,
@@ -550,6 +549,14 @@ class Canvas(commands.Cog):
                 mean=y_values.mean() if args.mean else args.mean)
             image = await self.bot.loop.run_in_executor(None, plot_func)
             content = ctx.s("canvas.online_line_title").format(
+                canvases.pretty_print[canvas], start_str, end_str)
+        elif args.type == "placement-hist":
+            process_func = partial(plot.process_placement_hist, ctx, canvas, args.duration)
+            times = await self.bot.loop.run_in_executor(None, process_func)
+
+            plot_func = partial(plot.placement_hist, ctx, times, args.duration, args.bins)
+            image = await self.bot.loop.run_in_executor(None, plot_func)
+            content = "Histogram of placements on {0} from `{1}` to `{2}`".format(
                 canvases.pretty_print[canvas], start_str, end_str)
 
         await ctx.send(content, file=discord.File(image, "stats.png"))

@@ -299,10 +299,10 @@ class Duration:
     @property
     def days(self):
         return self.duration.days
-    
+
     @property
     def hours(self):
-        return self.duration.total_seconds() // self.hour
+        return int(self.duration.total_seconds() / self.hour)
 
 
 class DurationAction(argparse.Action):
