@@ -344,9 +344,8 @@ class DiscordLogger(logging.Handler):
                     if len(message) < 1990:
                         self.bot.loop.create_task(channel.send(f"```{message}```"))
                     else:
-                        chunks = [message[i:i + 1990] for i in range(0, len(message), 1990)]
-                        for chunk in chunks:
-                            self.bot.loop.create_task(channel.send(f"```{chunk}```"))
+                        message = f"{message[:990]}\n...\n{message[-990:]}"
+                        self.bot.loop.create_task(channel.send(f"```{message}```"))
                 except discord.errors.Forbidden:
                     log.warning("Forbidden from logging channel!")
 
