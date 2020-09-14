@@ -5,6 +5,7 @@ import re
 from functools import partial
 from itertools import groupby
 
+from aiohttp.client_exceptions import ServerDisconnectedError, ClientOSError
 import discord
 from discord.ext import commands, menus, tasks
 import numpy as np
@@ -138,6 +139,8 @@ class Alerts(commands.Cog):
                         log.debug(f"Clearing {p}.")
                         t.pixels.remove(p)
 
+        except ClientOSError as e:
+            log.warning(f"OS error during cleanup, likely broken pipe. {e}")
         except Exception as e:
             log.exception(f'Cleanup failed. {e}')
 
@@ -450,8 +453,10 @@ class Alerts(commands.Cog):
                     for p in template.pixels:
                         if p.alert_id == "flag":
                             p.alert_id = template.last_alert_message.id
-            except discord.errors.HTTPException as e:
-                log.debug(f"Exception sending message for {template}")
+            except discord.errors.HTTPException:
+                log.warning(f"HTTP Exception sending message for {template}")
+            except ServerDisconnectedError:
+                log.warning(f"Server disconnected while sending message for {template}")
 
             # Release send lock
             template.sending = False
