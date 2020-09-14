@@ -69,6 +69,7 @@ STRINGS = {
     "error.canvas_not_supported": "Templates of that canvas are not supported for this command.",
     "error.invalid_duration_1": "Invalid duration, format like `1h8m`",
     "error.invalid_duration_2": "Invalid duration, duplicate time suffix (eg: 1**h**8m3**h**)",
+    "error.connection": "Error with discord connection. Please try again.",
 
     # Alerts command messages
     "alerts.alert_description": "Messages that are crossed out have been fixed.",

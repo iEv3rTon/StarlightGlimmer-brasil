@@ -1,5 +1,6 @@
 import logging
 
+from aiohttp.client_exceptions import ClientOSError
 import discord
 from discord.ext import commands, menus
 from fuzzywuzzy import fuzz
@@ -32,8 +33,11 @@ class Events(commands.Cog):
         if getattr(error, "handled", None):
             return
 
+        if isinstance(error, ClientOSError):
+            await ctx.send(ctx.s("error.connection"))
+
         # Command errors
-        if isinstance(error, commands.BadArgument):
+        elif isinstance(error, commands.BadArgument):
             pass
         elif isinstance(error, discord.HTTPException) and error.code == 50013:
             pass
