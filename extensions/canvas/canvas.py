@@ -235,7 +235,7 @@ class Canvas(commands.Cog):
             templates = ctx.session.query(Template).filter_by(guild_id=ctx.guild.id).all()
 
         if len(templates) < 1:
-            ctx.command.parent.reset_cooldown(ctx)
+            ctx.command.reset_cooldown(ctx)
             raise NoTemplatesError(False)
 
         msg = None
