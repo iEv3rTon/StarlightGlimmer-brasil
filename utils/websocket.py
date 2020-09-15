@@ -203,8 +203,15 @@ class PixelZoneConnection(LongrunningWSConnection):
 
             while True:
                 await self.sio.wait()
-                await asyncio.sleep(60 * 5)  # Give the built-in reconnect time to work
 
+                # We disconnected, invalidate all chunks
+                async with self.chunk_lock:
+                    self.chunks = {}
+
+                # Give the built-in reconnect time to work
+                await asyncio.sleep(60 * 5)
+
+                # S.io reconnect didn't work, disconnect and try to start from scratch
                 if not self.sio.connected and not self.ready:
                     await self.sio.disconnect()
                     break
