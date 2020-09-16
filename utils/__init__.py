@@ -53,7 +53,7 @@ async def autoscan(ctx):
     if cmd:
         view = f"{g[0]} {g[1]} -z {g[2] if g[2] != None else 1}"
         ctx.command = cmd
-        ctx.view = commands.StringView(view)
+        ctx.view = commands.view.StringView(view)
         ctx.is_autoscan = True
         await ctx.bot.invoke(ctx)
         return True
