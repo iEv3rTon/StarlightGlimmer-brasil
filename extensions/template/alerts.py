@@ -5,7 +5,7 @@ import re
 from functools import partial
 from itertools import groupby
 
-from aiohttp.client_exceptions import ServerDisconnectedError, ClientOSError
+from aiohttp.client_exceptions import ServerDisconnectedError, ClientOSError, ClientConnectorError
 import discord
 from discord.ext import commands, menus, tasks
 import numpy as np
@@ -462,4 +462,8 @@ class Alerts(commands.Cog):
             template.sending = False
         except Exception as e:
             template.sending = False
-            log.exception("Error sending/editing an embed.")
+
+            if isinstance(e, ClientConnectorError):
+                log.warning("Discord connection error while sending/editing an embed.")
+            else:
+                log.exception("Error sending/editing an embed.")
