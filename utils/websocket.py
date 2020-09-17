@@ -202,7 +202,12 @@ class PixelZoneConnection(LongrunningWSConnection):
             await self.connect()
 
             while True:
-                await self.sio.wait()
+                try:
+                    await self.sio.wait()
+                except ConnectionResetError:
+                    log.warning("Pixelzone.io connection reset by host.")
+                except Exception:
+                    log.exception("Error running pixelzone.io websocket.")
 
                 # We disconnected, invalidate all chunks
                 async with self.chunk_lock:

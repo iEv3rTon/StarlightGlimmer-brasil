@@ -15,7 +15,7 @@ from lang import en_US, pt_BR, tr_TR
 from objects.bot_objects import GlimContext
 from objects.database_models import MenuLock, Guild
 import utils
-from utils import config, http, canvases
+from utils import http, canvases
 from utils.version import VERSION
 
 log = logging.getLogger(__name__)
@@ -32,6 +32,14 @@ class General(commands.Cog):
 
         # To initialise cpu measurement
         psutil.cpu_percent(interval=None, percpu=True)
+
+        bot.loop.create_task(self.get_invite())
+
+    async def get_invite(self):
+        await self.bot.wait_until_ready()
+        self.invite_link = discord.utils.oauth_url(
+            self.bot.user.id,
+            permissions=discord.Permissions(permissions=387136))
 
     def cog_unload(self):
         self.bot.help_command = self._original_help_command
@@ -57,7 +65,7 @@ class General(commands.Cog):
     @commands.cooldown(1, 5, commands.BucketType.guild)
     @commands.command(name="invite")
     async def invite(self, ctx):
-        await ctx.send(config.INVITE)
+        await ctx.send(self.invite_link)
 
     @commands.cooldown(1, 5, commands.BucketType.guild)
     @commands.command(name="ping")

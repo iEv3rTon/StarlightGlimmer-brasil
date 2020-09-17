@@ -43,10 +43,6 @@ with open(config_file, "r+") as j:
 TOKEN = data.get('token', None)
 PREFIX = data.get('prefix', "g!")
 NAME = data.get('name', 'Starlight Glimmer')
-INVITE = data.get(
-    'invite',
-    "https://discordapp.com/oauth2/authorize?&client_id=405480380930588682&scope=bot&permissions=35840"
-)
 PZ_API_KEY = data.get('pixelzone_api_key', None)
 
 PREVIEW_H = clamp(data.get('preview_height', 240), 0, 896)
