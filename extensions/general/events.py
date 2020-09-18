@@ -4,6 +4,7 @@ from aiohttp.client_exceptions import ClientOSError
 import discord
 from discord.ext import commands, menus
 from fuzzywuzzy import fuzz
+import requests
 
 from objects import errors
 import utils
@@ -33,7 +34,7 @@ class Events(commands.Cog):
         if getattr(error, "handled", None):
             return
 
-        if isinstance(error, ClientOSError):
+        if isinstance(error, ClientOSError) or isinstance(error, requests.ConnectionError):
             await ctx.send(ctx.s("error.connection"))
 
         # Command errors

@@ -457,6 +457,8 @@ class Alerts(commands.Cog):
                 log.warning(f"HTTP Exception sending message for {template}")
             except ServerDisconnectedError:
                 log.warning(f"Server disconnected while sending message for {template}")
+            except ClientOSError:
+                log.warning(f"ClientOSError while sending message for {template}")
 
             # Release send lock
             template.sending = False
