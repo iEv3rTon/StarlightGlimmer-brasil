@@ -172,7 +172,7 @@ class Glimmer(commands.Bot):
 
         log.info("Beginning canvas websocket connections...")
         self.loop.create_task(self.pz.run())
-        self.loop.create_task(self.pc.run())
+        # self.loop.create_task(self.pc.run())  arkie's ws ssl cert expired lmaoooooo
         self.loop.create_task(self.px.run())
 
         log.info('I am ready!')
