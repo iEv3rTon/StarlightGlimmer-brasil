@@ -475,7 +475,7 @@ class Template(commands.Cog):
         snapshots = ctx.session.query(Snapshot).filter(Snapshot.base_template_id.in_(template_ids)).all()
 
         if not snapshots:
-            return await ctx.send(f"No snapshots found, add some using `{ctx.prefix}template snapshot add`")
+            return await ctx.send(f"No snapshots found, add some using `{ctx.prefix}snapshot add`")
 
         for i, snap in enumerate(snapshots):
             snap.result = None
@@ -625,7 +625,7 @@ class Template(commands.Cog):
         template_ids = ctx.session.query(TemplateDb.id).filter_by(guild_id=ctx.guild.id).subquery()
         snapshots = ctx.session.query(Snapshot).filter(Snapshot.base_template_id.in_(template_ids)).all()
         if not snapshots:
-            return await ctx.send(f"No snapshots found, add some using `{ctx.prefix}template snapshot add`")
+            return await ctx.send(f"No snapshots found, add some using `{ctx.prefix}snapshot add`")
 
         snapshot_menu = menus.MenuPages(
             source=SnapshotSource(snapshots),
