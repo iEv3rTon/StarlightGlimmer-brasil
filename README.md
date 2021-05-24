@@ -7,8 +7,6 @@ This bot is forked from Fawfulcopter's original [Starlight Glimmer](https://gith
 
 Currently supports [Pixelcanvas.io](https://pixelcanvas.io), [Pixelzone.io](https://pixelzone.io) and [Pxls.space](https://pxls.space).
 
-**Invite:** `https://discordapp.com/oauth2/authorize?client_id=589606792926068736&permissions=35840&scope=bot`
-
 #### Requires:
 - [Python](https://www.python.org/downloads/release/python-365/) v3.6
 - [Discord.py](https://github.com/Rapptz/discord.py/) v1.3.1
