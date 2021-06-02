@@ -171,9 +171,12 @@ class Glimmer(commands.Bot):
         self.clear_old_stats.start()
 
         log.info("Beginning canvas websocket connections...")
-        self.loop.create_task(self.pz.run())
-        self.loop.create_task(self.pc.run())
-        self.loop.create_task(self.px.run())
+        if config.PIXELZONE_ENABLED:
+            self.loop.create_task(self.pz.run())
+        if config.PIXELCANVAS_ENABLED:
+            self.loop.create_task(self.pc.run())
+        if config.PXLSSPACE_ENABLED:
+            self.loop.create_task(self.px.run())
 
         log.info('I am ready!')
         await utils.channel_log(self, "I am ready!")

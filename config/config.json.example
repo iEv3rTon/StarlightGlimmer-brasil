@@ -8,6 +8,9 @@
     "preview_width": 400,
     "max_templates_per_guild": 25,
     "max_template_name_length": 32,
+    "enable_pixelzone": true,
+    "enable_pixelcanvas": true,
+    "enable_pxlsspace": true,
 
     "logging_channel_id": 0,
     "debug": false,

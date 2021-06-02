@@ -365,7 +365,7 @@ class Canvas(commands.Cog):
             # Provide this new context with the current db session
             new_ctx.session = ctx.session
 
-            match = re.match('^{}(diff|d|preview|p) '.format(ctx.prefix), msg.content)
+            match = re.match('^{}(diff|d|preview|p) '.format(re.escape(ctx.prefix)), msg.content)
             if match:
                 await new_ctx.reinvoke()
                 return
