@@ -31,12 +31,13 @@ class Faction(commands.Cog):
         if ctx.session.query(Guild).filter_by(faction_name=name).first():
             await ctx.send(ctx.s("faction.name_already_exists"))
             return
-        alias = re.sub(r"[^A-Za-z]+", "", alias).lower()
-        if alias and not (1 <= len(alias) <= 5):
-            raise BadArgumentErrorWithMessage(ctx.s("faction.err.alias_length"))
-        if ctx.session.query(Guild).filter_by(faction_alias=alias).first():
-            await ctx.send(ctx.s("faction.alias_already_exists"))
-            return
+        if alias:
+            alias = re.sub(r"[^A-Za-z]+", "", alias).lower()
+            if alias and not (1 <= len(alias) <= 5):
+                raise BadArgumentErrorWithMessage(ctx.s("faction.err.alias_length"))
+            if ctx.session.query(Guild).filter_by(faction_alias=alias).first():
+                await ctx.send(ctx.s("faction.alias_already_exists"))
+                return
 
         guild.faction_name = name
         guild.faction_alias = alias
