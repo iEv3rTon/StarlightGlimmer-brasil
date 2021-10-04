@@ -74,7 +74,7 @@ class PixelZoneConnection(LongrunningWSConnection):
         super().__init__(*args)
         self.canvas = "pixelzone"
 
-        self.sio = socketio.AsyncClient(binary=True, logger=log)
+        self.sio = socketio.AsyncClient(logger=log)
         self.ready = False
 
         self.retry = True
