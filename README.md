@@ -9,6 +9,7 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io), [Pixelzone.io](http
 
 #### Requires:
 - [Python](https://www.python.org/downloads/release/python-365/) v3.6
+- [Postgresql](https://www.postgresql.org/)
 - [Discord.py](https://github.com/Rapptz/discord.py/) v1.3.1
 - [Pillow](https://pillow.readthedocs.io/en/latest/installation.html)
 - [aiohttp](https://aiohttp.readthedocs.io/en/stable/) 
@@ -20,11 +21,12 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io), [Pixelzone.io](http
 
 #### Installation:
 1. Install Python 3.6
-2. Run `python -m pip install -r requirements.txt` in the main directory
-3. Put your bot token, [database uri](https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls) and other config info in `config/config.json.example`
-3. Rename `config.json.example` to `config.json`
-4. Make a folder named data
-4. Run `python glimmer.py`
+2. Install Postgresql
+3. Run `python -m pip install -r requirements.txt` in the main directory
+4. Put your bot token, [database uri](https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls) and other config info in `config/config.json.example`
+5. Rename `config.json.example` to `config.json`
+6. Make a folder named data
+7. Run `python glimmer.py`
 
 #### Features:
 - Automatic live canvas preview
