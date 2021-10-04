@@ -8,9 +8,9 @@ This bot is forked from Fawfulcopter's original [Starlight Glimmer](https://gith
 Currently supports [Pixelcanvas.io](https://pixelcanvas.io), [Pixelzone.io](https://pixelzone.io) and [Pxls.space](https://pxls.space).
 
 #### Requires:
-- [Python](https://www.python.org/downloads/release/python-365/) v3.6
+- [Python](https://www.python.org/downloads/release/python-397/) v3.9
 - [Postgresql](https://www.postgresql.org/)
-- [Discord.py](https://github.com/Rapptz/discord.py/) v1.3.1
+- [Discord.py](https://github.com/Rapptz/discord.py/) v1.3.4
 - [Pillow](https://pillow.readthedocs.io/en/latest/installation.html)
 - [aiohttp](https://aiohttp.readthedocs.io/en/stable/) 
 - [numpy](https://www.scipy.org/scipylib/download.html) 
