@@ -13,8 +13,8 @@ class Cogs(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def cog_check(self, ctx):
-        return self.bot.is_owner(ctx.author)
+    async def cog_check(self, ctx):
+        return await self.bot.is_owner(ctx.author)
 
     async def cog_command_error(self, ctx, error):
         # Unwrap nested errors
