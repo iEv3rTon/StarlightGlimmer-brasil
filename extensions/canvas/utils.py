@@ -1,3 +1,4 @@
+import dataclasses
 import io
 import re
 import logging
@@ -26,12 +27,12 @@ class MockTemplate:
         return (2 * self.x + self.width) // 2, (2 * self.y + self.height) // 2
 
 
+@dataclasses.dataclass
 class Pixel:
-    def __init__(self, current, target, x, y):
-        self.current = current
-        self.target = target
-        self.x = x
-        self.y = y
+    current: int
+    target: int
+    x: int
+    y: int
 
 
 class CheckSource(discord.ext.menus.ListPageSource):

@@ -404,20 +404,19 @@ class CheckerSource(discord.ext.menus.ListPageSource):
 
 
 class Pixel:
-    # Messy, but like w/e
     colors = {
         "pixelcanvas": [],
         "pixelzone": [],
         "pxlsspace": []
     }
-    for x in range(16):
+    for i in range(16):
         for canvas in ["pixelcanvas", "pixelzone", "pxlsspace"]:
-            colors[canvas].append(en_US.STRINGS.get(f"color.{canvas}.{x}", None))
-    for x in range(16, 24):
-        colors["pxlsspace"].append(en_US.STRINGS.get(f"color.pxlsspace.{x}", None))
+            colors[canvas].append(en_US.STRINGS.get(f"color.{canvas}.{i}", None))
+    for i in range(16, 24):
+        colors["pxlsspace"].append(en_US.STRINGS.get(f"color.pxlsspace.{i}", None))
 
     def __init__(self, damage_color, x, y, alert_id, template_id, canvas):
-        self.damage_color = damage_color  # int from 0-15, corresponds to an index in colors
+        self.damage_color = damage_color  # int, corresponds to an index in colors
         self.x = x
         self.y = y
         self.alert_id = alert_id  # Alert message this pixel is for
