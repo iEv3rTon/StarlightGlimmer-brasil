@@ -319,7 +319,7 @@ class PixelCanvasConnection(LongrunningWSConnection):
 
             log.debug("Connecting to pixelcanvas.io websocket...")
             try:
-                url = f"wss://ws.pixelcanvas.io:8443/?fingerprint={self.fingerprint}"
+                url = f"https://pixelcanvas.io/events?fingerprint={self.fingerprint}"
                 async with websockets.connect(url, extra_headers=http.useragent) as ws:
                     async for message in ws:
                         self.bot.loop.create_task(self.on_message(message))
