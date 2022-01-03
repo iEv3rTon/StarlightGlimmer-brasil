@@ -14,3 +14,4 @@ python-socketio[asyncio_client]
 requests
 matplotlib
 sentry_sdk
+aiohttp_sse_client

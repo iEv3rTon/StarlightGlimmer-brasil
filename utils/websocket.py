@@ -12,6 +12,7 @@ import numpy as np
 import socketio
 from PIL import Image
 import websockets
+from aiohttp_sse_client import client as sse_client
 
 from objects.chunks import ChunkPz
 from objects.database_models import session_scope, Pixel, Canvas, Online
@@ -292,18 +293,18 @@ class PixelCanvasConnection(LongrunningWSConnection):
 
     async def on_message(self, message):
         self.alive = time()
-        if unpack_from("B", message, 0)[0] == 193:
-            x = unpack_from('!h', message, 1)[0]
-            y = unpack_from('!h', message, 3)[0]
-            a = unpack_from('!H', message, 5)[0]
-            number = (65520 & a) >> 4
-            x = int(x * 64 + ((number % 64 + 64) % 64))
-            y = int(y * 64 + math.floor(number / 64))
-            color = 15 & a
 
-            async with self.listener_lock:
-                for _, listener in self.listeners.items():
-                    self.bot.loop.create_task(listener(x, y, color, "pixelcanvas"))
+        try:
+            data = json.loads(message.data)
+            x = data["x"]
+            y = data["y"]
+            color = data["color"]
+        except Exception:
+            log.exception("Error decoding json message from pixelcanvas event source.")
+
+        async with self.listener_lock:
+            for _, listener in self.listeners.items():
+                self.bot.loop.create_task(listener(x, y, color, "pixelcanvas"))
 
     async def run(self):
         await self.add_listener(self.update_placements)
@@ -317,18 +318,20 @@ class PixelCanvasConnection(LongrunningWSConnection):
                 else:
                     self.failures = 0
 
-            log.debug("Connecting to pixelcanvas.io websocket...")
+            log.debug("Connecting to pixelcanvas.io event source...")
+
+            url = f"https://pixelcanvas.io/events?fingerprint={self.fingerprint}"
             try:
-                url = f"wss://pixelcanvas.io/events?fingerprint={self.fingerprint}"
-                async with websockets.connect(url, extra_headers=http.useragent) as ws:
-                    async for message in ws:
-                        self.bot.loop.create_task(self.on_message(message))
-            except websockets.exceptions.ConnectionClosed:
-                log.debug("Pixelcanvas.io websocket disconnected.")
-            except socket.gaierror:
-                log.debug("Temporary failure in name resolution for pixelcanvas.io.")
+                async with sse_client.EventSource(url) as event_source:
+                    try:
+                        async for message in event_source:
+                            self.bot.loop.create_task(self.on_message(message))
+                    except ConnectionError:
+                        log.exception("Error with pixelcanvas event source!")
+                    except Exception:
+                        log.exception("Error with pixelcanvas event source!")
             except Exception:
-                log.exception("Error with pixelcanvas websocket!")
+                log.exception("Error with pixelcanvas event source!")
 
             self.last_failure = time()
 
