@@ -125,7 +125,7 @@ async def fetch_online_pixelcanvas():
             if resp.status != 200:
                 raise HttpGeneralError
             data = json.loads(await resp.read())
-            return data['online']
+            return data['result']['data']['online']
 
 
 async def fetch_online_pixelzone(bot):
