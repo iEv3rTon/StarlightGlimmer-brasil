@@ -317,10 +317,11 @@ class Glimmer(commands.Bot):
 
 
 log = logging.getLogger(__name__)
+intents = discord.Intents.all()
 bot = Glimmer(
     command_prefix=get_prefix,
     case_insensitive=True,
-    owner_id=255376766049320960)
+    intents=intents)
 
 
 class DiscordLogger(logging.Handler):

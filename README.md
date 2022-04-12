@@ -1,7 +1,7 @@
 <img align="right" width="200" height="200" src="avatar.jpg">
 
 # Starlight Glimmer
-A template utility bot based on [Alastair](Make-Alastair-Great-Again) and [Pinkie Pie](https://pastebin.com/Tg1p5AnW).
+A template utility bot.
 
 This bot is forked from Fawfulcopter's original [Starlight Glimmer](https://github.com/DiamondIceNS/StarlightGlimmer).
 
@@ -10,7 +10,7 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io), [Pixelzone.io](http
 #### Requires:
 - [Python](https://www.python.org/downloads/release/python-397/) v3.9
 - [Postgresql](https://www.postgresql.org/)
-- [Discord.py](https://github.com/Rapptz/discord.py/) v1.3.4
+- [Discord.py](https://github.com/Rapptz/discord.py/) v1.7.3
 - [Pillow](https://pillow.readthedocs.io/en/latest/installation.html)
 - [aiohttp](https://aiohttp.readthedocs.io/en/stable/) 
 - [numpy](https://www.scipy.org/scipylib/download.html) 
@@ -26,7 +26,8 @@ Currently supports [Pixelcanvas.io](https://pixelcanvas.io), [Pixelzone.io](http
 4. Put your bot token, [database uri](https://docs.sqlalchemy.org/en/13/core/engines.html#database-urls) and other config info in `config/config.json.example`
 5. Rename `config.json.example` to `config.json`
 6. Make a folder named data
-7. Run `python glimmer.py`
+7. Enable all three [privileged intents](https://discordpy.readthedocs.io/en/master/intents.html) in the discord developer portal for your bot user
+8. Run `python glimmer.py`
 
 #### Features:
 - Automatic live canvas preview
