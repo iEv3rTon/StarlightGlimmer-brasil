@@ -45,13 +45,12 @@ class Configuration(commands.Cog):
     @checks.admin_only()
     @commands.guild_only()
     @commands.command()
-    async def prefix(self, ctx, *prefix):
+    async def prefix(self, ctx, prefix):
         guild = ctx.session.query(Guild).get(ctx.guild.id)
         if prefix:
             if len(prefix[0]) > 5:
                 raise commands.BadArgument
             guild.prefix = prefix
-            sql.guild_update(ctx.guild.id, prefix=prefix)
             await ctx.send(ctx.s("configuration.prefix_set").format(prefix))
         else:
             await ctx.send(ctx.s("configuration.prefix_current").format(guild.prefix if guild.prefix else utils.config.PREFIX))

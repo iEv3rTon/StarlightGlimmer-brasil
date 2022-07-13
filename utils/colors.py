@@ -72,34 +72,38 @@ pixelzone = [
 ]
 
 pxlsspace = [
-    (255, 255, 255),  # White
-    (205, 205, 205),  # Light Grey
-    (136, 136, 136),  # Med Light Grey
-    ( 85,  85,  85),  # Med Dark Grey
-    ( 34,  34,  34),  # Dark Grey
     (  0,   0,   0),  # Black
-    (255, 167, 209),  # Light Pink
-    (253,  70,  89),  # Dark Pink
-    (229,   0,   0),  # Light Red
-    (128,   0,   0),  # Dark Red
-    (255, 221, 202),  # Beige
-    (246, 179, 137),  # Tan
-    (229, 149,   0),  # Light Orange
-    (255,  91,   0),  # Dark Orange
-    (160, 106,  66),  # Light Brown
-    ( 96,  64,  40),  # Dark Brown
-    (255, 255,   0),  # Dark Yellow
-    (253, 253, 150),  # Light Yellow
-    (148, 224,  68),  # Light Green
-    (  2, 190,   1),  # Green
-    (  0,  95,   0),  # Dark Green
-    (  0, 211, 221),  # Cyan
-    (  0, 131, 199),  # Teal
-    (  0,   0, 234),  # Blue
-    (  3,   7, 100),  # Dark Blue
-    (207, 110, 228),  # Lavender
-    (255,   0, 255),  # Magenta
-    (130,   0, 128),  # Purple
+    ( 34,  34,  34),  # Dark Grey
+    ( 85,  85,  85),  # Deep Grey
+    (136, 136, 136),  # Medium Grey
+    (205, 205, 205),  # Light Grey
+    (255, 255, 255),  # White
+    (255, 213, 188),  # Beige
+    (255, 183, 131),  # Peach
+    (182, 109,  61),  # Brown
+    (119,  67,  31),  # Chocolate
+    (252, 117,  16),  # Rust
+    (252, 168,  14),  # Orange
+    (253, 232,  23),  # Yellow
+    (255, 244, 145),  # Pastel Yellow
+    (190, 255,  64),  # Lime
+    (112, 221,  19),  # Green
+    ( 49, 161,  23),  # Dark Green
+    ( 11,  95,  53),  # Forest
+    ( 39, 126, 108),  # Dark Teal
+    ( 50, 182, 159),  # Light Teal
+    (136, 255, 243),  # Aqua
+    ( 36, 181, 254),  # Azure
+    ( 18,  92, 199),  # Blue
+    ( 38,  41,  96),  # Navy
+    (139,  47, 168),  # Purple
+    (210,  76, 233),  # Mauve
+    (255,  89, 239),  # Magenta
+    (255, 169, 217),  # Pink
+    (255, 100, 116),  # Watermelon
+    (240,  37,  35),  # Red
+    (177,  18,   6),  # Rose
+    (116,  12,   0)   # Maroon
 ]
 
 by_name = {

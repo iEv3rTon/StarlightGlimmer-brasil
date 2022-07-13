@@ -97,7 +97,7 @@ class Template(commands.Cog):
         unhidden_guild_ids = ctx.session.query(Guild.id).filter(
             Guild.faction_name != None,
             Guild.faction_hidden == False
-        ).subquery()
+        )
 
         unhidden_templates = ctx.session.query(TemplateDb).filter(
             TemplateDb.guild_id.in_(unhidden_guild_ids))
@@ -467,10 +467,10 @@ class Template(commands.Cog):
         if filter:
             template_ids = ctx.session.query(TemplateDb.id).filter(
                 TemplateDb.guild_id == ctx.guild.id,
-                TemplateDb.name.in_(filter)).subquery()
+                TemplateDb.name.in_(filter))
         else:
             template_ids = ctx.session.query(TemplateDb.id).filter(
-                TemplateDb.guild_id == ctx.guild.id).subquery()
+                TemplateDb.guild_id == ctx.guild.id)
 
         snapshots = ctx.session.query(Snapshot).filter(Snapshot.base_template_id.in_(template_ids)).all()
 
@@ -622,7 +622,7 @@ class Template(commands.Cog):
     @checks.template_adder_only()
     @snapshot.command(name='list', aliases=['l'])
     async def snapshot_list(self, ctx):
-        template_ids = ctx.session.query(TemplateDb.id).filter_by(guild_id=ctx.guild.id).subquery()
+        template_ids = ctx.session.query(TemplateDb.id).filter_by(guild_id=ctx.guild.id)
         snapshots = ctx.session.query(Snapshot).filter(Snapshot.base_template_id.in_(template_ids)).all()
         if not snapshots:
             return await ctx.send(f"No snapshots found, add some using `{ctx.prefix}snapshot add`")

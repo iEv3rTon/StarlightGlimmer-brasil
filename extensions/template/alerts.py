@@ -300,7 +300,7 @@ class Alerts(commands.Cog):
         start = args.duration.start
         end = args.duration.end
 
-        sq = ctx.session.query(Canvas.id).filter_by(nick=template.canvas).subquery()
+        sq = ctx.session.query(Canvas.id).filter_by(nick=template.canvas)
         q = ctx.session.query(PixelDb).filter(
             PixelDb.placed.between(start, end),
             PixelDb.canvas_id.in_(sq),

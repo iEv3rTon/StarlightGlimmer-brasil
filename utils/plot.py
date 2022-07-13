@@ -105,7 +105,7 @@ def alert_gain(ctx, x_data, ally_values, enemy_values, duration):
 
 
 def process_color_pie(ctx, canvas, start, end):
-    sq = ctx.session.query(Canvas.id).filter_by(nick=canvas).subquery()
+    sq = ctx.session.query(Canvas.id).filter_by(nick=canvas)
     q = ctx.session.query(Pixel.color, func.count("(*)"))
     q = q.filter(
         Pixel.placed.between(start, end),
@@ -273,7 +273,7 @@ def online_iter(online_records):
 
 def process_raw(ctx, canvas, start, end, type):
     if type == "placement":
-        sq = ctx.session.query(Canvas.id).filter_by(nick=canvas).subquery()
+        sq = ctx.session.query(Canvas.id).filter_by(nick=canvas)
         q = ctx.session.query(Pixel.placed, Pixel.x, Pixel.y, Pixel.color)
         q = q.filter(
             Pixel.placed.between(start, end),
@@ -289,7 +289,7 @@ def process_raw(ctx, canvas, start, end, type):
         pixel_writer.writerows(pixel_iter(pixels))
         buf.seek(0)
     elif type == "online":
-        sq = ctx.session.query(Canvas.id).filter_by(nick=canvas).subquery()
+        sq = ctx.session.query(Canvas.id).filter_by(nick=canvas)
         q = ctx.session.query(Online.time, Online.count)
         q = q.filter(
             Online.time.between(start, end),
@@ -309,7 +309,7 @@ def process_raw(ctx, canvas, start, end, type):
 
 
 def process_online_line(ctx, canvas, start, end):
-    sq = ctx.session.query(Canvas.id).filter_by(nick=canvas).subquery()
+    sq = ctx.session.query(Canvas.id).filter_by(nick=canvas)
     data = ctx.session.query(Online.time, Online.count).filter(
         Online.canvas_id.in_(sq),
         Online.time.between(start, end)).order_by(Online.time).all()
@@ -387,7 +387,7 @@ def histogram_2d_placement_density(ctx, x_values, y_values, color_map, axes, cen
 
 
 def process_placement_hist(ctx, canvas, duration):
-    sq = ctx.session.query(Canvas.id).filter_by(nick=canvas).subquery()
+    sq = ctx.session.query(Canvas.id).filter_by(nick=canvas)
     q = ctx.session.query(Pixel.placed).filter(
         Pixel.canvas_id.in_(sq),
         Pixel.placed.between(duration.start, duration.end))
