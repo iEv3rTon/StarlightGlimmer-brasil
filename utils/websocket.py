@@ -380,7 +380,7 @@ class PxlsSpaceConnection(LongrunningWSConnection):
         while True:
             if self.last_failure:
                 failure_delta = time() - self.last_failure
-                if failure_delta > 60 * 5:
+                if failure_delta < 60 * 5:
                     self.failures += 1
                     await asyncio.sleep(2 ** self.failures)
                 else:
