@@ -76,7 +76,13 @@ class BigChunk(Chunky):
         return PC_CHUNK_LENGTH
 
     @property
+    def width(self):
+        return PC_CHUNK_LENGTH
+
+    @property
     def p_x(self):
+        # TODO: Don't understand what this is acheieving, but only check uses it, so it's fine if that breaks temporarily
+        # it's probably something to do with where a coord inside the chunk is relative to the map
         return self.x * PC_CHUNK_LENGTH - 448
 
     @property
@@ -85,35 +91,25 @@ class BigChunk(Chunky):
 
     @property
     def url(self):
-        return "https://pixelcanvas.io/api/bigchunk/{0}.{1}.bmp".format(self.x * 15, self.y * 15)
-
-    @property
-    def width(self):
-        return PC_CHUNK_LENGTH
+        return "https://pixelcanvas.io/tile/{0}/{1}.png".format(self.x * 512, self.y * 512)
 
     def is_in_bounds(self):
+        # TODO: These aren't the map boundaries on pixelcanvas. I'm not sure there are boundaries anymore, it's infinite iirc?
         return -1043 <= self.x < 1043 and -1043 <= self.y < 1043
 
     def load(self, data):
-        with io.BytesIO(data) as bio:
-            self._image = Image.new("RGB", (PC_CHUNK_LENGTH, PC_CHUNK_LENGTH), colors.pixelcanvas[1])
-            bio.seek(0)
-            for cy in range(0, PC_CHUNK_LENGTH, 64):
-                for cx in range(0, PC_CHUNK_LENGTH, 64):
-                    if not -1000000 <= self.p_x + cx < 1000000 or not -1000000 <= self.p_y + cy < 1000000:
-                        bio.seek(2048, 1)
-                        continue
-                    img = Image.frombuffer('P', (64, 64), bio.read(2048), 'raw', 'P;4')
-                    img.putpalette(self.palette)
-                    self._image.paste(img, (cx, cy, cx + 64, cy + 64))
+        image = Image.open(io.BytesIO(data))
+        self._image = image
+        return image
 
     @staticmethod
     def get_intersecting(x, y, dx, dy):
+        # dx and dy are the width and height of the area being fetched
         bigchunks = []
-        dx = (x + dx + 448) // PC_CHUNK_LENGTH
-        dy = (y + dy + 448) // PC_CHUNK_LENGTH
-        x = (x + 448) // PC_CHUNK_LENGTH
-        y = (y + 448) // PC_CHUNK_LENGTH
+        x = x // PC_CHUNK_LENGTH
+        y = y // PC_CHUNK_LENGTH
+        dx = (x + dx) // PC_CHUNK_LENGTH
+        dy = (y + dy) // PC_CHUNK_LENGTH
         for iy in range(y, dy + 1):
             for ix in range(x, dx + 1):
                 bigchunks.append(BigChunk(ix, iy))

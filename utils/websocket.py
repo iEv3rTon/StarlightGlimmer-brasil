@@ -320,7 +320,7 @@ class PixelCanvasConnection(LongrunningWSConnection):
 
             log.debug("Connecting to pixelcanvas.io event source...")
 
-            url = f"https://fanout.fly.dev/?fingerprint={self.fingerprint}"
+            url = f"https://pixelcanvas.io/events?fingerprint={self.fingerprint}"
             try:
                 async with sse_client.EventSource(url) as event_source:
                     try:

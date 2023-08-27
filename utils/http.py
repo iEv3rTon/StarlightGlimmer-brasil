@@ -48,8 +48,8 @@ async def _fetch_chunks_pixelcanvas(bigchunks: Iterable[BigChunk]):
                 try:
                     async with session.get(bc.url, headers=useragent) as resp:
                         data = await resp.read()
-                        if len(data) == 460800:
-                            break
+                        # TODO: add a replacement verification step here?
+                        break
                 except aiohttp.ClientPayloadError:
                     pass
                 data = None

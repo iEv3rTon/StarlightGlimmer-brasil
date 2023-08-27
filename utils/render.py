@@ -324,16 +324,15 @@ async def fetch_pixelcanvas(bot, x, y, dx, dy):
     A PIL Image object of the area requested.
     """
     bigchunks, shape = BigChunk.get_intersecting(x, y, dx, dy)
-    fetched = Image.new('RGB', tuple([960 * x for x in shape]), colors.pixelcanvas[1])
+    fetched = Image.new('RGB', tuple([512 * x for x in shape]), colors.pixelcanvas[1])
 
     await http.fetch_chunks(bot, bigchunks)
 
     for i, bc in enumerate(bigchunks):
         if bc.is_in_bounds():
-            fetched.paste(bc.image, ((i % shape[0]) * 960, (i // shape[0]) * 960))
+            fetched.paste(bc.image, box=((i % shape[0]) * 512, (i // shape[0]) * 512))
 
-    x, y = x - (x + 448) // 960 * 960 + 448, y - (y + 448) // 960 * 960 + 448
-    return fetched.crop((x, y, x + dx, y + dy))
+    return fetched.crop((x % 512, y % 512, (x % 512) + dx, (y % 512) + dy))
 
 
 async def fetch_pixelzone(bot, x, y, dx, dy):

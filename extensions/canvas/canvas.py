@@ -10,7 +10,7 @@ import aiohttp
 import discord
 from discord.ext import commands, menus
 from PIL import Image
-from matplotlib.cm import _cmap_registry as cmaps
+from matplotlib.cm import _colormaps as cmaps
 import numpy as np
 
 from extensions.canvas.utils import \
