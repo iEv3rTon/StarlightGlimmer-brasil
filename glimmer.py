@@ -380,4 +380,7 @@ async def on_command_preprocess(ctx):
     log.info("[uuid:{0}] {1}".format(ctx.uuid, ctx.message.content))
 
 
-bot.run(config.TOKEN)
+#bot.run(config.TOKEN)
+
+bot.run((os.environ['TOKEN'])
+        
